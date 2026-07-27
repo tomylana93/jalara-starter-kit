@@ -1,0 +1,12 @@
+# Conventions
+
+- Follow sibling files for structure and naming; names are descriptive, classes/components TitleCase, PHP methods/variables camelCase.
+- PHP: explicit parameter and return types; constructor property promotion where dependencies exist; curly braces for every control structure; no empty public constructors; Enum cases TitleCase.
+- PHP documentation: prefer PHPDoc blocks and array-shape/generic annotations where types cannot be expressed natively; inline comments only for exceptional complexity.
+- Laravel: thin controllers, validation in Form Requests or reusable concerns, authorization in policies, Eloquent over raw queries, named routes and `route()`/`to_route()` for URLs.
+- API work defaults to versioned endpoints and Eloquent API Resources unless established routes show another convention.
+- Vue: Composition API with `<script setup lang="ts">`, single root template, strict types, `@/` imports, shared components before new one-off UI.
+- ESLint enforces type-only imports, alphabetized import groups, all control braces, 1TBS brace style, and blank lines around control statements.
+- Prettier: 4-space tabs, semicolons, single quotes, 80 columns; Tailwind plugin sorts utility classes and recognizes `clsx`, `cn`, and `cva`.
+- Wayfinder-generated `resources/js/actions`, `resources/js/routes`, and `resources/js/wayfinder` are generated artifacts; call their typed functions from frontend code rather than hardcoded URLs.
+- Pest tests use function-style `test()`/expectations and factories; feature tests use database refresh globally. Every behavior change requires a new or updated programmatic test.

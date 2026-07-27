@@ -1,0 +1,18 @@
+# Suggested Commands
+
+- First-time setup: `composer run setup` (Composer install, .env/key, forced migrations, pnpm install, production build).
+- Full local development stack: `composer run dev` (delegates to `php artisan dev`).
+- Frontend-only dev server: `pnpm run dev`.
+- Production frontend build: `pnpm run build`; SSR build: `pnpm run build:ssr`.
+- Targeted tests: `php artisan test --compact tests/Feature/Path/SomeTest.php` or `php artisan test --compact --filter=testName`.
+- Full backend gate: `composer test` (config clear, Pint check, Larastan, Laravel tests).
+- PHP formatting: `vendor/bin/pint --dirty --format agent` after modifying PHP.
+- Frontend autofix: `pnpm run lint`; frontend lint check: `pnpm run lint:check`.
+- Frontend formatting: `pnpm run format`; check only: `pnpm run format:check`.
+- Frontend types: `pnpm run types:check`.
+- PHP static analysis: `composer run types:check`.
+- Aggregate CI checks: `composer run ci:check`.
+- Route inspection: `php artisan route:list --except-vendor` with `--method`, `--name`, or `--path` filters.
+- Configuration inspection: `php artisan config:show key.path`.
+- Artisan generators must include `--no-interaction`; Pest tests: `php artisan make:test --pest Name --no-interaction`.
+- If a frontend edit is not visible, run `pnpm run dev`, `pnpm run build`, or the full `composer run dev`.
