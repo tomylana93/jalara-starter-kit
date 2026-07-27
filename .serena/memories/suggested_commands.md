@@ -12,6 +12,8 @@
 - Frontend types: `pnpm run types:check`.
 - PHP static analysis: `composer run types:check`.
 - Aggregate CI checks: `composer run ci:check`.
+- Publish custom guidelines and skills: `php artisan boost:update --no-interaction`.
+- Check Serena memory references: `serena memories check`; deeper maintenance audit: `serena memories check --include-unmarked --fuzzy-matching`.
 - Route inspection: `php artisan route:list --except-vendor` with `--method`, `--name`, or `--path` filters.
 - Configuration inspection: `php artisan config:show key.path`.
 - Artisan generators must include `--no-interaction`; Pest tests: `php artisan make:test --pest Name --no-interaction`.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain Agent Context"
+  short_description: "Maintain agent workflows, skills, and memory"
+  default_prompt: "Use $maintaining-agent-context to audit and update this repository agent context."
