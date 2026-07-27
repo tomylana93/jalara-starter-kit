@@ -1,6 +1,6 @@
 ---
 name: maintaining-agent-context
-description: Maintain repository agent infrastructure, including always-on guidelines, on-demand skills, MCP routing rules, Laravel Boost publication, and Serena project memories. Use when onboarding an agent, auditing or changing AGENTS.md/CLAUDE.md generation, editing `.ai/`, adding/updating/removing skills, changing MCP instructions or configuration, reorganizing Serena memories, repairing memory references, or refreshing Boost resources.
+description: Maintain repository agent infrastructure, including always-on guidelines, on-demand skills, MCP routing rules, Laravel Boost publication, and Serena project memories. Use when onboarding an agent, changing AGENTS.md/CLAUDE.md generation, editing `.ai/`, adding/updating/removing skills, changing MCP instructions or configuration, reorganizing Serena memories, repairing memory references, or refreshing Boost resources.
 ---
 
 # Maintaining Agent Context
@@ -26,8 +26,12 @@ regenerate.
 - Put focused procedures that should load on demand in a skill.
 - Discover skills from the current runtime catalog and filesystem. Never copy a
   list of installed skill names into static instructions.
+- Select a skill only when its trigger metadata actually matches the task; do
+  not substitute the closest available skill for a missing capability.
 - Give every skill a lowercase hyphenated directory name and a `SKILL.md` whose
   frontmatter contains only `name` and a precise trigger-rich `description`.
+- Read a selected `SKILL.md` through EOF. Continue after truncated or paginated
+  output; never treat a fixed line range as a complete read.
 - Keep the body imperative and concise. Add scripts, references, or assets only
   when they remove repeated work or large optional context.
 - Validate custom skills before publication and inspect trigger overlap so a
