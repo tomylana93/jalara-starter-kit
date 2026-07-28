@@ -28,6 +28,21 @@ it('authenticates users using the login screen', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
+it('redirects authenticated users to their intended route', function () {
+    $user = User::factory()->create();
+
+    get(route('account.profile.edit'))
+        ->assertRedirectToRoute('login');
+
+    $response = post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    assertAuthenticated();
+    $response->assertRedirectToRoute('account.profile.edit');
+});
+
 it('redirects users with two factor enabled to the two factor challenge', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
