@@ -67,6 +67,8 @@ return [
         ],
         'message' => [
             'updated' => 'Password berhasil diperbarui.',
+            'must_change_password_title' => 'Password wajib diganti',
+            'must_change_password' => 'Tetapkan password baru sebelum melanjutkan ke aplikasi.',
         ],
     ],
 

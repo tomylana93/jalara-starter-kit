@@ -20,6 +20,7 @@ class SecurityController extends Controller
     {
         $props = [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'mustChangePassword' => $request->user()->must_change_password,
         ];
 
         return Inertia::render('account/Security', $props);
@@ -30,10 +31,14 @@ class SecurityController extends Controller
      */
     public function update(UpdatePasswordRequest $request, UpdatePassword $updatePassword): RedirectResponse
     {
+        $mustChangePassword = $request->user()->must_change_password;
+
         $updatePassword->handle($request->user(), $request->password);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('account.security.message.updated')]);
 
-        return back();
+        return $mustChangePassword
+            ? to_route('dashboard')
+            : back();
     }
 }

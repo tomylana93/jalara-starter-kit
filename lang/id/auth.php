@@ -30,6 +30,12 @@ return [
         'link' => [
             'forgot_password' => 'Lupa password?',
         ],
+        'message' => [
+            'active' => 'Akun aktif.',
+            'disabled' => 'Akun dinonaktifkan.',
+            'suspended' => 'Akun ditangguhkan.',
+            'must_change_password' => 'Password wajib diganti sebelum melanjutkan.',
+        ],
     ],
 
     'forgot_password' => [

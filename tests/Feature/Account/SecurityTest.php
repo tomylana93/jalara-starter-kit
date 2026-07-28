@@ -23,6 +23,7 @@ it('displays the security page', function () {
         ->get(route('account.security.edit'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('account/Security')
+            ->where('mustChangePassword', false)
             ->where('canManageTwoFactor', true)
             ->where('twoFactorEnabled', false),
         );
@@ -57,6 +58,7 @@ it('renders the security page without two factor when the feature is disabled', 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('account/Security')
+            ->where('mustChangePassword', false)
             ->where('canManageTwoFactor', false)
             ->missing('twoFactorEnabled')
             ->missing('requiresConfirmation'),

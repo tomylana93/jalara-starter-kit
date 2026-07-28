@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { TriangleAlert } from '@lucide/vue';
 import SecurityController from '@/actions/App/Http/Controllers/Account/SecurityController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { translate, useTranslations } from '@/composables/useTranslations';
@@ -11,6 +13,7 @@ import { edit } from '@/routes/account/security';
 
 type Props = {
     passwordRules: string;
+    mustChangePassword: boolean;
 };
 
 type LayoutProps = {
@@ -49,6 +52,16 @@ const { t } = useTranslations();
             :title="t('account.security.title')"
             :description="t('account.security.description')"
         />
+
+        <Alert v-if="props.mustChangePassword">
+            <TriangleAlert class="size-4" />
+            <AlertTitle>
+                {{ t('account.security.message.must_change_password_title') }}
+            </AlertTitle>
+            <AlertDescription>
+                {{ t('account.security.message.must_change_password') }}
+            </AlertDescription>
+        </Alert>
 
         <Form
             v-bind="SecurityController.update.form()"

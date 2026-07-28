@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserStatus;
 use App\Jobs\SendEmailVerification;
 use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
@@ -19,7 +20,13 @@ use Illuminate\Notifications\Notifiable;
  * @property string $name
  * @property string $email
  * @property CarbonInterface|null $email_verified_at
+ * @property string|null $phone
+ * @property UserStatus $status
  * @property string $password
+ * @property bool $must_change_password
+ * @property CarbonInterface|null $last_login_at
+ * @property int $failed_login_attempts
+ * @property CarbonInterface|null $suspended_until
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property CarbonInterface|null $two_factor_confirmed_at
@@ -28,11 +35,33 @@ use Illuminate\Notifications\Notifiable;
  * @property CarbonInterface|null $updated_at
  */
 #[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden([
+    'password',
+    'phone',
+    'status',
+    'must_change_password',
+    'last_login_at',
+    'failed_login_attempts',
+    'suspended_until',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
+    'remember_token',
+])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasUuids, MustVerifyEmail, Notifiable;
+
+    /**
+     * The model's default values for attributes.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => UserStatus::Active->value,
+        'must_change_password' => false,
+        'failed_login_attempts' => 0,
+    ];
 
     public function sendEmailVerificationNotification(): void
     {
@@ -48,7 +77,12 @@ class User extends Authenticatable implements MustVerifyEmailContract
     {
         return [
             'email_verified_at' => 'datetime',
+            'status' => UserStatus::class,
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
+            'last_login_at' => 'datetime',
+            'failed_login_attempts' => 'integer',
+            'suspended_until' => 'datetime',
         ];
     }
 }

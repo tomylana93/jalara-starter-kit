@@ -2,9 +2,13 @@
 
 namespace App\Providers;
 
+use App\Actions\Auth\RecordSuccessfulLogin;
+use App\Actions\Fortify\AuthenticateUser;
 use App\Actions\Fortify\ResetUserPassword;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -38,7 +42,12 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureActions(): void
     {
+        Fortify::authenticateUsing(
+            fn (Request $request) => app(AuthenticateUser::class)->handle($request),
+        );
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        Event::listen(Login::class, [RecordSuccessfulLogin::class, 'handle']);
     }
 
     /**

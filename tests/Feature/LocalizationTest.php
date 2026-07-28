@@ -37,6 +37,7 @@ it('provides complete Indonesian translations with matching placeholders', funct
     'pagination' => 'pagination',
     'password reset' => 'passwords',
     'system' => 'system',
+    'user' => 'user',
     'validation' => 'validation',
 ]);
 
@@ -70,6 +71,7 @@ it('keeps user-facing translations free from direct address', function (string $
         'pagination',
         'passwords',
         'system',
+        'user',
         'validation',
     ])
         ->mapWithKeys(fn (string $file): array => [$file => require lang_path("{$locale}/{$file}.php")])

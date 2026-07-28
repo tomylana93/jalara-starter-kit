@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserStatus;
 use App\Models\User;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -40,6 +42,28 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function disabled(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => UserStatus::Disabled,
+        ]);
+    }
+
+    public function suspended(?DateTimeInterface $until = null): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => UserStatus::Suspended,
+            'suspended_until' => $until,
+        ]);
+    }
+
+    public function mustChangePassword(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'must_change_password' => true,
         ]);
     }
 }

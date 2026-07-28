@@ -67,6 +67,27 @@ it('resets the password with a valid token', function () {
     });
 });
 
+it('clears the forced password change after a valid reset', function () {
+    Notification::fake();
+
+    $user = User::factory()->mustChangePassword()->create();
+
+    post(route('password.email'), ['email' => $user->email]);
+
+    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        post(route('password.update'), [
+            'token' => $notification->token,
+            'email' => $user->email,
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])->assertSessionHasNoErrors();
+
+        expect($user->refresh()->must_change_password)->toBeFalse();
+
+        return true;
+    });
+});
+
 it('does not reset the password with an invalid token', function () {
     $user = User::factory()->create();
 

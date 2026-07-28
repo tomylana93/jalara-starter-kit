@@ -41,6 +41,12 @@ return [
         'link' => [
             'forgot_password' => 'Forgot password?',
         ],
+        'message' => [
+            'active' => 'The account is active.',
+            'disabled' => 'The account has been disabled.',
+            'suspended' => 'The account is suspended.',
+            'must_change_password' => 'A password change is required before continuing.',
+        ],
     ],
 
     'forgot_password' => [
