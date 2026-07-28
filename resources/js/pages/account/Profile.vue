@@ -40,7 +40,7 @@ const user = computed(() => page.props.auth.user);
         <Form
             v-bind="ProfileController.update.form()"
             class="space-y-6"
-            v-slot="{ errors, processing }"
+            v-slot="{ errors, processing, validate }"
         >
             <div class="grid gap-2">
                 <Label for="name">Name</Label>
@@ -52,6 +52,7 @@ const user = computed(() => page.props.auth.user);
                     required
                     autocomplete="name"
                     placeholder="Full name"
+                    @change="validate('name')"
                 />
                 <InputError class="mt-2" :message="errors.name" />
             </div>
@@ -67,6 +68,7 @@ const user = computed(() => page.props.auth.user);
                     required
                     autocomplete="username"
                     placeholder="Email address"
+                    @change="validate('email')"
                 />
                 <InputError class="mt-2" :message="errors.email" />
             </div>

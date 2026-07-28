@@ -3,13 +3,16 @@
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->prefix('account')->name('account.')->group(function () {
     Route::get('/', fn () => to_route('account.profile.edit'))->name('index');
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('profile', [ProfileController::class, 'update'])
+        ->middleware(HandlePrecognitiveRequests::class)
+        ->name('profile.update');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {

@@ -36,6 +36,52 @@ it('updates profile information', function () {
     expect($user->email_verified_at)->toBeNull();
 });
 
+it('precognizes valid profile information without updating the user', function () {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->withPrecognition()
+        ->patchJson(route('account.profile.update'), [
+            'name' => 'Precognitive User',
+            'email' => 'precognitive@example.com',
+        ])
+        ->assertSuccessfulPrecognition();
+
+    $user->refresh();
+
+    expect($user->name)->not->toBe('Precognitive User');
+    expect($user->email)->not->toBe('precognitive@example.com');
+    expect($user->email_verified_at)->not->toBeNull();
+});
+
+it('precognizes that another user email is unavailable', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    actingAs($user)
+        ->withPrecognition()
+        ->withHeader('Precognition-Validate-Only', 'email')
+        ->patchJson(route('account.profile.update'), [
+            'email' => $otherUser->email,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
+
+    expect($user->refresh()->email)->not->toBe($otherUser->email);
+});
+
+it('precognizes that the current user email remains available', function () {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->withPrecognition()
+        ->withHeader('Precognition-Validate-Only', 'email')
+        ->patchJson(route('account.profile.update'), [
+            'email' => $user->email,
+        ])
+        ->assertSuccessfulPrecognition();
+});
+
 it('leaves email verification status unchanged when the email address is unchanged', function () {
     $user = User::factory()->create();
 
