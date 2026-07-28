@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Requests\Settings;
+namespace App\Http\Requests\Account;
 
-use App\Concerns\PasswordValidationRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Laravel\Fortify\InteractsWithTwoFactorState;
 
-class ProfileDeleteRequest extends FormRequest
+class TwoFactorAuthenticationRequest extends FormRequest
 {
-    use PasswordValidationRules;
+    use InteractsWithTwoFactorState;
 
     /**
      * Get the validation rules that apply to the request.
@@ -17,8 +17,6 @@ class ProfileDeleteRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'password' => $this->currentPasswordRules(),
-        ];
+        return [];
     }
 }

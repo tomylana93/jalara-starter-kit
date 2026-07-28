@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
+import SecurityController from '@/actions/App/Http/Controllers/Account/SecurityController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/security';
+import { edit } from '@/routes/account/security';
 
 type Props = {
     passwordRules: string;
@@ -18,7 +18,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Security settings',
+                title: 'Security',
                 href: edit(),
             },
         ],
@@ -27,9 +27,9 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Security settings" />
+    <Head title="Security" />
 
-    <h1 class="sr-only">Security settings</h1>
+    <h1 class="sr-only">Security</h1>
 
     <div class="space-y-6">
         <Heading

@@ -20,9 +20,9 @@ it('displays the security page', function () {
 
     actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('security.edit'))
+        ->get(route('account.security.edit'))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/Security')
+            ->component('account/Security')
             ->where('canManageTwoFactor', true)
             ->where('twoFactorEnabled', false),
         );
@@ -39,7 +39,7 @@ it('requires password confirmation for the security page when enabled', function
     ]);
 
     $response = actingAs($user)
-        ->get(route('security.edit'));
+        ->get(route('account.security.edit'));
 
     $response->assertRedirect(route('password.confirm'));
 });
@@ -53,10 +53,10 @@ it('renders the security page without two factor when the feature is disabled', 
 
     actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('security.edit'))
+        ->get(route('account.security.edit'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/Security')
+            ->component('account/Security')
             ->where('canManageTwoFactor', false)
             ->missing('twoFactorEnabled')
             ->missing('requiresConfirmation'),
@@ -68,8 +68,8 @@ it('updates the password', function () {
 
     actingAs($user);
 
-    $response = from(route('security.edit'))
-        ->put(route('user-password.update'), [
+    $response = from(route('account.security.edit'))
+        ->put(route('account.password.update'), [
             'current_password' => 'password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
@@ -77,7 +77,8 @@ it('updates the password', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('security.edit'));
+        ->assertRedirect(route('account.security.edit'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Password updated.']);
 
     expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
@@ -87,8 +88,8 @@ it('requires the correct password to update the password', function () {
 
     actingAs($user);
 
-    $response = from(route('security.edit'))
-        ->put(route('user-password.update'), [
+    $response = from(route('account.security.edit'))
+        ->put(route('account.password.update'), [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
@@ -96,5 +97,33 @@ it('requires the correct password to update the password', function () {
 
     $response
         ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('security.edit'));
+        ->assertRedirect(route('account.security.edit'));
+});
+
+it('requires authentication for security routes', function () {
+    $this->get(route('account.security.edit'))->assertRedirect(route('login'));
+    $this->put(route('account.password.update'))->assertRedirect(route('login'));
+    $this->get(route('account.appearance.edit'))->assertRedirect(route('login'));
+});
+
+it('throttles password update attempts', function () {
+    $user = User::factory()->create();
+
+    actingAs($user);
+
+    foreach (range(1, 6) as $_) {
+        $this->put(route('account.password.update'), [
+            'current_password' => 'wrong-password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
+    }
+
+    $response = $this->put(route('account.password.update'), [
+        'current_password' => 'wrong-password',
+        'password' => 'new-password',
+        'password_confirmation' => 'new-password',
+    ]);
+
+    $response->assertTooManyRequests();
 });

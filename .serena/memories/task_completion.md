@@ -5,7 +5,7 @@
 - Vue/TypeScript/CSS touched: run `pnpm run format`, `pnpm run lint:check`, `pnpm run types:check`, plus relevant backend feature tests for the end-to-end behavior.
 - Route/controller contract changed: regenerate/use Wayfinder through the configured Vite integration and verify frontend type checks; no hardcoded route fallback.
 - Agent context touched: validate custom skill structure, run `php artisan boost:update --no-interaction` twice to verify publication is idempotent, and run Serena reference checks when memories changed.
-- Broad or cross-cutting change: run `composer run ci:check` or the equivalent full backend/frontend gates after focused checks pass.
+- Before every task handoff, `composer run ci:check` is mandatory after focused checks pass. Do not replace it with an equivalent subset of commands; report and resolve or explicitly surface every failure before completion.
 - Frontend build-affecting change: run `pnpm run build` when proportionate; Vite manifest errors specifically require `pnpm run build` or an active dev server.
 - Before handoff, inspect `git diff`/status, preserve unrelated user changes, and report the exact checks run and their outcomes.
 - Do not create ad-hoc verification scripts when the test suite can demonstrate the behavior.

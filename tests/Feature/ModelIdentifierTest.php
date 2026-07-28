@@ -21,7 +21,7 @@ it('gives users a uuid version seven identifier', function () {
 it('finds users by their uuid identifier', function () {
     $user = User::factory()->create();
 
-    expect($user->is(User::find($user->getKey())))->toBeTrue();
+    expect($user->is(User::query()->find($user->getKey())))->toBeTrue();
 });
 
 it('authenticates users with uuid identifiers', function () {

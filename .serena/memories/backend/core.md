@@ -1,7 +1,8 @@
 # Backend
 
-- Laravel application code is under `app/`; HTTP controllers and Form Requests are grouped by feature (for example `app/Http/Controllers/Settings`, `app/Http/Requests/Settings`).
-- `routes/web.php` owns public/dashboard routes and includes `routes/settings.php`; named routes are the invariant for URL generation.
+- Laravel application code is under `app/`; HTTP controllers and Form Requests are grouped by feature (for example `app/Http/Controllers/Account`, `app/Http/Requests/Account`).
+- `routes/web.php` owns public/dashboard routes and includes `routes/account.php`; named routes are the invariant for URL generation. The `Settings` domain (namespace/routes/pages) was fully retired in favor of `Account` (prefix `account`, name `account.*`) — the `Settings` namespace is reserved for future application-level settings, not user account management.
+- Business mutations (profile update, password update, account deletion) live in concrete `App\Actions\{Domain}\*` classes with a single `handle()` method, no interface/base class. Controllers inject the Action via method injection and stay thin: validation/authorization stays in Form Requests, HTTP concerns (redirect, flash, session lifecycle) stay in the controller, only the mutation itself goes in the Action.
 - Inertia pages are returned with `Inertia::render('Path/Component', props)`; mutations conventionally redirect with `to_route()` and may publish toast data via `Inertia::flash('toast', ...)`.
 - Fortify owns authentication backend behavior; custom actions live in `app/Actions/Fortify`, reusable auth validation rules in `app/Concerns`, and configuration/bootstrap in `app/Providers/FortifyServiceProvider.php`.
 - Authorization/validation belongs in policies or Form Requests, not ad-hoc controller logic.

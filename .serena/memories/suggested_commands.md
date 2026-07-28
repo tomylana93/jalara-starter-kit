@@ -12,7 +12,7 @@
 - Frontend formatting: `pnpm run format`; check only: `pnpm run format:check`.
 - Frontend types: `pnpm run types:check`.
 - PHP static analysis: `composer run types:check`.
-- Aggregate CI checks: `composer run ci:check`.
+- Mandatory final gate before every task handoff: `composer run ci:check`; run it after focused checks and report every failure.
 - Publish custom guidelines and skills: `php artisan boost:update --no-interaction`.
 - Check Serena memory references: `serena memories check`; deeper maintenance audit: `serena memories check --include-unmarked --fuzzy-matching`.
 - Route inspection: `php artisan route:list --except-vendor` with `--method`, `--name`, or `--path` filters.
