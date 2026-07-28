@@ -10,7 +10,8 @@
     "mcp": true,
     "nightwatch": false,
     "packages": [
-        "spatie/laravel-permission"
+        "spatie/laravel-permission",
+        "fruitcake/laravel-debugbar"
     ],
     "sail": false,
     "skills": [
@@ -21,6 +22,7 @@
         "inertia-vue-development",
         "tailwindcss-development",
         "laravel-permission-development",
+        "debug-using-debugbar",
         "maintaining-agent-context"
     ]
 }
