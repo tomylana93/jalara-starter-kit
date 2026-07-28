@@ -30,8 +30,13 @@ it('provides complete Indonesian translations with matching placeholders', funct
 })->with([
     'account' => 'account',
     'authentication' => 'auth',
+    'common' => 'common',
+    'console' => 'console',
+    'dashboard' => 'dashboard',
+    'navigation' => 'navigation',
     'pagination' => 'pagination',
     'password reset' => 'passwords',
+    'system' => 'system',
     'validation' => 'validation',
 ]);
 
@@ -55,7 +60,18 @@ it('shares the active and fallback locales with Inertia', function (): void {
 });
 
 it('keeps user-facing translations free from direct address', function (string $locale, string $directAddress): void {
-    $translations = collect(['account', 'auth', 'pagination', 'passwords', 'validation'])
+    $translations = collect([
+        'account',
+        'auth',
+        'common',
+        'console',
+        'dashboard',
+        'navigation',
+        'pagination',
+        'passwords',
+        'system',
+        'validation',
+    ])
         ->mapWithKeys(fn (string $file): array => [$file => require lang_path("{$locale}/{$file}.php")])
         ->toJson();
 

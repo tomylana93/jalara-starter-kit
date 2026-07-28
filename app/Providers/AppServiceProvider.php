@@ -41,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
         throw_if(
             app()->isProduction() && ! in_array(DB::getDefaultConnection(), ['mysql', 'mariadb', 'pgsql'], true),
             LogicException::class,
-            'Production must use a MySQL, MariaDB, or PostgreSQL database connection.',
+            __('system.exception.production_database'),
         );
 
         Password::defaults(fn (): ?Password => app()->isProduction()

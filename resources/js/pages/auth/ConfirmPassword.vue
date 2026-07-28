@@ -5,19 +5,34 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { translate, useTranslations } from '@/composables/useTranslations';
 import { store } from '@/routes/password/confirm';
 
+type LayoutProps = {
+    locale: string;
+    fallbackLocale: string;
+};
+
 defineOptions({
-    layout: {
-        title: 'Confirm password',
-        description:
-            'This is a secure area of the application. Please confirm your password before continuing.',
-    },
+    layout: (props: LayoutProps) => ({
+        title: translate(
+            'auth.confirm_password.title',
+            props.locale,
+            props.fallbackLocale,
+        ),
+        description: translate(
+            'auth.confirm_password.description',
+            props.locale,
+            props.fallbackLocale,
+        ),
+    }),
 });
+
+const { t } = useTranslations();
 </script>
 
 <template>
-    <Head title="Confirm password" />
+    <Head :title="t('auth.confirm_password.title')" />
 
     <Form
         v-bind="store.form()"
@@ -26,7 +41,9 @@ defineOptions({
     >
         <div class="space-y-6">
             <div class="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">
+                    {{ t('auth.confirm_password.label.password') }}
+                </Label>
                 <PasswordInput
                     id="password"
                     name="password"
@@ -46,7 +63,7 @@ defineOptions({
                     data-test="confirm-password-button"
                 >
                     <Spinner v-if="processing" />
-                    Confirm password
+                    {{ t('auth.confirm_password.button.submit') }}
                 </Button>
             </div>
         </div>

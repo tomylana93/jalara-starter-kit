@@ -50,7 +50,7 @@ const { t } = useTranslations();
             data-test="logout-button"
         >
             <LogOut class="mr-2 h-4 w-4" />
-            Log out
+            {{ t('auth.session.button.logout') }}
         </Link>
     </DropdownMenuItem>
 </template>

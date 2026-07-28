@@ -9,5 +9,6 @@
 - Vite integration is implemented by the standalone `vite/plugins/laravel-lang.ts` plugin registered through `laravelLang()`; keep conversion logic out of `vite.config.ts`.
 - Dev startup and production/SSR builds generate one ignored `resources/js/generated/lang/{locale}.json` file per locale. Each JSON object is keyed first by the PHP language filename/domain; generated JSON must never be tracked.
 - Inertia shares `locale` and `fallbackLocale`; frontend copy resolves dot-notation keys through `useTranslations()`, tries the active locale then Laravel's fallback locale, and returns the key when neither contains a string.
-- Account UI copy consumes `account.*` keys; technical HTML attributes, route identifiers, and test selectors remain literal.
+- All user-facing frontend copy outside `resources/js/components/ui/` consumes Laravel Lang JSON through domain keys (`account`, `auth`, `common`, `dashboard`, and `navigation`); technical HTML attributes, URLs, route/component identifiers, brand-name fallbacks, and test selectors remain literal.
+- Backend sentence copy uses Laravel Lang keys, including operational `console` and `system` domains; route names, field names, middleware, drivers, and other identifiers remain literal.
 - `tests/Feature/LocalizationTest.php` enforces English/Indonesian key parity, placeholder parity, translator loading, shared locale props, and the no-direct-address rule. The Vite plugin has colocated Node tests for generation and failure behavior.
