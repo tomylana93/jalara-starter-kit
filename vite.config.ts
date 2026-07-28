@@ -5,9 +5,11 @@ import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vite';
+import { laravelLang } from './vite/plugins/laravel-lang';
 
 export default defineConfig({
     plugins: [
+        laravelLang(),
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,

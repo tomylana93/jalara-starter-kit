@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Arr;
+use Inertia\Testing\AssertableInertia as Assert;
 
 function translationPlaceholders(mixed $translation): array
 {
@@ -41,6 +42,16 @@ it('loads Indonesian language lines through the translator', function (): void {
         ->toBe('Email atau password tidak sesuai.')
         ->and(__('validation.required', ['attribute' => 'email']))
         ->toBe('email wajib diisi.');
+});
+
+it('shares the active and fallback locales with Inertia', function (): void {
+    app()->setLocale('id');
+
+    $this->get(route('login'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('locale', 'id')
+            ->where('fallbackLocale', 'en'),
+        );
 });
 
 it('keeps user-facing translations free from direct address', function (string $locale, string $directAddress): void {

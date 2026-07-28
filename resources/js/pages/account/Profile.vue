@@ -8,33 +8,44 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { translate, useTranslations } from '@/composables/useTranslations';
 import { edit } from '@/routes/account/profile';
 
+type LayoutProps = {
+    locale: string;
+    fallbackLocale: string;
+};
+
 defineOptions({
-    layout: {
+    layout: (props: LayoutProps) => ({
         breadcrumbs: [
             {
-                title: 'Profile',
+                title: translate(
+                    'account.profile.title',
+                    props.locale,
+                    props.fallbackLocale,
+                ),
                 href: edit(),
             },
         ],
-    },
+    }),
 });
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const { t } = useTranslations();
 </script>
 
 <template>
-    <Head title="Profile" />
+    <Head :title="t('account.profile.title')" />
 
-    <h1 class="sr-only">Profile</h1>
+    <h1 class="sr-only">{{ t('account.profile.title') }}</h1>
 
     <div class="flex flex-col space-y-6">
         <Heading
             variant="small"
-            title="Profile"
-            description="Update your name and email address"
+            :title="t('account.profile.title')"
+            :description="t('account.profile.description')"
         />
 
         <Form
@@ -43,7 +54,7 @@ const user = computed(() => page.props.auth.user);
             v-slot="{ errors, processing, validate }"
         >
             <div class="grid gap-2">
-                <Label for="name">Name</Label>
+                <Label for="name">{{ t('account.profile.label.name') }}</Label>
                 <Input
                     id="name"
                     class="mt-1 block w-full"
@@ -51,14 +62,16 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.name"
                     required
                     autocomplete="name"
-                    placeholder="Full name"
+                    :placeholder="t('account.profile.placeholder.name')"
                     @change="validate('name')"
                 />
                 <InputError class="mt-2" :message="errors.name" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email">{{
+                    t('account.profile.label.email')
+                }}</Label>
                 <Input
                     id="email"
                     type="email"
@@ -67,16 +80,19 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.email"
                     required
                     autocomplete="username"
-                    placeholder="Email address"
+                    :placeholder="t('account.profile.placeholder.email')"
                     @change="validate('email')"
                 />
                 <InputError class="mt-2" :message="errors.email" />
             </div>
 
             <div class="flex items-center gap-4">
-                <Button :disabled="processing" data-test="update-profile-button"
-                    >Save</Button
+                <Button
+                    :disabled="processing"
+                    data-test="update-profile-button"
                 >
+                    {{ t('account.profile.button.save') }}
+                </Button>
             </div>
         </Form>
     </div>

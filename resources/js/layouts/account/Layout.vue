@@ -1,45 +1,47 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { useTranslations } from '@/composables/useTranslations';
 import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/account/appearance';
 import { edit as editProfile } from '@/routes/account/profile';
 import { edit as editSecurity } from '@/routes/account/security';
 import type { NavItem } from '@/types';
 
-const sidebarNavItems: NavItem[] = [
+const { isCurrentOrParentUrl } = useCurrentUrl();
+const { t } = useTranslations();
+const sidebarNavItems = computed<NavItem[]>(() => [
     {
-        title: 'Profile',
+        title: t('account.layout.label.profile'),
         href: editProfile(),
     },
     {
-        title: 'Security',
+        title: t('account.layout.label.security'),
         href: editSecurity(),
     },
     {
-        title: 'Appearance',
+        title: t('account.layout.label.appearance'),
         href: editAppearance(),
     },
-];
-
-const { isCurrentOrParentUrl } = useCurrentUrl();
+]);
 </script>
 
 <template>
     <div class="px-4 py-6">
         <Heading
-            title="Account"
-            description="Manage your account, security, and preferences"
+            :title="t('account.layout.title')"
+            :description="t('account.layout.description')"
         />
 
         <div class="flex flex-col lg:flex-row lg:space-x-12">
             <aside class="w-full max-w-xl lg:w-48">
                 <nav
                     class="flex flex-col space-y-1 space-x-0"
-                    aria-label="Account"
+                    :aria-label="t('account.layout.title')"
                 >
                     <Button
                         v-for="item in sidebarNavItems"

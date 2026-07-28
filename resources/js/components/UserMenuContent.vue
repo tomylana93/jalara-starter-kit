@@ -8,6 +8,7 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
+import { useTranslations } from '@/composables/useTranslations';
 import { logout } from '@/routes';
 import { edit } from '@/routes/account/profile';
 import type { User } from '@/types';
@@ -21,6 +22,7 @@ const handleLogout = () => {
 };
 
 defineProps<Props>();
+const { t } = useTranslations();
 </script>
 
 <template>
@@ -34,7 +36,7 @@ defineProps<Props>();
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
                 <Settings class="mr-2 h-4 w-4" />
-                Account
+                {{ t('account.layout.title') }}
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>

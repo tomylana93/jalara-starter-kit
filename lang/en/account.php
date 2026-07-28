@@ -37,6 +37,7 @@ return [
             'confirmation_description' => 'All associated resources and data will be permanently deleted. Enter the password to confirm.',
             'label' => [
                 'password' => 'Password',
+                'warning' => 'Warning',
             ],
             'placeholder' => [
                 'password' => 'Password',

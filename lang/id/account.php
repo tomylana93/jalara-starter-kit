@@ -37,6 +37,7 @@ return [
             'confirmation_description' => 'Semua resource dan data terkait akan dihapus secara permanen. Masukkan password untuk konfirmasi.',
             'label' => [
                 'password' => 'Password',
+                'warning' => 'Peringatan',
             ],
             'placeholder' => [
                 'password' => 'Password',
