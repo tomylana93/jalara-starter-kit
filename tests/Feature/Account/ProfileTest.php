@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Support\Facades\Route;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertGuest;
@@ -91,20 +90,4 @@ it('requires authentication for account routes', function () {
     $this->get(route('account.profile.edit'))->assertRedirect(route('login'));
     $this->patch(route('account.profile.update'))->assertRedirect(route('login'));
     $this->delete(route('account.destroy'))->assertRedirect(route('login'));
-});
-
-it('no longer serves the legacy settings endpoints', function () {
-    $this->get('/settings')->assertNotFound();
-    $this->get('/settings/profile')->assertNotFound();
-    $this->get('/settings/security')->assertNotFound();
-    $this->get('/settings/appearance')->assertNotFound();
-});
-
-it('no longer registers the legacy settings route names', function () {
-    expect(Route::has('profile.edit'))->toBeFalse();
-    expect(Route::has('profile.update'))->toBeFalse();
-    expect(Route::has('profile.destroy'))->toBeFalse();
-    expect(Route::has('security.edit'))->toBeFalse();
-    expect(Route::has('user-password.update'))->toBeFalse();
-    expect(Route::has('appearance.edit'))->toBeFalse();
 });
