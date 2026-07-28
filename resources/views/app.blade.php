@@ -1,5 +1,16 @@
+@php
+    $branding = array_merge(
+        \App\Http\Presenters\BrandingPresenter::defaults(),
+        (array) data_get($page, 'props.branding', []),
+    );
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html
+    lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+    data-color-theme="{{ $branding['colorTheme'] }}"
+    data-font-preset="{{ $branding['fontPreset'] }}"
+    @class(['dark' => ($appearance ?? 'system') == 'dark'])
+>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,7 +49,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ $branding['companyName'] }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

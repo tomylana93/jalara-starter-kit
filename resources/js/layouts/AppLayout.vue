@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
+import { useBranding } from '@/composables/useBranding';
 import type { BreadcrumbItem } from '@/types';
 
 const { breadcrumbs = [] } = defineProps<{
     breadcrumbs?: BreadcrumbItem[];
 }>();
+
+const { appLayout } = useBranding();
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <component :is="appLayout" :breadcrumbs="breadcrumbs">
         <slot />
-    </AppLayout>
+    </component>
 </template>

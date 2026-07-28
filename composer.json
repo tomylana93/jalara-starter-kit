@@ -16,7 +16,8 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
-        "spatie/laravel-permission": "^7.4"
+        "spatie/laravel-permission": "^7.4",
+        "spatie/laravel-settings": "^3.9"
     },
     "require-dev": {
         "driftingly/rector-laravel": "^2.5",
@@ -75,6 +76,7 @@
             "npm run lint:check",
             "npm run format:check",
             "npm run test:lang",
+            "npm run test:branding",
             "npm run types:check",
             "@test"
         ],

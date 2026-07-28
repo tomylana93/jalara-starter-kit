@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import AuthLayout from '@/layouts/auth/AuthSimpleLayout.vue';
+import { useBranding } from '@/composables/useBranding';
 
 const { title = '', description = '' } = defineProps<{
     title?: string;
     description?: string;
 }>();
+
+const { authLayout } = useBranding();
 </script>
 
 <template>
-    <AuthLayout :title="title" :description="description">
+    <component :is="authLayout" :title="title" :description="description">
         <slot />
-    </AuthLayout>
+    </component>
 </template>

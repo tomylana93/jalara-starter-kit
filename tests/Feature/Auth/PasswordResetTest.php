@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PasswordPolicy;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
@@ -46,6 +47,7 @@ it('renders the reset password screen', function () {
 
 it('resets the password with a valid token', function () {
     Notification::fake();
+    usePasswordPolicy(PasswordPolicy::Strict);
 
     $user = User::factory()->create();
 
@@ -55,8 +57,8 @@ it('resets the password with a valid token', function () {
         $response = post(route('password.update'), [
             'token' => $notification->token,
             'email' => $user->email,
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'Jalara-Str0ng!',
+            'password_confirmation' => 'Jalara-Str0ng!',
         ]);
 
         $response

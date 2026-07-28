@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Presenters\BrandingPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +41,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'locale' => app()->getLocale(),
             'fallbackLocale' => config('app.fallback_locale'),
+            'branding' => BrandingPresenter::present(),
             'auth' => [
                 'user' => $request->user(),
             ],

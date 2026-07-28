@@ -4,6 +4,8 @@ namespace App\Actions\Fortify;
 
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Settings\SecuritySettings;
+use App\Settings\SettingsResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -59,13 +61,17 @@ class AuthenticateUser
             return;
         }
 
+        $security = SettingsResolver::tryResolve(SecuritySettings::class);
+        $maxFailedLoginAttempts = $security->maxFailedLoginAttempts ?? 5;
+        $suspensionDurationMinutes = $security->suspensionDurationMinutes ?? 15;
+
         $failedLoginAttempts = $user->failed_login_attempts + 1;
         $attributes = ['failed_login_attempts' => $failedLoginAttempts];
 
-        if ($failedLoginAttempts >= 5) {
+        if ($failedLoginAttempts >= $maxFailedLoginAttempts) {
             $attributes += [
                 'status' => UserStatus::Suspended,
-                'suspended_until' => now()->addMinutes(15),
+                'suspended_until' => now()->addMinutes($suspensionDurationMinutes),
             ];
         }
 

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Enums\PasswordPolicy;
+use App\Settings\AuthenticationSettings;
+use App\Settings\SettingsResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -44,14 +47,10 @@ class AppServiceProvider extends ServiceProvider
             __('system.exception.production_database'),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
+        Password::defaults(fn (): Password => SettingsResolver::tryResolve(AuthenticationSettings::class)
+            ?->passwordPolicy
+            ->rule()
+            ?? PasswordPolicy::Strict->rule(),
         );
     }
 }

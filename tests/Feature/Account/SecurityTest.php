@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PasswordPolicy;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -66,6 +67,8 @@ it('renders the security page without two factor when the feature is disabled', 
 });
 
 it('updates the password', function () {
+    usePasswordPolicy(PasswordPolicy::Strict);
+
     $user = User::factory()->create();
 
     actingAs($user);
@@ -73,8 +76,8 @@ it('updates the password', function () {
     $response = from(route('account.security.edit'))
         ->put(route('account.password.update'), [
             'current_password' => 'password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
+            'password' => 'Jalara-Str0ng!',
+            'password_confirmation' => 'Jalara-Str0ng!',
         ]);
 
     $response
@@ -82,7 +85,23 @@ it('updates the password', function () {
         ->assertRedirect(route('account.security.edit'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Password updated.']);
 
-    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+    expect(Hash::check('Jalara-Str0ng!', $user->refresh()->password))->toBeTrue();
+});
+
+it('rejects a password that does not satisfy the strict policy', function () {
+    usePasswordPolicy(PasswordPolicy::Strict);
+
+    $user = User::factory()->create();
+
+    actingAs($user);
+
+    from(route('account.security.edit'))
+        ->put(route('account.password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertSessionHasErrors('password');
 });
 
 it('localizes the password update message', function () {

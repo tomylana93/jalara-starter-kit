@@ -11,6 +11,7 @@
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
         "test:lang": "node --test vite/plugins/laravel-lang.test.ts",
+        "test:branding": "node --test resources/js/lib/branding.test.ts",
         "types:check": "vue-tsc --noEmit"
     },
     "devDependencies": {
