@@ -1,0 +1,11 @@
+# Browser Testing
+
+- Browser tests are expensive. During implementation, run only the newly added or directly affected test by exact file path or unique `--filter`; never run the whole `tests/Browser` directory by default.
+- Do not append task-specific coverage to a broad existing browser file when that would force unrelated legacy scenarios to rerun. Prefer a focused `tests/Browser/<Behavior>Test.php` file and a unique Pest group for the changed behavior.
+- When Vue/TypeScript/CSS changed and no Vite dev server is active, run `pnpm run build` before Pest Browser. Browser tests consume the built manifest; stale assets make DOM assertions retry against old markup for the full timeout and can look like a hung test.
+- Pest Browser `script()` returns the JavaScript result, not the page object. Never continue a fluent page chain after `->script(...)`; call `$page->script(...);` separately, then start the next interaction from `$page`.
+- When using `visit([...])`, collection assertions run once per page. Destructure the collection and apply page-specific assertions to the matching page; reserve collection-wide assertions for genuinely shared checks such as `assertNoSmoke()`.
+- For form validation-state work, the focused suite is `tests/Browser/FormValidationStateTest.php`, group `form-validation-state`. Iterate with `php artisan test --compact tests/Browser/FormValidationStateTest.php` or a single unique test-name filter.
+- During a slow-test investigation, cap one exact test with shell `timeout` and compare it with one known-fast browser test. Do not let a suspected hang expand into an unbounded suite run.
+- Run an existing broad browser file or the full browser suite only when the change affects those scenarios, the focused test exposes a regression requiring it, or the user explicitly requests it.
+- The mandatory `composer run ci:check` excludes the browser group; do not add a redundant full browser run before handoff. Report the exact focused browser command and result.

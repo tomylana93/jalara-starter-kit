@@ -66,17 +66,13 @@ const { t } = useTranslations();
                 </Label>
                 <Input
                     id="fromName"
-                    class="mt-1 block w-full"
                     name="fromName"
                     :default-value="settings.fromName"
-                    required
+                    :aria-invalid="Boolean(errors.fromName)"
                     @change="validate('fromName')"
                     :placeholder="t('setting.mail.placeholder.from_name')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.mail.help.from_name') }}
-                </p>
-                <InputError class="mt-2" :message="errors.fromName" />
+                <InputError :message="errors.fromName" />
             </div>
 
             <div class="grid gap-2">
@@ -85,19 +81,16 @@ const { t } = useTranslations();
                 </Label>
                 <Input
                     id="fromAddress"
-                    type="email"
-                    class="mt-1 block w-full"
+                    type="text"
+                    inputmode="email"
                     name="fromAddress"
                     :default-value="settings.fromAddress"
-                    required
+                    :aria-invalid="Boolean(errors.fromAddress)"
                     autocomplete="email"
                     @change="validate('fromAddress')"
                     :placeholder="t('setting.mail.placeholder.from_address')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.mail.help.from_address') }}
-                </p>
-                <InputError class="mt-2" :message="errors.fromAddress" />
+                <InputError :message="errors.fromAddress" />
             </div>
 
             <div class="flex items-center gap-4">

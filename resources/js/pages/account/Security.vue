@@ -84,7 +84,7 @@ const { t } = useTranslations();
                 <PasswordInput
                     id="current_password"
                     name="current_password"
-                    class="mt-1 block w-full"
+                    :aria-invalid="Boolean(errors.current_password)"
                     autocomplete="current-password"
                     :placeholder="
                         t('account.security.placeholder.current_password')
@@ -100,7 +100,7 @@ const { t } = useTranslations();
                 <PasswordInput
                     id="password"
                     name="password"
-                    class="mt-1 block w-full"
+                    :aria-invalid="Boolean(errors.password)"
                     autocomplete="new-password"
                     :placeholder="t('account.security.placeholder.password')"
                     :passwordrules="props.passwordRules"
@@ -115,7 +115,7 @@ const { t } = useTranslations();
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
-                    class="mt-1 block w-full"
+                    :aria-invalid="Boolean(errors.password_confirmation)"
                     autocomplete="new-password"
                     :placeholder="
                         t('account.security.placeholder.password_confirmation')

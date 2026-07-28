@@ -72,23 +72,14 @@ const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
                 </Label>
                 <Input
                     id="maxFailedLoginAttempts"
-                    type="number"
+                    type="text"
                     inputmode="numeric"
-                    min="1"
-                    max="20"
-                    class="mt-1 block w-full"
                     name="maxFailedLoginAttempts"
                     :default-value="settings.maxFailedLoginAttempts"
-                    required
+                    :aria-invalid="Boolean(errors.maxFailedLoginAttempts)"
                     @change="validate('maxFailedLoginAttempts')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.security.help.max_failed_login_attempts') }}
-                </p>
-                <InputError
-                    class="mt-2"
-                    :message="errors.maxFailedLoginAttempts"
-                />
+                <InputError :message="errors.maxFailedLoginAttempts" />
             </div>
 
             <div class="grid gap-2">
@@ -99,23 +90,14 @@ const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
                 </Label>
                 <Input
                     id="suspensionDurationMinutes"
-                    type="number"
+                    type="text"
                     inputmode="numeric"
-                    min="1"
-                    max="1440"
-                    class="mt-1 block w-full"
                     name="suspensionDurationMinutes"
                     :default-value="settings.suspensionDurationMinutes"
-                    required
+                    :aria-invalid="Boolean(errors.suspensionDurationMinutes)"
                     @change="validate('suspensionDurationMinutes')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.security.help.suspension_duration_minutes') }}
-                </p>
-                <InputError
-                    class="mt-2"
-                    :message="errors.suspensionDurationMinutes"
-                />
+                <InputError :message="errors.suspensionDurationMinutes" />
             </div>
 
             <div class="grid gap-2">
@@ -131,13 +113,12 @@ const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
                     <Switch
                         id="maintenanceEnabled"
                         v-model="maintenanceEnabled"
+                        :aria-invalid="Boolean(errors.maintenanceEnabled)"
+                        class="aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
                         @update:model-value="validate('maintenanceEnabled')"
                     />
                 </div>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.security.help.maintenance_enabled') }}
-                </p>
-                <InputError class="mt-2" :message="errors.maintenanceEnabled" />
+                <InputError :message="errors.maintenanceEnabled" />
             </div>
 
             <Alert>

@@ -6,3 +6,4 @@
 - Prefer stable public outcomes over collaborator wiring, exact internal call sequences, or class-shape assertions. Add direct action tests only when an action exposes independently meaningful branching that cannot be exercised clearly through its owning domain boundary.
 - Treat migration/rename assertions for removed paths, symbols, or implementation structures as temporary safeguards. Remove them after the transition is established unless backward incompatibility is a documented product contract.
 - Name files after the owning domain or subject and keep related happy-path, validation, authorization, and side-effect cases together. Replace scaffold examples with tests for real application contracts.
+- Browser test isolation, grouping, and fast iteration commands: `mem:testing/browser`.

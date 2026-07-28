@@ -61,15 +61,14 @@ const { t } = useTranslations();
                 <Label for="name">{{ t('account.profile.label.name') }}</Label>
                 <Input
                     id="name"
-                    class="mt-1 block w-full"
                     name="name"
                     :default-value="user.name"
-                    required
+                    :aria-invalid="Boolean(errors.name)"
                     autocomplete="name"
                     :placeholder="t('account.profile.placeholder.name')"
                     @change="validate('name')"
                 />
-                <InputError class="mt-2" :message="errors.name" />
+                <InputError :message="errors.name" />
             </div>
 
             <div class="grid gap-2">
@@ -78,16 +77,16 @@ const { t } = useTranslations();
                 }}</Label>
                 <Input
                     id="email"
-                    type="email"
-                    class="mt-1 block w-full"
+                    type="text"
+                    inputmode="email"
                     name="email"
                     :default-value="user.email"
-                    required
+                    :aria-invalid="Boolean(errors.email)"
                     autocomplete="username"
                     :placeholder="t('account.profile.placeholder.email')"
                     @change="validate('email')"
                 />
-                <InputError class="mt-2" :message="errors.email" />
+                <InputError :message="errors.email" />
             </div>
 
             <div class="flex items-center gap-4">

@@ -61,10 +61,6 @@ const passwordPolicyLabel = computed(
             (option) => option.value === passwordPolicy.value,
         )?.label ?? passwordPolicy.value,
 );
-
-const passwordPolicyDescription = computed(() =>
-    t(`setting.password_policy.description.${passwordPolicy.value}`),
-);
 </script>
 
 <template>
@@ -102,22 +98,14 @@ const passwordPolicyDescription = computed(() =>
                     <Switch
                         id="requireEmailVerification"
                         v-model="requireEmailVerification"
+                        :aria-invalid="Boolean(errors.requireEmailVerification)"
+                        class="aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
                         @update:model-value="
                             validate('requireEmailVerification')
                         "
                     />
                 </div>
-                <p class="text-sm text-muted-foreground">
-                    {{
-                        t(
-                            'setting.authentication.help.require_email_verification',
-                        )
-                    }}
-                </p>
-                <InputError
-                    class="mt-2"
-                    :message="errors.requireEmailVerification"
-                />
+                <InputError :message="errors.requireEmailVerification" />
             </div>
 
             <div class="grid gap-2">
@@ -133,7 +121,11 @@ const passwordPolicyDescription = computed(() =>
                     v-model="passwordPolicy"
                     @update:model-value="validate('passwordPolicy')"
                 >
-                    <SelectTrigger id="passwordPolicy" class="w-full">
+                    <SelectTrigger
+                        id="passwordPolicy"
+                        class="w-full"
+                        :aria-invalid="Boolean(errors.passwordPolicy)"
+                    >
                         <SelectValue>{{ passwordPolicyLabel }}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -146,13 +138,7 @@ const passwordPolicyDescription = computed(() =>
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                <p class="text-sm text-muted-foreground">
-                    {{ passwordPolicyDescription }}
-                </p>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.authentication.help.password_policy') }}
-                </p>
-                <InputError class="mt-2" :message="errors.passwordPolicy" />
+                <InputError :message="errors.passwordPolicy" />
             </div>
 
             <div class="grid gap-2">
@@ -165,27 +151,14 @@ const passwordPolicyDescription = computed(() =>
                 </Label>
                 <Input
                     id="sessionLifetimeMinutes"
-                    type="number"
+                    type="text"
                     inputmode="numeric"
-                    min="5"
-                    max="10080"
-                    class="mt-1 block w-full"
                     name="sessionLifetimeMinutes"
                     :default-value="settings.sessionLifetimeMinutes"
-                    required
+                    :aria-invalid="Boolean(errors.sessionLifetimeMinutes)"
                     @change="validate('sessionLifetimeMinutes')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{
-                        t(
-                            'setting.authentication.help.session_lifetime_minutes',
-                        )
-                    }}
-                </p>
-                <InputError
-                    class="mt-2"
-                    :message="errors.sessionLifetimeMinutes"
-                />
+                <InputError :message="errors.sessionLifetimeMinutes" />
             </div>
 
             <div class="flex items-center gap-4">

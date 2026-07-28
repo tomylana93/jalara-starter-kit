@@ -8,3 +8,5 @@
 - Reusable UI primitives live under `resources/js/components/ui` (Reka UI/shadcn-style); check these before adding a component.
 - Tailwind CSS v4 is loaded through Vite; global stylesheet is `resources/css/app.css`. Dark/light initialization is handled by `useAppearance`.
 - Inertia page metadata/layout props use `defineOptions({ layout: ... })`; page titles use `<Head>`.
+- Frontend forms rely on Laravel/Inertia validation for every field, including passwords. Do not add HTML constraint-validation attributes such as `required`, `min`, `max`, or `pattern`; use input type/inputmode only for keyboard and value-entry semantics.
+- Bind server errors with `:aria-invalid="Boolean(errors.field)"`. The shared `Input`, `Textarea`, and `PasswordInput` components already provide their base presentation; do not add per-usage classes or modify those components for field error state.

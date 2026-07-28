@@ -80,10 +80,6 @@ const { t } = useTranslations();
             </Badge>
         </div>
 
-        <p class="text-sm text-muted-foreground">
-            {{ t('setting.user_provisioning.help.default_password') }}
-        </p>
-
         <Form
             v-bind="UserProvisioningSettingsController.update.form()"
             reset-on-success
@@ -99,10 +95,10 @@ const { t } = useTranslations();
                 <PasswordInput
                     id="defaultPassword"
                     ref="passwordInput"
-                    class="mt-1 block w-full"
                     name="defaultPassword"
-                    required
                     autocomplete="new-password"
+                    :aria-invalid="Boolean(errors.defaultPassword)"
+                    :passwordrules="passwordRules"
                     @change="validate('defaultPassword')"
                     :placeholder="
                         t(
@@ -110,10 +106,7 @@ const { t } = useTranslations();
                         )
                     "
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ passwordRules }}
-                </p>
-                <InputError class="mt-2" :message="errors.defaultPassword" />
+                <InputError :message="errors.defaultPassword" />
             </div>
 
             <div class="grid gap-2">
@@ -126,10 +119,10 @@ const { t } = useTranslations();
                 </Label>
                 <PasswordInput
                     id="defaultPassword_confirmation"
-                    class="mt-1 block w-full"
                     name="defaultPassword_confirmation"
-                    required
                     autocomplete="new-password"
+                    :aria-invalid="Boolean(errors.defaultPassword_confirmation)"
+                    :passwordrules="passwordRules"
                     @change="
                         validate({
                             only: [
@@ -144,15 +137,8 @@ const { t } = useTranslations();
                         )
                     "
                 />
-                <InputError
-                    class="mt-2"
-                    :message="errors.defaultPassword_confirmation"
-                />
+                <InputError :message="errors.defaultPassword_confirmation" />
             </div>
-
-            <p class="text-sm text-muted-foreground">
-                {{ t('setting.user_provisioning.help.stored') }}
-            </p>
 
             <div class="flex items-center gap-4">
                 <Button

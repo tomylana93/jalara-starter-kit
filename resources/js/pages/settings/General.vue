@@ -92,19 +92,15 @@ const dateFormatLabel = computed(() =>
                 </Label>
                 <Input
                     id="applicationName"
-                    class="mt-1 block w-full"
                     name="applicationName"
                     :default-value="settings.applicationName"
-                    required
+                    :aria-invalid="Boolean(errors.applicationName)"
                     @change="validate('applicationName')"
                     :placeholder="
                         t('setting.general.placeholder.application_name')
                     "
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.general.help.application_name') }}
-                </p>
-                <InputError class="mt-2" :message="errors.applicationName" />
+                <InputError :message="errors.applicationName" />
             </div>
 
             <div class="grid gap-2">
@@ -113,16 +109,13 @@ const dateFormatLabel = computed(() =>
                 </Label>
                 <Textarea
                     id="description"
-                    class="mt-1 block w-full"
                     name="description"
                     :default-value="settings.description ?? ''"
                     :placeholder="t('setting.general.placeholder.description')"
+                    :aria-invalid="Boolean(errors.description)"
                     @change="validate('description')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.general.help.description') }}
-                </p>
-                <InputError class="mt-2" :message="errors.description" />
+                <InputError :message="errors.description" />
             </div>
 
             <div class="grid gap-2">
@@ -138,7 +131,11 @@ const dateFormatLabel = computed(() =>
                     v-model="defaultLocale"
                     @update:model-value="validate('defaultLocale')"
                 >
-                    <SelectTrigger id="defaultLocale" class="w-full">
+                    <SelectTrigger
+                        id="defaultLocale"
+                        class="w-full"
+                        :aria-invalid="Boolean(errors.defaultLocale)"
+                    >
                         <SelectValue>{{ localeLabel }}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -151,10 +148,7 @@ const dateFormatLabel = computed(() =>
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.general.help.default_locale') }}
-                </p>
-                <InputError class="mt-2" :message="errors.defaultLocale" />
+                <InputError :message="errors.defaultLocale" />
             </div>
 
             <div class="grid gap-2">
@@ -166,7 +160,11 @@ const dateFormatLabel = computed(() =>
                     v-model="dateFormat"
                     @update:model-value="validate('dateFormat')"
                 >
-                    <SelectTrigger id="dateFormat" class="w-full">
+                    <SelectTrigger
+                        id="dateFormat"
+                        class="w-full"
+                        :aria-invalid="Boolean(errors.dateFormat)"
+                    >
                         <SelectValue>{{ dateFormatLabel }}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -180,10 +178,7 @@ const dateFormatLabel = computed(() =>
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.general.help.date_format') }}
-                </p>
-                <InputError class="mt-2" :message="errors.dateFormat" />
+                <InputError :message="errors.dateFormat" />
             </div>
 
             <div class="flex items-center gap-4">

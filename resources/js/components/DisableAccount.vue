@@ -88,6 +88,7 @@ const { t } = useTranslations();
                                 id="password"
                                 name="password"
                                 ref="passwordInput"
+                                :aria-invalid="Boolean(errors.password)"
                                 :placeholder="
                                     t(
                                         'account.profile.disable.placeholder.password',

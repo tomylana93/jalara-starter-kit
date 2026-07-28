@@ -61,9 +61,10 @@ const { t } = useTranslations();
                 <Label for="email">{{ t('auth.login.label.email') }}</Label>
                 <Input
                     id="email"
-                    type="email"
+                    type="text"
+                    inputmode="email"
                     name="email"
-                    required
+                    :aria-invalid="Boolean(errors.email)"
                     autofocus
                     :tabindex="1"
                     autocomplete="email"
@@ -89,7 +90,7 @@ const { t } = useTranslations();
                 <PasswordInput
                     id="password"
                     name="password"
-                    required
+                    :aria-invalid="Boolean(errors.password)"
                     :tabindex="2"
                     autocomplete="current-password"
                     :placeholder="t('auth.login.placeholder.password')"
@@ -99,7 +100,12 @@ const { t } = useTranslations();
 
             <div class="flex items-center justify-between">
                 <Label for="remember" class="flex items-center space-x-3">
-                    <Checkbox id="remember" name="remember" :tabindex="3" />
+                    <Checkbox
+                        id="remember"
+                        name="remember"
+                        :aria-invalid="Boolean(errors.remember)"
+                        :tabindex="3"
+                    />
                     <span>{{ t('auth.login.label.remember') }}</span>
                 </Label>
             </div>

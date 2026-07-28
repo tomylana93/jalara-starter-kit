@@ -56,14 +56,15 @@ const { t } = useTranslations();
                 </Label>
                 <Input
                     id="email"
-                    type="email"
+                    type="text"
+                    inputmode="email"
                     name="email"
+                    :aria-invalid="Boolean(errors.email)"
                     autocomplete="email"
                     v-model="inputEmail"
-                    class="mt-1 block w-full"
                     readonly
                 />
-                <InputError :message="errors.email" class="mt-2" />
+                <InputError :message="errors.email" />
             </div>
 
             <div class="grid gap-2">
@@ -74,7 +75,7 @@ const { t } = useTranslations();
                     id="password"
                     name="password"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
+                    :aria-invalid="Boolean(errors.password)"
                     autofocus
                     :placeholder="t('auth.reset_password.placeholder.password')"
                     :passwordrules="passwordRules"
@@ -90,7 +91,7 @@ const { t } = useTranslations();
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
+                    :aria-invalid="Boolean(errors.password_confirmation)"
                     :placeholder="
                         t(
                             'auth.reset_password.placeholder.password_confirmation',

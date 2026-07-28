@@ -52,6 +52,15 @@ defineOptions({
 
 const { t } = useTranslations();
 
+/**
+ * Radio cards carry the group's error state themselves, so an invalid choice is
+ * visible across the whole option and not only on its radio circle.
+ */
+const radioCardClass = (hasError: boolean): string =>
+    hasError
+        ? 'border-destructive ring-3 ring-destructive/20 has-[[data-state=checked]]:border-destructive dark:ring-destructive/40'
+        : 'has-[[data-state=checked]]:border-primary';
+
 const authLayout = ref(props.settings.authLayout);
 const appLayout = ref(props.settings.appLayout);
 const colorTheme = ref(props.settings.colorTheme);
@@ -82,19 +91,15 @@ const fontPreset = ref(props.settings.fontPreset);
                 </Label>
                 <Input
                     id="companyName"
-                    class="mt-1 block w-full"
                     name="companyName"
                     :default-value="settings.companyName"
-                    required
+                    :aria-invalid="Boolean(errors.companyName)"
                     @change="validate('companyName')"
                     :placeholder="
                         t('setting.branding.placeholder.company_name')
                     "
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.branding.help.company_name') }}
-                </p>
-                <InputError class="mt-2" :message="errors.companyName" />
+                <InputError :message="errors.companyName" />
             </div>
 
             <div class="grid gap-2">
@@ -103,36 +108,34 @@ const fontPreset = ref(props.settings.fontPreset);
                 </Label>
                 <Textarea
                     id="footerText"
-                    class="mt-1 block w-full"
                     name="footerText"
                     :default-value="settings.footerText ?? ''"
                     :placeholder="t('setting.branding.placeholder.footer_text')"
+                    :aria-invalid="Boolean(errors.footerText)"
                     @change="validate('footerText')"
                 />
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.branding.help.footer_text') }}
-                </p>
-                <InputError class="mt-2" :message="errors.footerText" />
+                <InputError :message="errors.footerText" />
             </div>
 
             <fieldset class="grid gap-3">
                 <legend class="text-sm font-medium">
                     {{ t('setting.branding.label.auth_layout_group') }}
                 </legend>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.branding.help.auth_layout_group') }}
-                </p>
                 <input type="hidden" name="authLayout" :value="authLayout" />
                 <RadioGroup
                     v-model="authLayout"
                     class="sm:grid-cols-3"
+                    :aria-invalid="Boolean(errors.authLayout)"
                     @update:model-value="validate('authLayout')"
                 >
                     <Label
                         v-for="option in authLayoutOptions"
                         :key="option.value"
                         :for="`authLayout-${option.value}`"
-                        class="flex cursor-pointer flex-col items-start gap-3 rounded-lg border p-3 has-[[data-state=checked]]:border-primary"
+                        :class="[
+                            'flex cursor-pointer flex-col items-start gap-3 rounded-lg border p-3',
+                            radioCardClass(Boolean(errors.authLayout)),
+                        ]"
                     >
                         <div
                             class="flex h-16 w-full gap-1 rounded-md bg-muted p-2"
@@ -161,6 +164,7 @@ const fontPreset = ref(props.settings.fontPreset);
                             <RadioGroupItem
                                 :id="`authLayout-${option.value}`"
                                 :value="option.value"
+                                :aria-invalid="Boolean(errors.authLayout)"
                             />
                             <span class="text-sm">{{ option.label }}</span>
                         </div>
@@ -173,20 +177,21 @@ const fontPreset = ref(props.settings.fontPreset);
                 <legend class="text-sm font-medium">
                     {{ t('setting.branding.label.app_layout_group') }}
                 </legend>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.branding.help.app_layout_group') }}
-                </p>
                 <input type="hidden" name="appLayout" :value="appLayout" />
                 <RadioGroup
                     v-model="appLayout"
                     class="sm:grid-cols-2"
+                    :aria-invalid="Boolean(errors.appLayout)"
                     @update:model-value="validate('appLayout')"
                 >
                     <Label
                         v-for="option in appLayoutOptions"
                         :key="option.value"
                         :for="`appLayout-${option.value}`"
-                        class="flex cursor-pointer flex-col items-start gap-3 rounded-lg border p-3 has-[[data-state=checked]]:border-primary"
+                        :class="[
+                            'flex cursor-pointer flex-col items-start gap-3 rounded-lg border p-3',
+                            radioCardClass(Boolean(errors.appLayout)),
+                        ]"
                     >
                         <div
                             :class="[
@@ -212,6 +217,7 @@ const fontPreset = ref(props.settings.fontPreset);
                             <RadioGroupItem
                                 :id="`appLayout-${option.value}`"
                                 :value="option.value"
+                                :aria-invalid="Boolean(errors.appLayout)"
                             />
                             <span class="text-sm">{{ option.label }}</span>
                         </div>
@@ -224,24 +230,26 @@ const fontPreset = ref(props.settings.fontPreset);
                 <legend class="text-sm font-medium">
                     {{ t('setting.branding.label.color_theme_group') }}
                 </legend>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.branding.help.color_theme_group') }}
-                </p>
                 <input type="hidden" name="colorTheme" :value="colorTheme" />
                 <RadioGroup
                     v-model="colorTheme"
                     class="sm:grid-cols-3"
+                    :aria-invalid="Boolean(errors.colorTheme)"
                     @update:model-value="validate('colorTheme')"
                 >
                     <Label
                         v-for="option in colorThemeOptions"
                         :key="option.value"
                         :for="`colorTheme-${option.value}`"
-                        class="flex cursor-pointer items-center gap-2 rounded-lg border p-3 has-[[data-state=checked]]:border-primary"
+                        :class="[
+                            'flex cursor-pointer items-center gap-2 rounded-lg border p-3',
+                            radioCardClass(Boolean(errors.colorTheme)),
+                        ]"
                     >
                         <RadioGroupItem
                             :id="`colorTheme-${option.value}`"
                             :value="option.value"
+                            :aria-invalid="Boolean(errors.colorTheme)"
                         />
                         <span
                             :data-color-theme="option.value"
@@ -258,23 +266,26 @@ const fontPreset = ref(props.settings.fontPreset);
                 <legend class="text-sm font-medium">
                     {{ t('setting.branding.label.font_preset_group') }}
                 </legend>
-                <p class="text-sm text-muted-foreground">
-                    {{ t('setting.branding.help.font_preset_group') }}
-                </p>
                 <input type="hidden" name="fontPreset" :value="fontPreset" />
                 <RadioGroup
                     v-model="fontPreset"
+                    $!2
+                    :aria-invalid="Boolean(errors.fontPreset)"
                     @update:model-value="validate('fontPreset')"
                 >
                     <Label
                         v-for="option in fontPresetOptions"
                         :key="option.value"
                         :for="`fontPreset-${option.value}`"
-                        class="flex cursor-pointer items-center gap-3 rounded-lg border p-3 has-[[data-state=checked]]:border-primary"
+                        :class="[
+                            'flex cursor-pointer items-center gap-3 rounded-lg border p-3',
+                            radioCardClass(Boolean(errors.fontPreset)),
+                        ]"
                     >
                         <RadioGroupItem
                             :id="`fontPreset-${option.value}`"
                             :value="option.value"
+                            :aria-invalid="Boolean(errors.fontPreset)"
                         />
                         <span
                             :data-font-preset="option.value"

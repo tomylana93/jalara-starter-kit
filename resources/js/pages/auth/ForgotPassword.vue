@@ -55,8 +55,10 @@ const { t } = useTranslations();
                 </Label>
                 <Input
                     id="email"
-                    type="email"
+                    type="text"
+                    inputmode="email"
                     name="email"
+                    :aria-invalid="Boolean(errors.email)"
                     autocomplete="off"
                     autofocus
                     :placeholder="t('auth.forgot_password.placeholder.email')"

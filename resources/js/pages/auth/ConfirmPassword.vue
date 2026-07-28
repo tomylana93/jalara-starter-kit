@@ -47,8 +47,7 @@ const { t } = useTranslations();
                 <PasswordInput
                     id="password"
                     name="password"
-                    class="mt-1 block w-full"
-                    required
+                    :aria-invalid="Boolean(errors.password)"
                     autocomplete="current-password"
                     autofocus
                 />

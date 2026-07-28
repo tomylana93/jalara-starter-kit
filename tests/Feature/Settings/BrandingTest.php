@@ -73,14 +73,14 @@ it('renders the application name as the document title independently of branding
     updateBranding(['companyName' => 'Jalara Group']);
 
     get(route('login'))
-        ->assertSee('Log in - Jalara App</title>', false)
-        ->assertDontSee('Log in - Jalara Group</title>', false);
+        ->assertSee('<title>Jalara App</title>', false)
+        ->assertDontSee('<title>Jalara Group</title>', false);
 
     updateBranding(['companyName' => 'Renamed Company']);
 
     get(route('login'))
-        ->assertSee('Log in - Jalara App</title>', false)
-        ->assertDontSee('Log in - Renamed Company</title>', false);
+        ->assertSee('<title>Jalara App</title>', false)
+        ->assertDontSee('<title>Renamed Company</title>', false);
 });
 
 it('shares the footer text with the layouts', function () {
