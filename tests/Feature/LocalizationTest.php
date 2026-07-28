@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Arr;
+
 function translationPlaceholders(mixed $translation): array
 {
     if (is_array($translation)) {
@@ -20,9 +22,12 @@ it('provides complete Indonesian translations with matching placeholders', funct
 
     expect(array_keys($indonesian))
         ->toBe(array_keys($english))
+        ->and(array_keys(Arr::dot($indonesian)))
+        ->toBe(array_keys(Arr::dot($english)))
         ->and(translationPlaceholders($indonesian))
         ->toEqualCanonicalizing(translationPlaceholders($english));
 })->with([
+    'account' => 'account',
     'authentication' => 'auth',
     'pagination' => 'pagination',
     'password reset' => 'passwords',
@@ -39,7 +44,7 @@ it('loads Indonesian language lines through the translator', function (): void {
 });
 
 it('keeps user-facing translations free from direct address', function (string $locale, string $directAddress): void {
-    $translations = collect(['auth', 'pagination', 'passwords', 'validation'])
+    $translations = collect(['account', 'auth', 'pagination', 'passwords', 'validation'])
         ->mapWithKeys(fn (string $file): array => [$file => require lang_path("{$locale}/{$file}.php")])
         ->toJson();
 

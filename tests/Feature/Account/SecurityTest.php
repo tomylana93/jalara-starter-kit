@@ -83,6 +83,26 @@ it('updates the password', function () {
     expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
 
+it('localizes the password update message', function () {
+    app()->setLocale('id');
+
+    $user = User::factory()->create();
+
+    actingAs($user);
+
+    from(route('account.security.edit'))
+        ->put(route('account.password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertInertiaFlash('toast', [
+            'type' => 'success',
+            'message' => 'Password berhasil diperbarui.',
+        ]);
+});
+
 it('requires the correct password to update the password', function () {
     $user = User::factory()->create();
 

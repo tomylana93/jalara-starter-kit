@@ -37,7 +37,7 @@ class ProfileController extends Controller
             'email' => (string) $request->validated('email'),
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('account.profile.message.updated')]);
 
         return to_route('account.profile.edit');
     }

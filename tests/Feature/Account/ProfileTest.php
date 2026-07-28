@@ -36,6 +36,23 @@ it('updates profile information', function () {
     expect($user->email_verified_at)->toBeNull();
 });
 
+it('localizes the profile update message', function () {
+    app()->setLocale('id');
+
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->patch(route('account.profile.update'), [
+            'name' => 'Test User',
+            'email' => $user->email,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertInertiaFlash('toast', [
+            'type' => 'success',
+            'message' => 'Profil berhasil diperbarui.',
+        ]);
+});
+
 it('precognizes valid profile information without updating the user', function () {
     $user = User::factory()->create();
 
