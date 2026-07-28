@@ -1,5 +1,24 @@
 {
     "mcpServers": {
+        "serena": {
+            "type": "http",
+            "url": "http://localhost:9121/mcp"
+        },
+        "context7": {
+            "command": "pnpm",
+            "args": [
+                "dlx",
+                "@upstash/context7-mcp"
+            ]
+        },
+        "shadcn": {
+            "command": "pnpm",
+            "args": [
+                "dlx",
+                "shadcn-vue@latest",
+                "mcp"
+            ]
+        },
         "laravel-boost": {
             "command": "php",
             "args": [
