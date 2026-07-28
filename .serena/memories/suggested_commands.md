@@ -6,7 +6,8 @@
 - Production frontend build: `pnpm run build`; SSR build: `pnpm run build:ssr`.
 - Targeted tests: `php artisan test --compact tests/Feature/Path/SomeTest.php` or `php artisan test --compact --filter=testName`.
 - Full backend gate: `composer test` (config clear, Pint check, Larastan, Laravel tests).
-- PHP formatting: `vendor/bin/pint --dirty --format agent` after modifying PHP.
+- PHP formatting autofix (Pint): `composer run lint`; after modifying PHP, use the focused required formatter `vendor/bin/pint --dirty --format agent`; check only: `composer run lint:check`.
+- PHP refactoring autofix (Rector): `composer run rector`; check only: `composer run rector:check`.
 - Frontend autofix: `pnpm run lint`; frontend lint check: `pnpm run lint:check`.
 - Frontend formatting: `pnpm run format`; check only: `pnpm run format:check`.
 - Frontend types: `pnpm run types:check`.
