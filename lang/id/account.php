@@ -29,12 +29,12 @@ return [
         'message' => [
             'updated' => 'Profil berhasil diperbarui.',
         ],
-        'delete' => [
-            'title' => 'Hapus akun',
-            'description' => 'Hapus akun beserta semua resource terkait',
-            'warning' => 'Tindakan ini tidak dapat dibatalkan.',
-            'confirmation_title' => 'Hapus akun ini secara permanen?',
-            'confirmation_description' => 'Semua resource dan data terkait akan dihapus secara permanen. Masukkan password untuk konfirmasi.',
+        'disable' => [
+            'title' => 'Nonaktifkan akun',
+            'description' => 'Nonaktifkan akses tanpa menghapus data akun',
+            'warning' => 'Akun akan logout dan memerlukan administrator untuk diaktifkan kembali.',
+            'confirmation_title' => 'Nonaktifkan akun ini?',
+            'confirmation_description' => 'Akun dan data terkait tetap tersimpan. Masukkan password untuk konfirmasi logout dan penonaktifan akses.',
             'label' => [
                 'password' => 'Password',
                 'warning' => 'Peringatan',
@@ -44,7 +44,7 @@ return [
             ],
             'button' => [
                 'cancel' => 'Batal',
-                'delete' => 'Hapus akun',
+                'disable' => 'Nonaktifkan akun',
             ],
         ],
     ],

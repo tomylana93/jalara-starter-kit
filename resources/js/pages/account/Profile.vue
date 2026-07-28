@@ -2,7 +2,7 @@
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Account/ProfileController';
-import DeleteAccount from '@/components/DeleteAccount.vue';
+import DisableAccount from '@/components/DisableAccount.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,10 @@ type LayoutProps = {
     locale: string;
     fallbackLocale: string;
 };
+
+defineProps<{
+    canDisableAccount: boolean;
+}>();
 
 defineOptions({
     layout: (props: LayoutProps) => ({
@@ -97,5 +101,5 @@ const { t } = useTranslations();
         </Form>
     </div>
 
-    <DeleteAccount />
+    <DisableAccount v-if="canDisableAccount" />
 </template>

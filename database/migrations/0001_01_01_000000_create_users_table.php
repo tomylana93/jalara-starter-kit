@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('phone')->nullable()->unique();
             $table->string('status')->default(UserStatus::Active->value);
+            $table->boolean('is_system')->default(false);
             $table->string('password');
             $table->boolean('must_change_password')->default(false);
             $table->timestamp('last_login_at')->nullable();

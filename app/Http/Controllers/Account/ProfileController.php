@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Account;
 
-use App\Actions\Account\DeleteAccount;
+use App\Actions\Account\DisableAccount;
 use App\Actions\Account\UpdateProfile;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Account\DeleteAccountRequest;
+use App\Http\Requests\Account\DisableAccountRequest;
 use App\Http\Requests\Account\UpdateProfileRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +24,7 @@ class ProfileController extends Controller
         return Inertia::render('account/Profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'canDisableAccount' => $request->user()->can('disableAccount', $request->user()),
         ]);
     }
 
@@ -43,19 +44,18 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Disable the user's account.
      */
-    public function destroy(DeleteAccountRequest $request, DeleteAccount $deleteAccount): RedirectResponse
+    public function disable(DisableAccountRequest $request, DisableAccount $disableAccount): RedirectResponse
     {
         $user = $request->user();
 
-        Auth::logout();
-
-        $deleteAccount->handle($user);
+        $disableAccount->handle($user);
+        Auth::guard()->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return to_route('home');
     }
 }

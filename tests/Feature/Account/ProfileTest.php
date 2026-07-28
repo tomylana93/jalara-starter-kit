@@ -1,18 +1,24 @@
 <?php
 
+use App\Enums\Role;
+use App\Enums\UserStatus;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\from;
 
-it('displays the profile page', function () {
+it('displays the profile page with account disable ability', function () {
     $user = User::factory()->create();
 
     $response = actingAs($user)
         ->get(route('account.profile.edit'));
 
-    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('account/Profile')
+        ->where('canDisableAccount', true),
+    );
 });
 
 it('updates profile information', function () {
@@ -115,11 +121,13 @@ it('leaves email verification status unchanged when the email address is unchang
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
 
-it('allows a user to delete their account', function () {
+it('allows a user to disable their account while preserving its role', function () {
     $user = User::factory()->create();
+    $role = Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web');
+    $user->assignRole($role);
 
     $response = actingAs($user)
-        ->delete(route('account.destroy'), [
+        ->patch(route('account.disable'), [
             'password' => 'password',
         ]);
 
@@ -128,16 +136,17 @@ it('allows a user to delete their account', function () {
         ->assertRedirect(route('home'));
 
     assertGuest();
-    expect($user->fresh())->toBeNull();
+    expect($user->refresh()->status)->toBe(UserStatus::Disabled)
+        ->and($user->hasRole(Role::User->value))->toBeTrue();
 });
 
-it('requires the correct password to delete account', function () {
+it('requires the correct password to disable account', function () {
     $user = User::factory()->create();
 
     actingAs($user);
 
     $response = from(route('account.profile.edit'))
-        ->delete(route('account.destroy'), [
+        ->patch(route('account.disable'), [
             'password' => 'wrong-password',
         ]);
 
@@ -145,12 +154,35 @@ it('requires the correct password to delete account', function () {
         ->assertSessionHasErrors('password')
         ->assertRedirect(route('account.profile.edit'));
 
-    expect($user->fresh())->not->toBeNull();
+    expect($user->refresh()->status)->toBe(UserStatus::Active);
+    $this->assertAuthenticatedAs($user);
 });
+
+it('forbids system users and super administrators from disabling their accounts', function (string $protectedBy) {
+    Spatie\Permission\Models\Role::findOrCreate(Role::SuperAdmin->value, 'web');
+    $user = User::factory()->create([
+        'is_system' => $protectedBy === 'system flag',
+    ]);
+
+    if ($protectedBy === 'super-admin role') {
+        $user->assignRole(Role::SuperAdmin->value);
+    }
+
+    actingAs($user)
+        ->patch(route('account.disable'), ['password' => 'password'])
+        ->assertForbidden();
+
+    expect($user->refresh()->status)->toBe(UserStatus::Active);
+    $this->assertAuthenticatedAs($user);
+
+    actingAs($user)
+        ->get(route('account.profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('canDisableAccount', false));
+})->with(['system flag', 'super-admin role']);
 
 it('requires authentication for account routes', function () {
     $this->get(route('account.index'))->assertRedirect(route('login'));
     $this->get(route('account.profile.edit'))->assertRedirect(route('login'));
     $this->patch(route('account.profile.update'))->assertRedirect(route('login'));
-    $this->delete(route('account.destroy'))->assertRedirect(route('login'));
+    $this->patch(route('account.disable'))->assertRedirect(route('login'));
 });

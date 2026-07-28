@@ -16,7 +16,7 @@ Route::middleware(['auth'])->prefix('account')->name('account.')->group(function
 });
 
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
-    Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
+    Route::patch('/', [ProfileController::class, 'disable'])->name('disable');
 
     Route::get('security', [SecurityController::class, 'edit'])
         ->middleware(RequirePassword::class)

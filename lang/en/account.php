@@ -29,12 +29,12 @@ return [
         'message' => [
             'updated' => 'Profile updated.',
         ],
-        'delete' => [
-            'title' => 'Delete account',
-            'description' => 'Delete the account and all associated resources',
-            'warning' => 'This action cannot be undone.',
-            'confirmation_title' => 'Permanently delete this account?',
-            'confirmation_description' => 'All associated resources and data will be permanently deleted. Enter the password to confirm.',
+        'disable' => [
+            'title' => 'Disable account',
+            'description' => 'Disable access while retaining account data',
+            'warning' => 'The account will be logged out and an administrator is required to reactivate it.',
+            'confirmation_title' => 'Disable this account?',
+            'confirmation_description' => 'The account and associated data will be retained. Enter the password to confirm logout and disable access.',
             'label' => [
                 'password' => 'Password',
                 'warning' => 'Warning',
@@ -44,7 +44,7 @@ return [
             ],
             'button' => [
                 'cancel' => 'Cancel',
-                'delete' => 'Delete account',
+                'disable' => 'Disable account',
             ],
         ],
     ],

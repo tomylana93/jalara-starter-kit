@@ -27,32 +27,32 @@ const { t } = useTranslations();
     <div class="space-y-6">
         <Heading
             variant="small"
-            :title="t('account.profile.delete.title')"
-            :description="t('account.profile.delete.description')"
+            :title="t('account.profile.disable.title')"
+            :description="t('account.profile.disable.description')"
         />
         <div
             class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
         >
             <div class="relative space-y-0.5 text-red-600 dark:text-red-100">
                 <p class="font-medium">
-                    {{ t('account.profile.delete.label.warning') }}
+                    {{ t('account.profile.disable.label.warning') }}
                 </p>
                 <p class="text-sm">
-                    {{ t('account.profile.delete.warning') }}
+                    {{ t('account.profile.disable.warning') }}
                 </p>
             </div>
             <Dialog>
                 <DialogTrigger as-child>
                     <Button
                         variant="destructive"
-                        data-test="delete-user-button"
+                        data-test="disable-user-button"
                     >
-                        {{ t('account.profile.delete.button.delete') }}
+                        {{ t('account.profile.disable.button.disable') }}
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <Form
-                        v-bind="ProfileController.destroy.form()"
+                        v-bind="ProfileController.disable.form()"
                         reset-on-success
                         @error="() => passwordInput?.focus()"
                         :options="{
@@ -65,14 +65,14 @@ const { t } = useTranslations();
                             <DialogTitle>
                                 {{
                                     t(
-                                        'account.profile.delete.confirmation_title',
+                                        'account.profile.disable.confirmation_title',
                                     )
                                 }}
                             </DialogTitle>
                             <DialogDescription>
                                 {{
                                     t(
-                                        'account.profile.delete.confirmation_description',
+                                        'account.profile.disable.confirmation_description',
                                     )
                                 }}
                             </DialogDescription>
@@ -80,7 +80,9 @@ const { t } = useTranslations();
 
                         <div class="grid gap-2">
                             <Label for="password" class="sr-only">
-                                {{ t('account.profile.delete.label.password') }}
+                                {{
+                                    t('account.profile.disable.label.password')
+                                }}
                             </Label>
                             <PasswordInput
                                 id="password"
@@ -88,7 +90,7 @@ const { t } = useTranslations();
                                 ref="passwordInput"
                                 :placeholder="
                                     t(
-                                        'account.profile.delete.placeholder.password',
+                                        'account.profile.disable.placeholder.password',
                                     )
                                 "
                             />
@@ -108,7 +110,7 @@ const { t } = useTranslations();
                                 >
                                     {{
                                         t(
-                                            'account.profile.delete.button.cancel',
+                                            'account.profile.disable.button.cancel',
                                         )
                                     }}
                                 </Button>
@@ -118,9 +120,11 @@ const { t } = useTranslations();
                                 type="submit"
                                 variant="destructive"
                                 :disabled="processing"
-                                data-test="confirm-delete-user-button"
+                                data-test="confirm-disable-user-button"
                             >
-                                {{ t('account.profile.delete.button.delete') }}
+                                {{
+                                    t('account.profile.disable.button.disable')
+                                }}
                             </Button>
                         </DialogFooter>
                     </Form>

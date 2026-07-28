@@ -3,22 +3,26 @@
 namespace App\Http\Requests\Account;
 
 use App\Concerns\PasswordValidationRules;
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DeleteAccountRequest extends FormRequest
+class DisableAccountRequest extends FormRequest
 {
     use PasswordValidationRules;
 
+    public function authorize(): bool
+    {
+        $user = $this->user();
+
+        return $user instanceof User && $user->can('disableAccount', $user);
+    }
+
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        return [
-            'password' => $this->currentPasswordRules(),
-        ];
+        return ['password' => $this->currentPasswordRules()];
     }
 }

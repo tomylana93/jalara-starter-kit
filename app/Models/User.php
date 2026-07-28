@@ -23,6 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonInterface|null $email_verified_at
  * @property string|null $phone
  * @property UserStatus $status
+ * @property bool $is_system
  * @property string $password
  * @property bool $must_change_password
  * @property CarbonInterface|null $last_login_at
@@ -60,6 +61,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
      */
     protected $attributes = [
         'status' => UserStatus::Active->value,
+        'is_system' => false,
         'must_change_password' => false,
         'failed_login_attempts' => 0,
     ];
@@ -79,6 +81,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return [
             'email_verified_at' => 'datetime',
             'status' => UserStatus::class,
+            'is_system' => 'boolean',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
