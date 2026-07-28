@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, FolderGit2, LayoutGrid, Settings } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -17,8 +17,10 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
+import { edit as editGeneralSettings } from '@/routes/settings/general';
 import type { NavItem } from '@/types';
 
+const page = usePage();
 const { t } = useTranslations();
 const mainNavItems = computed<NavItem[]>(() => [
     {
@@ -26,6 +28,15 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    ...(page.props.can?.manageSettings
+        ? [
+              {
+                  title: t('navigation.main.settings'),
+                  href: editGeneralSettings(),
+                  icon: Settings,
+              },
+          ]
+        : []),
 ]);
 
 const footerNavItems = computed<NavItem[]>(() => [

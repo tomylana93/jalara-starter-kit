@@ -8,6 +8,7 @@ return [
 
     'main' => [
         'dashboard' => 'Dashboard',
+        'settings' => 'Pengaturan',
     ],
 
     'external' => [

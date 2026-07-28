@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from '@lucide/vue';
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    Menu,
+    Search,
+    Settings,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -37,6 +44,7 @@ import { getInitials } from '@/composables/useInitials';
 import { useTranslations } from '@/composables/useTranslations';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import { edit as editGeneralSettings } from '@/routes/settings/general';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -61,6 +69,15 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    ...(page.props.can?.manageSettings
+        ? [
+              {
+                  title: t('navigation.main.settings'),
+                  href: editGeneralSettings(),
+                  icon: Settings,
+              },
+          ]
+        : []),
 ]);
 
 const rightNavItems = computed<NavItem[]>(() => [

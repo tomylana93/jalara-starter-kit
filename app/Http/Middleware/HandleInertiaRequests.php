@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Permission;
 use App\Http\Presenters\BrandingPresenter;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -44,6 +45,9 @@ class HandleInertiaRequests extends Middleware
             'branding' => BrandingPresenter::present(),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'can' => [
+                'manageSettings' => $request->user()?->can(Permission::ManageSettings->value) ?? false,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

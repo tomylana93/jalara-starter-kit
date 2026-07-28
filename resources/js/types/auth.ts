@@ -13,6 +13,10 @@ export type Auth = {
     user: User;
 };
 
+export type Abilities = {
+    manageSettings: boolean;
+};
+
 /* @chisel-passkeys */
 export type Passkey = {
     id: number;

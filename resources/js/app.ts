@@ -1,26 +1,26 @@
-import { createInertiaApp, usePage } from '@inertiajs/vue3';
+import { createInertiaApp } from '@inertiajs/vue3';
 import { initializeTheme } from '@/composables/useAppearance';
 import AccountLayout from '@/layouts/account/Layout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
-import { brandedTitle, defaultBranding } from '@/lib/branding';
+import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { applicationTitle, defaultBranding } from '@/lib/branding';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const fallbackName =
     import.meta.env.VITE_APP_NAME || defaultBranding.companyName;
 
 createInertiaApp({
-    title: (title) =>
-        brandedTitle(
-            title,
-            usePage().props?.branding?.companyName ?? fallbackName,
-        ),
+    title: (title, page) =>
+        applicationTitle(title, page.props.name ?? fallbackName),
     layout: (name) => {
         switch (true) {
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('account/'):
                 return [AppLayout, AccountLayout];
+            case name.startsWith('settings/'):
+                return [AppLayout, SettingsLayout];
             default:
                 return AppLayout;
         }

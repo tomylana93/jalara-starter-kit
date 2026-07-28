@@ -75,14 +75,14 @@ export function syncBrandingAttributes(
 }
 
 /**
- * Build the document title from the branding identity.
+ * Build the document title from the application identity.
  */
-export function brandedTitle(
+export function applicationTitle(
     title: string | null | undefined,
-    companyName: string,
+    applicationName: string,
 ): string {
-    const company = companyName.trim() || defaultBranding.companyName;
+    const application = applicationName.trim() || defaultBranding.companyName;
     const page = (title ?? '').trim();
 
-    return page ? `${page} - ${company}` : company;
+    return page ? `${page} - ${application}` : application;
 }

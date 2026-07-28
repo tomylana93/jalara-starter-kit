@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\Settings\UpdateBrandingSettings;
+use App\Actions\Settings\UpdateGeneralSettings;
 use App\Settings\BrandingSettings;
+use App\Settings\GeneralSettings;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\get;
@@ -58,16 +60,27 @@ it('renders the branding attributes on the root element', function () {
         ->assertSee('data-font-preset="system-mono"', false);
 });
 
-it('renders the company name as the document title', function () {
+it('renders the application name as the document title independently of branding', function () {
+    $general = app(GeneralSettings::class);
+
+    app(UpdateGeneralSettings::class)->handle($general, [
+        'applicationName' => 'Jalara App',
+        'description' => $general->description,
+        'defaultLocale' => $general->defaultLocale->value,
+        'dateFormat' => $general->dateFormat->value,
+    ]);
+
     updateBranding(['companyName' => 'Jalara Group']);
 
-    get(route('login'))->assertSee('<title>Jalara Group</title>', false);
+    get(route('login'))
+        ->assertSee('Log in - Jalara App</title>', false)
+        ->assertDontSee('Log in - Jalara Group</title>', false);
 
     updateBranding(['companyName' => 'Renamed Company']);
 
     get(route('login'))
-        ->assertSee('<title>Renamed Company</title>', false)
-        ->assertDontSee('Jalara Group', false);
+        ->assertSee('Log in - Jalara App</title>', false)
+        ->assertDontSee('Log in - Renamed Company</title>', false);
 });
 
 it('shares the footer text with the layouts', function () {

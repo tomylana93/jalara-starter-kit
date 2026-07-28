@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import {
     appLayoutPresets,
-    brandedTitle,
+    applicationTitle,
     authLayoutPresets,
     colorThemePresets,
     defaultBranding,
@@ -94,15 +94,15 @@ test('maps every layout preset to its own component', async () => {
     }
 });
 
-test('builds the document title from the branding identity', () => {
+test('builds the document title from the application identity', () => {
     assert.equal(
-        brandedTitle('Dashboard', 'Jalara Group'),
-        'Dashboard - Jalara Group',
+        applicationTitle('Dashboard', 'Jalara App'),
+        'Dashboard - Jalara App',
     );
-    assert.equal(brandedTitle('', 'Jalara Group'), 'Jalara Group');
-    assert.equal(brandedTitle(null, 'Jalara Group'), 'Jalara Group');
-    assert.equal(brandedTitle(undefined, 'Jalara Group'), 'Jalara Group');
-    assert.equal(brandedTitle('Dashboard', '  '), 'Dashboard - Laravel');
+    assert.equal(applicationTitle('', 'Jalara App'), 'Jalara App');
+    assert.equal(applicationTitle(null, 'Jalara App'), 'Jalara App');
+    assert.equal(applicationTitle(undefined, 'Jalara App'), 'Jalara App');
+    assert.equal(applicationTitle('Dashboard', '  '), 'Dashboard - Laravel');
 });
 
 test('drives the visible identity from the branding company name', async () => {
@@ -118,8 +118,9 @@ test('drives the visible identity from the branding company name', async () => {
 
     const entry = await readSource('resources/js/app.ts');
 
-    assert.match(entry, /brandedTitle\(/);
-    assert.match(entry, /branding\?\.companyName/);
+    assert.match(entry, /applicationTitle\(/);
+    assert.match(entry, /page\.props\.name/);
+    assert.doesNotMatch(entry, /branding\?\.companyName/);
 });
 
 test('renders the branding footer text in every layout', async () => {

@@ -1,0 +1,134 @@
+<script setup lang="ts">
+import { Form, Head } from '@inertiajs/vue3';
+import MailSettingsController from '@/actions/App/Http/Controllers/Settings/MailSettingsController';
+import Heading from '@/components/Heading.vue';
+import InputError from '@/components/InputError.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { translate, useTranslations } from '@/composables/useTranslations';
+import { edit } from '@/routes/settings/mail';
+
+type MailSettings = {
+    fromName: string;
+    fromAddress: string;
+};
+
+type LayoutProps = {
+    locale: string;
+    fallbackLocale: string;
+};
+
+defineProps<{
+    settings: MailSettings;
+}>();
+
+defineOptions({
+    layout: (layoutProps: LayoutProps) => ({
+        breadcrumbs: [
+            {
+                title: translate(
+                    'setting.mail.title',
+                    layoutProps.locale,
+                    layoutProps.fallbackLocale,
+                ),
+                href: edit(),
+            },
+        ],
+    }),
+});
+
+const { t } = useTranslations();
+</script>
+
+<template>
+    <Head :title="t('setting.mail.title')" />
+
+    <h1 class="sr-only">{{ t('setting.mail.title') }}</h1>
+
+    <div class="flex flex-col space-y-6">
+        <Heading
+            variant="small"
+            :title="t('setting.mail.title')"
+            :description="t('setting.mail.description')"
+        />
+
+        <Form
+            v-bind="MailSettingsController.update.form()"
+            :options="{ preserveScroll: true }"
+            class="space-y-6"
+            v-slot="{ errors, processing, validate, validating }"
+        >
+            <div class="grid gap-2">
+                <Label for="fromName">
+                    {{ t('setting.mail.label.from_name') }}
+                </Label>
+                <Input
+                    id="fromName"
+                    class="mt-1 block w-full"
+                    name="fromName"
+                    :default-value="settings.fromName"
+                    required
+                    @change="validate('fromName')"
+                    :placeholder="t('setting.mail.placeholder.from_name')"
+                />
+                <p class="text-sm text-muted-foreground">
+                    {{ t('setting.mail.help.from_name') }}
+                </p>
+                <InputError class="mt-2" :message="errors.fromName" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="fromAddress">
+                    {{ t('setting.mail.label.from_address') }}
+                </Label>
+                <Input
+                    id="fromAddress"
+                    type="email"
+                    class="mt-1 block w-full"
+                    name="fromAddress"
+                    :default-value="settings.fromAddress"
+                    required
+                    autocomplete="email"
+                    @change="validate('fromAddress')"
+                    :placeholder="t('setting.mail.placeholder.from_address')"
+                />
+                <p class="text-sm text-muted-foreground">
+                    {{ t('setting.mail.help.from_address') }}
+                </p>
+                <InputError class="mt-2" :message="errors.fromAddress" />
+            </div>
+
+            <div class="flex items-center gap-4">
+                <Button
+                    :disabled="processing || validating"
+                    data-test="update-mail-settings-button"
+                >
+                    {{ t('setting.mail.button.save') }}
+                </Button>
+            </div>
+        </Form>
+
+        <Separator />
+
+        <Form
+            v-bind="MailSettingsController.test.form()"
+            :options="{ preserveScroll: true }"
+            class="space-y-4"
+            v-slot="{ processing }"
+        >
+            <p class="text-sm text-muted-foreground">
+                {{ t('setting.mail.help.test') }}
+            </p>
+
+            <Button
+                variant="secondary"
+                :disabled="processing"
+                data-test="send-test-mail-button"
+            >
+                {{ t('setting.mail.button.test') }}
+            </Button>
+        </Form>
+    </div>
+</template>

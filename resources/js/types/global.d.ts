@@ -1,4 +1,4 @@
-import type { Auth } from '@/types/auth';
+import type { Abilities, Auth } from '@/types/auth';
 import type { Branding } from '@/types/branding';
 
 // Extend ImportMeta interface for Vite...
@@ -21,6 +21,7 @@ declare module '@inertiajs/core' {
             locale: string;
             fallbackLocale: string;
             auth: Auth;
+            can: Abilities;
             branding: Branding;
             sidebarOpen: boolean;
             [key: string]: unknown;

@@ -35,7 +35,10 @@ it('persists the general settings', function () {
     expect($settings->applicationName)->toBe('Jalara')
         ->and($settings->description)->toBe('Starter kit')
         ->and($settings->defaultLocale)->toBe(Locale::Indonesian)
-        ->and($settings->dateFormat)->toBe(DateFormat::Iso);
+        ->and($settings->dateFormat)->toBe(DateFormat::Iso)
+        ->and(config('app.name'))->toBe('Jalara')
+        ->and(config('app.locale'))->toBe(Locale::Indonesian->value)
+        ->and(app()->getLocale())->toBe(Locale::Indonesian->value);
 });
 
 it('persists an empty general description', function () {
