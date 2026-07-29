@@ -18,6 +18,7 @@ use function Pest\Laravel\get;
 function settingsRouteNames(): array
 {
     return [
+        'settings.index',
         'settings.general.edit',
         'settings.authentication.edit',
         'settings.user-provisioning.edit',
@@ -43,10 +44,12 @@ it('shows every settings screen to a settings manager', function (string $route)
         ->assertOk();
 })->with(settingsRouteNames());
 
-it('redirects the settings index to the general screen', function () {
+it('renders the settings index for a settings manager', function () {
     actingAs(settingsManager())
         ->get(route('settings.index'))
-        ->assertRedirectToRoute('settings.general.edit');
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('settings/Index'),
+        );
 });
 
 it('sends the general settings and localized options as scalars', function () {

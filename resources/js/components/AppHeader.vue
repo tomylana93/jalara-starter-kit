@@ -44,7 +44,7 @@ import { getInitials } from '@/composables/useInitials';
 import { useTranslations } from '@/composables/useTranslations';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import { edit as editGeneralSettings } from '@/routes/settings/general';
+import { index as settingsIndex } from '@/routes/settings';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -73,7 +73,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         ? [
               {
                   title: t('navigation.main.settings'),
-                  href: editGeneralSettings(),
+                  href: settingsIndex(),
                   icon: Settings,
               },
           ]

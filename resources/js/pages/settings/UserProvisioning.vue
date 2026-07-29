@@ -2,8 +2,8 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { useTemplateRef } from 'vue';
 import UserProvisioningSettingsController from '@/actions/App/Http/Controllers/Settings/UserProvisioningSettingsController';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import PageWrapper from '@/components/PageWrapper.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import {
     AlertDialog,
@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { translate, useTranslations } from '@/composables/useTranslations';
+import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/user-provisioning';
 
 type LayoutProps = {
@@ -38,6 +39,14 @@ defineOptions({
         breadcrumbs: [
             {
                 title: translate(
+                    'setting.layout.title',
+                    layoutProps.locale,
+                    layoutProps.fallbackLocale,
+                ),
+                href: settingsIndex(),
+            },
+            {
+                title: translate(
                     'setting.user_provisioning.title',
                     layoutProps.locale,
                     layoutProps.fallbackLocale,
@@ -53,160 +62,170 @@ const { t } = useTranslations();
 </script>
 
 <template>
-    <Head :title="t('setting.user_provisioning.title')" />
+    <div class="contents">
+        <Head :title="t('setting.user_provisioning.title')" />
 
-    <h1 class="sr-only">{{ t('setting.user_provisioning.title') }}</h1>
-
-    <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
+        <PageWrapper
             :title="t('setting.user_provisioning.title')"
             :description="t('setting.user_provisioning.description')"
-        />
-
-        <div class="flex items-center gap-3">
-            <span class="text-sm font-medium">
-                {{ t('setting.user_provisioning.label.status') }}
-            </span>
-            <Badge
-                :variant="hasDefaultPassword ? 'default' : 'secondary'"
-                data-test="default-password-status"
-            >
-                {{
-                    hasDefaultPassword
-                        ? t('setting.user_provisioning.status.configured')
-                        : t('setting.user_provisioning.status.not_configured')
-                }}
-            </Badge>
-        </div>
-
-        <Form
-            v-bind="UserProvisioningSettingsController.update.form()"
-            reset-on-success
-            @error="() => passwordInput?.focus()"
-            :options="{ preserveScroll: true }"
-            class="space-y-6"
-            v-slot="{ errors, processing, validate, validating }"
+            content-class="space-y-6"
         >
-            <div class="grid gap-2">
-                <Label for="defaultPassword">
-                    {{ t('setting.user_provisioning.label.default_password') }}
-                </Label>
-                <PasswordInput
-                    id="defaultPassword"
-                    ref="passwordInput"
-                    name="defaultPassword"
-                    autocomplete="new-password"
-                    :aria-invalid="Boolean(errors.defaultPassword)"
-                    :passwordrules="passwordRules"
-                    @change="validate('defaultPassword')"
-                    :placeholder="
-                        t(
-                            'setting.user_provisioning.placeholder.default_password',
-                        )
-                    "
-                />
-                <InputError :message="errors.defaultPassword" />
-            </div>
-
-            <div class="grid gap-2">
-                <Label for="defaultPassword_confirmation">
-                    {{
-                        t(
-                            'setting.user_provisioning.label.default_password_confirmation',
-                        )
-                    }}
-                </Label>
-                <PasswordInput
-                    id="defaultPassword_confirmation"
-                    name="defaultPassword_confirmation"
-                    autocomplete="new-password"
-                    :aria-invalid="Boolean(errors.defaultPassword_confirmation)"
-                    :passwordrules="passwordRules"
-                    @change="
-                        validate({
-                            only: [
-                                'defaultPassword',
-                                'defaultPassword_confirmation',
-                            ],
-                        })
-                    "
-                    :placeholder="
-                        t(
-                            'setting.user_provisioning.placeholder.default_password_confirmation',
-                        )
-                    "
-                />
-                <InputError :message="errors.defaultPassword_confirmation" />
-            </div>
-
-            <div class="flex items-center gap-4">
-                <Button
-                    :disabled="processing || validating"
-                    data-test="update-default-password-button"
+            <div class="flex items-center gap-3">
+                <span class="text-sm font-medium">
+                    {{ t('setting.user_provisioning.label.status') }}
+                </span>
+                <Badge
+                    :variant="hasDefaultPassword ? 'default' : 'secondary'"
+                    data-test="default-password-status"
                 >
-                    {{ t('setting.user_provisioning.button.save') }}
-                </Button>
+                    {{
+                        hasDefaultPassword
+                            ? t('setting.user_provisioning.status.configured')
+                            : t(
+                                  'setting.user_provisioning.status.not_configured',
+                              )
+                    }}
+                </Badge>
             </div>
-        </Form>
 
-        <template v-if="hasDefaultPassword">
-            <Separator />
+            <Form
+                v-bind="UserProvisioningSettingsController.update.form()"
+                reset-on-success
+                @error="() => passwordInput?.focus()"
+                :options="{ preserveScroll: true }"
+                class="space-y-6"
+                v-slot="{ errors, processing, validate, validating }"
+            >
+                <div class="grid gap-2">
+                    <Label for="defaultPassword">
+                        {{
+                            t(
+                                'setting.user_provisioning.label.default_password',
+                            )
+                        }}
+                    </Label>
+                    <PasswordInput
+                        id="defaultPassword"
+                        ref="passwordInput"
+                        name="defaultPassword"
+                        autocomplete="new-password"
+                        :aria-invalid="Boolean(errors.defaultPassword)"
+                        :passwordrules="passwordRules"
+                        @change="validate('defaultPassword')"
+                        :placeholder="
+                            t(
+                                'setting.user_provisioning.placeholder.default_password',
+                            )
+                        "
+                    />
+                    <InputError :message="errors.defaultPassword" />
+                </div>
 
-            <AlertDialog>
-                <AlertDialogTrigger as-child>
+                <div class="grid gap-2">
+                    <Label for="defaultPassword_confirmation">
+                        {{
+                            t(
+                                'setting.user_provisioning.label.default_password_confirmation',
+                            )
+                        }}
+                    </Label>
+                    <PasswordInput
+                        id="defaultPassword_confirmation"
+                        name="defaultPassword_confirmation"
+                        autocomplete="new-password"
+                        :aria-invalid="
+                            Boolean(errors.defaultPassword_confirmation)
+                        "
+                        :passwordrules="passwordRules"
+                        @change="
+                            validate({
+                                only: [
+                                    'defaultPassword',
+                                    'defaultPassword_confirmation',
+                                ],
+                            })
+                        "
+                        :placeholder="
+                            t(
+                                'setting.user_provisioning.placeholder.default_password_confirmation',
+                            )
+                        "
+                    />
+                    <InputError
+                        :message="errors.defaultPassword_confirmation"
+                    />
+                </div>
+
+                <div class="flex items-center gap-4">
                     <Button
-                        variant="destructive"
-                        class="w-fit"
-                        data-test="remove-default-password-button"
+                        :disabled="processing || validating"
+                        data-test="update-default-password-button"
                     >
-                        {{ t('setting.user_provisioning.button.remove') }}
+                        {{ t('setting.user_provisioning.button.save') }}
                     </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            {{
-                                t(
-                                    'setting.user_provisioning.confirmation.title',
-                                )
-                            }}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {{
-                                t(
-                                    'setting.user_provisioning.confirmation.description',
-                                )
-                            }}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>
-                            {{ t('setting.user_provisioning.button.cancel') }}
-                        </AlertDialogCancel>
-                        <Form
-                            v-bind="
-                                UserProvisioningSettingsController.destroy.form()
-                            "
-                            :options="{ preserveScroll: true }"
-                            v-slot="{ processing }"
+                </div>
+            </Form>
+
+            <template v-if="hasDefaultPassword">
+                <Separator />
+
+                <AlertDialog>
+                    <AlertDialogTrigger as-child>
+                        <Button
+                            variant="destructive"
+                            class="w-fit"
+                            data-test="remove-default-password-button"
                         >
-                            <AlertDialogAction
-                                type="submit"
-                                variant="destructive"
-                                :disabled="processing"
-                                data-test="confirm-remove-default-password-button"
-                            >
+                            {{ t('setting.user_provisioning.button.remove') }}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
                                 {{
                                     t(
-                                        'setting.user_provisioning.button.confirm_remove',
+                                        'setting.user_provisioning.confirmation.title',
                                     )
                                 }}
-                            </AlertDialogAction>
-                        </Form>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </template>
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {{
+                                    t(
+                                        'setting.user_provisioning.confirmation.description',
+                                    )
+                                }}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>
+                                {{
+                                    t('setting.user_provisioning.button.cancel')
+                                }}
+                            </AlertDialogCancel>
+                            <Form
+                                v-bind="
+                                    UserProvisioningSettingsController.destroy.form()
+                                "
+                                :options="{ preserveScroll: true }"
+                                v-slot="{ processing }"
+                            >
+                                <AlertDialogAction
+                                    type="submit"
+                                    variant="destructive"
+                                    :disabled="processing"
+                                    data-test="confirm-remove-default-password-button"
+                                >
+                                    {{
+                                        t(
+                                            'setting.user_provisioning.button.confirm_remove',
+                                        )
+                                    }}
+                                </AlertDialogAction>
+                            </Form>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </template>
+        </PageWrapper>
     </div>
 </template>

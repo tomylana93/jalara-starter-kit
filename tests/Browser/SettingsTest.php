@@ -18,6 +18,7 @@ it('renders every settings screen for a settings manager', function () {
     actingAs(settingsManager());
 
     visit([
+        route('settings.index', absolute: false),
         route('settings.general.edit', absolute: false),
         route('settings.authentication.edit', absolute: false),
         route('settings.user-provisioning.edit', absolute: false),
@@ -25,6 +26,22 @@ it('renders every settings screen for a settings manager', function () {
         route('settings.security.edit', absolute: false),
         route('settings.branding.edit', absolute: false),
     ])->assertNoSmoke();
+});
+
+it('navigates from the settings index to a settings screen', function () {
+    actingAs(settingsManager());
+
+    visit(route('settings.index', absolute: false))
+        ->assertSee(__('setting.layout.title'))
+        ->assertSee(__('setting.general.title'))
+        ->assertSee(__('setting.authentication.title'))
+        ->assertSee(__('setting.user_provisioning.title'))
+        ->assertSee(__('setting.mail.title'))
+        ->assertSee(__('setting.security.title'))
+        ->assertSee(__('setting.branding.title'))
+        ->click('@settings-card-general')
+        ->assertPathIs(route('settings.general.edit', absolute: false))
+        ->assertNoSmoke();
 });
 
 it('hides settings navigation from other users', function () {

@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
-import { edit as editGeneralSettings } from '@/routes/settings/general';
+import { index as settingsIndex } from '@/routes/settings';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -32,7 +32,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         ? [
               {
                   title: t('navigation.main.settings'),
-                  href: editGeneralSettings(),
+                  href: settingsIndex(),
                   icon: Settings,
               },
           ]

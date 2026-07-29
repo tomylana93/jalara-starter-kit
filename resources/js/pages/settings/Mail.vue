@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import MailSettingsController from '@/actions/App/Http/Controllers/Settings/MailSettingsController';
-import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { translate, useTranslations } from '@/composables/useTranslations';
+import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/mail';
 
 type MailSettings = {
@@ -29,6 +30,14 @@ defineOptions({
         breadcrumbs: [
             {
                 title: translate(
+                    'setting.layout.title',
+                    layoutProps.locale,
+                    layoutProps.fallbackLocale,
+                ),
+                href: settingsIndex(),
+            },
+            {
+                title: translate(
                     'setting.mail.title',
                     layoutProps.locale,
                     layoutProps.fallbackLocale,
@@ -43,85 +52,85 @@ const { t } = useTranslations();
 </script>
 
 <template>
-    <Head :title="t('setting.mail.title')" />
+    <div class="contents">
+        <Head :title="t('setting.mail.title')" />
 
-    <h1 class="sr-only">{{ t('setting.mail.title') }}</h1>
-
-    <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
+        <PageWrapper
             :title="t('setting.mail.title')"
             :description="t('setting.mail.description')"
-        />
-
-        <Form
-            v-bind="MailSettingsController.update.form()"
-            :options="{ preserveScroll: true }"
-            class="space-y-6"
-            v-slot="{ errors, processing, validate, validating }"
+            content-class="space-y-6"
         >
-            <div class="grid gap-2">
-                <Label for="fromName">
-                    {{ t('setting.mail.label.from_name') }}
-                </Label>
-                <Input
-                    id="fromName"
-                    name="fromName"
-                    :default-value="settings.fromName"
-                    :aria-invalid="Boolean(errors.fromName)"
-                    @change="validate('fromName')"
-                    :placeholder="t('setting.mail.placeholder.from_name')"
-                />
-                <InputError :message="errors.fromName" />
-            </div>
-
-            <div class="grid gap-2">
-                <Label for="fromAddress">
-                    {{ t('setting.mail.label.from_address') }}
-                </Label>
-                <Input
-                    id="fromAddress"
-                    type="text"
-                    inputmode="email"
-                    name="fromAddress"
-                    :default-value="settings.fromAddress"
-                    :aria-invalid="Boolean(errors.fromAddress)"
-                    autocomplete="email"
-                    @change="validate('fromAddress')"
-                    :placeholder="t('setting.mail.placeholder.from_address')"
-                />
-                <InputError :message="errors.fromAddress" />
-            </div>
-
-            <div class="flex items-center gap-4">
-                <Button
-                    :disabled="processing || validating"
-                    data-test="update-mail-settings-button"
-                >
-                    {{ t('setting.mail.button.save') }}
-                </Button>
-            </div>
-        </Form>
-
-        <Separator />
-
-        <Form
-            v-bind="MailSettingsController.test.form()"
-            :options="{ preserveScroll: true }"
-            class="space-y-4"
-            v-slot="{ processing }"
-        >
-            <p class="text-sm text-muted-foreground">
-                {{ t('setting.mail.help.test') }}
-            </p>
-
-            <Button
-                variant="secondary"
-                :disabled="processing"
-                data-test="send-test-mail-button"
+            <Form
+                v-bind="MailSettingsController.update.form()"
+                :options="{ preserveScroll: true }"
+                class="space-y-6"
+                v-slot="{ errors, processing, validate, validating }"
             >
-                {{ t('setting.mail.button.test') }}
-            </Button>
-        </Form>
+                <div class="grid gap-2">
+                    <Label for="fromName">
+                        {{ t('setting.mail.label.from_name') }}
+                    </Label>
+                    <Input
+                        id="fromName"
+                        name="fromName"
+                        :default-value="settings.fromName"
+                        :aria-invalid="Boolean(errors.fromName)"
+                        @change="validate('fromName')"
+                        :placeholder="t('setting.mail.placeholder.from_name')"
+                    />
+                    <InputError :message="errors.fromName" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="fromAddress">
+                        {{ t('setting.mail.label.from_address') }}
+                    </Label>
+                    <Input
+                        id="fromAddress"
+                        type="text"
+                        inputmode="email"
+                        name="fromAddress"
+                        :default-value="settings.fromAddress"
+                        :aria-invalid="Boolean(errors.fromAddress)"
+                        autocomplete="email"
+                        @change="validate('fromAddress')"
+                        :placeholder="
+                            t('setting.mail.placeholder.from_address')
+                        "
+                    />
+                    <InputError :message="errors.fromAddress" />
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <Button
+                        :disabled="processing || validating"
+                        data-test="update-mail-settings-button"
+                    >
+                        {{ t('setting.mail.button.save') }}
+                    </Button>
+                </div>
+            </Form>
+
+            <Separator />
+
+            <Form
+                v-bind="MailSettingsController.test.form()"
+                :options="{ preserveScroll: true }"
+                class="space-y-4"
+                v-slot="{ processing }"
+            >
+                <p class="text-sm text-muted-foreground">
+                    {{ t('setting.mail.help.test') }}
+                </p>
+
+                <Button
+                    variant="secondary"
+                    :disabled="processing"
+                    data-test="send-test-mail-button"
+                >
+                    {{ t('setting.mail.button.test') }}
+                </Button>
+            </Form>
+        </PageWrapper>
     </div>
 </template>

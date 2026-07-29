@@ -14,7 +14,7 @@ Route::middleware(['auth', 'verified', 'permission:'.Permission::ManageSettings-
     ->prefix('settings')
     ->name('settings.')
     ->group(function (): void {
-        Route::get('/', fn () => to_route('settings.general.edit'))->name('index');
+        Route::inertia('/', 'settings/Index')->name('index');
 
         Route::get('general', [GeneralSettingsController::class, 'edit'])->name('general.edit');
         Route::put('general', [GeneralSettingsController::class, 'update'])
