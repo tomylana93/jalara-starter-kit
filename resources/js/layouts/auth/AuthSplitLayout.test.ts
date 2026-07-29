@@ -20,18 +20,20 @@ afterEach(() => {
 });
 
 describe('auth split layout', () => {
-    it('uses a graduated brand tint over the background image', () => {
+    it('uses a graduated neutral tint over the background image', () => {
         const tint = mountLayout().get('[data-test="auth-split-tint"]');
 
         expect(tint.classes()).toEqual(
             expect.arrayContaining([
                 'bg-linear-to-b',
-                'from-primary/80',
-                'via-primary/55',
-                'to-primary/80',
+                'from-black/70',
+                'via-black/40',
+                'to-black/70',
             ]),
         );
-        expect(tint.classes()).not.toContain('bg-primary/70');
+        expect(
+            tint.classes().some((className) => className.includes('primary')),
+        ).toBe(false);
     });
 
     it('shows the application description at the foot of the panel', () => {

@@ -33,13 +33,13 @@ defineProps<{
         class="relative grid h-dvh flex-col items-center justify-center bg-background px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0"
     >
         <div
-            class="relative hidden h-full flex-col bg-primary p-10 text-primary-foreground lg:flex dark:border-r"
+            class="relative hidden h-full flex-col bg-neutral-950 p-10 text-white lg:flex dark:border-r"
         >
             <!--
                 The image is decorative; the solid colour stays as the base so
                 the panel is never empty while it loads.
             -->
-            <div class="absolute inset-0 bg-primary" />
+            <div class="absolute inset-0 bg-neutral-950" />
             <img
                 :src="backgroundUrl"
                 alt=""
@@ -51,19 +51,19 @@ defineProps<{
                 the softer centre keeps the image from looking flat.
             -->
             <div
-                class="absolute inset-0 bg-linear-to-b from-primary/80 via-primary/55 to-primary/80"
+                class="absolute inset-0 bg-linear-to-b from-black/70 via-black/40 to-black/70"
                 data-test="auth-split-tint"
             />
             <Link
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"
             >
-                <BrandIdentity class="[&_span]:text-primary-foreground" />
+                <BrandIdentity class="[&_span]:text-white" />
             </Link>
             <!-- Sits at the foot of the image panel, aligned to its left edge. -->
             <p
                 v-if="applicationDescription"
-                class="relative z-20 mt-auto max-w-sm text-sm text-primary-foreground/80"
+                class="relative z-20 mt-auto max-w-sm text-sm text-white/80"
                 data-test="auth-split-about"
             >
                 {{ applicationDescription }}
