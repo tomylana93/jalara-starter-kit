@@ -23,7 +23,11 @@
   use Context7's library resolution and documentation query before web search.
   Use web search only when the purpose-built documentation tool is unavailable
   or unhelpful.
-- Use shadcn tools for registry-backed UI components when available.
+- For UI primitives covered by the shadcn-vue registry, using or reusing the
+  corresponding shadcn-vue component is mandatory. Reuse installed components
+  first; when one is missing, inspect or add it on demand with the shadcn-vue
+  CLI. Do not reimplement an available registry component merely because the
+  shadcn MCP server is not configured.
 - Use the shell for Git and cases not covered by a purpose-built tool. Invoke
   repository-configured development tools through Composer scripts; use direct
   Artisan or package-manager commands only when no repository script exists.
