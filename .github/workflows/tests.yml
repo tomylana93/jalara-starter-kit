@@ -39,5 +39,8 @@ jobs:
       - name: Setup Application
         run: composer setup
 
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run CI Checks
         run: composer ci:check

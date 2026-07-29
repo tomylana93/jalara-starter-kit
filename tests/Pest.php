@@ -38,7 +38,13 @@ pest()->extend(TestCase::class)
 
         usePasswordPolicy(PasswordPolicy::Basic);
     })
-    ->in('Feature', 'Browser');
+    ->in('Feature');
+
+pest()->printer()->compact();
+
+pest()->tia()
+    ->filtered()
+    ->baselined();
 
 /*
 |--------------------------------------------------------------------------

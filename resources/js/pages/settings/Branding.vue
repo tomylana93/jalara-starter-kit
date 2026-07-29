@@ -288,7 +288,7 @@ const fontPreset = ref(props.settings.fontPreset);
                     />
                     <RadioGroup
                         v-model="fontPreset"
-                        $!2
+                        class="sm:grid-cols-2"
                         :aria-invalid="Boolean(errors.fontPreset)"
                         @update:model-value="validate('fontPreset')"
                     >

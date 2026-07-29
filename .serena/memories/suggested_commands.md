@@ -1,21 +1,11 @@
 # Suggested Commands
 
-- First-time setup: `composer run setup` (Composer install, .env/key, forced migrations, pnpm install, production build).
-- Full local development stack: `composer run dev` (delegates to `php artisan dev`).
-- Frontend-only dev server: `pnpm run dev`.
-- Production frontend build: `pnpm run build`; SSR build: `pnpm run build:ssr`.
-- Targeted tests: `php artisan test --compact tests/Feature/Path/SomeTest.php` or `php artisan test --compact --filter=testName`.
-- Full backend gate: `composer test` (config clear, Pint check, Larastan, Laravel tests).
-- PHP formatting autofix (Pint): `composer run lint`; after modifying PHP, use the focused required formatter `vendor/bin/pint --dirty --format agent`; check only: `composer run lint:check`.
-- PHP refactoring autofix (Rector): `composer run rector`; check only: `composer run rector:check`.
-- Frontend autofix: `pnpm run lint`; frontend lint check: `pnpm run lint:check`.
-- Frontend formatting: `pnpm run format`; check only: `pnpm run format:check`.
-- Frontend types: `pnpm run types:check`.
-- PHP static analysis: `composer run types:check`.
-- Mandatory final gate before every task handoff: `composer run ci:check`; run it after focused checks and report every failure.
-- Publish custom guidelines and skills: `php artisan boost:update --no-interaction`.
-- Check Serena memory references: `serena memories check`; deeper maintenance audit: `serena memories check --include-unmarked --fuzzy-matching`.
-- Route inspection: `php artisan route:list --except-vendor` with `--method`, `--name`, or `--path` filters.
-- Configuration inspection: `php artisan config:show key.path`.
-- Artisan generators must include `--no-interaction`; Pest tests: `php artisan make:test --pest Name --no-interaction`.
-- If a frontend edit is not visible, run `pnpm run dev`, `pnpm run build`, or the full `composer run dev`.
+- Setup: `composer run setup`; development: `composer run dev`; frontend dev: `pnpm run dev`.
+- Vitest: `pnpm test:unit`; watch: `pnpm test:unit:watch`.
+- Pest focused: `php artisan test --compact <file>` or `--filter=<name>`; full backend: `composer test`.
+- Pest TIA (requires PCOV/Xdebug): `composer test:tia`; rebuild baseline: `vendor/bin/pest --tia --fresh`.
+- Playwright E2E: `pnpm test:e2e`; focused: `pnpm exec playwright test <spec> --grep '<name>'`.
+- Frontend checks: `pnpm run lint:check`, `pnpm run format:check`, `pnpm run types:check`, `pnpm run build`.
+- PHP checks: `composer run lint:check`, `composer run rector:check`, `composer run types:check`; PHP formatting: `vendor/bin/pint --dirty --format agent`.
+- Mandatory final gate: `composer run ci:check` (frontend checks, Vitest, Pest, build, Playwright).
+- Publish agent context: `php artisan boost:update --no-interaction`; memory checks: `serena memories check` and `serena memories check --include-unmarked --fuzzy-matching`.
