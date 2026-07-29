@@ -1,3 +1,6 @@
+[features]
+hooks = true
+
 [mcp_servers.serena]
 type = "streamableHttp"
 url = "http://localhost:9121/mcp"
