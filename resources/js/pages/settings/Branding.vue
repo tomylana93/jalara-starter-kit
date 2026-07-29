@@ -170,7 +170,7 @@ const fontPreset = ref(props.settings.fontPreset);
                             <!--
                                 The sketch shows what a branded surface renders:
                                 the wide logo on its own, or the square icon
-                                followed by the company name.
+                                followed by the application name.
                             -->
                             <div
                                 class="flex h-16 w-full items-center justify-center gap-2 rounded-md bg-muted p-2"

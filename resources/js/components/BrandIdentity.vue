@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useBranding } from '@/composables/useBranding';
+import { fallbackApplicationName } from '@/lib/branding';
 
 /*
  * Bundled brand files stand in when nothing is stored. They live here in the
@@ -17,7 +19,7 @@ const fallbacks = {
 type Props = {
     /** Compact surfaces show the mark alone, whatever the identity mode is. */
     iconOnly?: boolean;
-    /** Hide the company name even in icon mode. */
+    /** Hide the application name even in icon mode. */
     hideName?: boolean;
 };
 
@@ -27,6 +29,18 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { branding } = useBranding();
+const page = usePage();
+
+/*
+ * The visible identity pairs the mark with the application name, never with the
+ * company name: the company name is stored for documents such as mail, not for
+ * the interface.
+ */
+const applicationName = computed(
+    () =>
+        (page.props.name as string | undefined)?.trim() ||
+        fallbackApplicationName,
+);
 
 /*
  * Light and dark are chosen by the `.dark` class rather than by reading the
@@ -72,7 +86,7 @@ const darkSrc = computed(() => {
         <template v-if="useLogo">
             <img
                 :src="lightSrc"
-                :alt="branding.companyName"
+                :alt="applicationName"
                 :class="[
                     'h-8 w-auto object-contain',
                     darkSrc ? 'dark:hidden' : '',
@@ -81,7 +95,7 @@ const darkSrc = computed(() => {
             <img
                 v-if="darkSrc"
                 :src="darkSrc"
-                :alt="branding.companyName"
+                :alt="applicationName"
                 class="hidden h-8 w-auto object-contain dark:block"
             />
         </template>
@@ -89,7 +103,7 @@ const darkSrc = computed(() => {
         <template v-else>
             <img
                 :src="lightSrc"
-                :alt="branding.companyName"
+                :alt="applicationName"
                 :class="[
                     'size-8 shrink-0 rounded-md object-cover',
                     darkSrc ? 'dark:hidden' : '',
@@ -98,7 +112,7 @@ const darkSrc = computed(() => {
             <img
                 v-if="darkSrc"
                 :src="darkSrc"
-                :alt="branding.companyName"
+                :alt="applicationName"
                 class="hidden size-8 shrink-0 rounded-md object-cover dark:block"
             />
         </template>
@@ -107,7 +121,7 @@ const darkSrc = computed(() => {
             v-if="showName"
             class="truncate text-sm leading-tight font-semibold"
         >
-            {{ branding.companyName }}
+            {{ applicationName }}
         </span>
     </div>
 </template>

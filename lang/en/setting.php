@@ -98,7 +98,7 @@ return [
         'help' => [
             'company_name' => 'The visible company identity used in logo text and branded interface elements. The document title suffix is configured under general settings.',
             'footer_text' => 'Optional line rendered in the footer of authentication and application pages.',
-            'identity_mode_group' => 'Whether branded areas show the logo, or the icon next to the company name.',
+            'identity_mode_group' => 'Whether branded areas show the logo, or the icon next to the application name.',
             'auth_layout_group' => 'Arrangement of the login, registration, and password pages.',
             'app_layout_group' => 'Navigation arrangement inside the application.',
             'color_theme_group' => 'Brand color tokens. Light and dark mode remain a separate preference.',
@@ -121,7 +121,7 @@ return [
 
         'identity_mode' => [
             'logo' => 'Logo',
-            'icon_text' => 'Icon and company name',
+            'icon_text' => 'Icon and application name',
         ],
 
         'auth_layout' => [

@@ -39,6 +39,11 @@ export const brandingIdentityModes: readonly BrandingIdentityMode[] = [
     'icon-text',
 ] as const;
 
+/**
+ * Used whenever the server sends no application name.
+ */
+export const fallbackApplicationName = 'Laravel';
+
 export const defaultBranding: Branding = {
     companyName: 'Laravel',
     footerText: null,
@@ -93,7 +98,7 @@ export function applicationTitle(
     title: string | null | undefined,
     applicationName: string,
 ): string {
-    const application = applicationName.trim() || defaultBranding.companyName;
+    const application = applicationName.trim() || fallbackApplicationName;
     const page = (title ?? '').trim();
 
     return page ? `${page} - ${application}` : application;

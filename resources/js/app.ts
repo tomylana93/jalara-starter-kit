@@ -4,11 +4,10 @@ import { initializeTheme } from '@/composables/useAppearance';
 import AccountLayout from '@/layouts/account/Layout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
-import { applicationTitle, defaultBranding } from '@/lib/branding';
+import { applicationTitle, fallbackApplicationName } from '@/lib/branding';
 import { initializeFlashToast } from '@/lib/flashToast';
 
-const fallbackName =
-    import.meta.env.VITE_APP_NAME || defaultBranding.companyName;
+const fallbackName = import.meta.env.VITE_APP_NAME || fallbackApplicationName;
 
 createInertiaApp({
     title: (title, page) =>

@@ -13,6 +13,7 @@ export const formState = {
 export const inertiaPageProps = {
     auth: { user: null as { name: string; avatar?: string } | null },
     branding: {},
+    name: undefined as string | undefined,
     can: { manageSettings: true },
     locale: 'en',
     fallbackLocale: 'en',

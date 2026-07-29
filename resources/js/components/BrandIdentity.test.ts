@@ -4,6 +4,7 @@ import { inertiaPageProps } from '@/test/setup';
 import BrandIdentity from './BrandIdentity.vue';
 
 const withBranding = (branding: Record<string, unknown>) => {
+    inertiaPageProps.name = 'Jalara App';
     inertiaPageProps.branding = {
         companyName: 'Jalara Group',
         identityMode: 'icon-text',
@@ -18,6 +19,7 @@ const withBranding = (branding: Record<string, unknown>) => {
 
 afterEach(() => {
     inertiaPageProps.branding = {};
+    inertiaPageProps.name = undefined;
 });
 
 describe('brand identity', () => {
@@ -27,16 +29,17 @@ describe('brand identity', () => {
         const wrapper = mount(BrandIdentity);
 
         expect(wrapper.get('img').attributes('src')).toBe('/storage/logo.png');
-        expect(wrapper.text()).not.toContain('Jalara Group');
+        expect(wrapper.text()).not.toContain('Jalara App');
     });
 
-    it('renders the icon next to the company name in icon mode', () => {
+    it('renders the icon next to the application name in icon mode', () => {
         withBranding({ iconUrl: '/storage/icon.png' });
 
         const wrapper = mount(BrandIdentity);
 
         expect(wrapper.get('img').attributes('src')).toBe('/storage/icon.png');
-        expect(wrapper.text()).toContain('Jalara Group');
+        expect(wrapper.text()).toContain('Jalara App');
+        expect(wrapper.text()).not.toContain('Jalara Group');
     });
 
     it('falls back to the light asset when no dark variant is stored', () => {
@@ -87,7 +90,7 @@ describe('brand identity', () => {
         expect(images[1].attributes('src')).toBe(
             '/assets/images/branding/icon-dark.png',
         );
-        expect(mount(BrandIdentity).text()).toContain('Jalara Group');
+        expect(mount(BrandIdentity).text()).toContain('Jalara App');
     });
 
     it('keeps a stored light asset in both modes rather than the bundled dark one', () => {
@@ -107,7 +110,7 @@ describe('brand identity', () => {
         });
 
         expect(wrapper.get('img').attributes('src')).toBe('/storage/icon.png');
-        expect(wrapper.text()).not.toContain('Jalara Group');
+        expect(wrapper.text()).not.toContain('Jalara App');
     });
 
     it('prefers the icon over the logo on compact surfaces', () => {

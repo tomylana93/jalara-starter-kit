@@ -105,7 +105,7 @@ test('builds the document title from the application identity', () => {
     assert.equal(applicationTitle('Dashboard', '  '), 'Dashboard - Laravel');
 });
 
-test('drives the visible identity from the branding company name', async () => {
+test('drives the visible identity from the application name', async () => {
     /*
      * BrandIdentity is the single owner of the visible identity: it resolves the
      * identity mode, the dark variants, and the static fallback. Every branded
@@ -115,8 +115,8 @@ test('drives the visible identity from the branding company name', async () => {
         'resources/js/components/BrandIdentity.vue',
     );
 
-    assert.match(identity, /branding\.companyName/);
-    assert.doesNotMatch(identity, /props\.name/);
+    assert.match(identity, /page\.props\.name/);
+    assert.doesNotMatch(identity, /companyName/);
 
     for (const file of [
         'resources/js/components/AppLogo.vue',
@@ -125,14 +125,14 @@ test('drives the visible identity from the branding company name', async () => {
         const source = await readSource(file);
 
         assert.match(source, /BrandIdentity/);
-        assert.doesNotMatch(source, /props\.name/);
+        assert.doesNotMatch(source, /companyName/);
     }
 
     const entry = await readSource('resources/js/app.ts');
 
     assert.match(entry, /applicationTitle\(/);
     assert.match(entry, /page\.props\.name/);
-    assert.doesNotMatch(entry, /branding\?\.companyName/);
+    assert.doesNotMatch(entry, /companyName/);
 });
 
 test('renders the branding footer text in every layout', async () => {
