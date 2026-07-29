@@ -80,6 +80,12 @@ return [
         'label' => [
             'company_name' => 'Nama perusahaan',
             'footer_text' => 'Teks footer',
+            'identity_mode_group' => 'Mode identitas',
+            'logo' => 'Logo',
+            'logo_dark' => 'Logo (mode gelap)',
+            'icon' => 'Ikon',
+            'icon_dark' => 'Ikon (mode gelap)',
+            'auth_background' => 'Latar autentikasi (layout terbagi)',
             'auth_layout_group' => 'Layout autentikasi',
             'app_layout_group' => 'Layout aplikasi',
             'color_theme_group' => 'Tema warna',
@@ -92,6 +98,7 @@ return [
         'help' => [
             'company_name' => 'Identitas perusahaan yang terlihat pada teks logo dan elemen antarmuka berbrand. Akhiran judul dokumen diatur pada pengaturan umum.',
             'footer_text' => 'Baris opsional yang tampil pada footer halaman autentikasi dan aplikasi.',
+            'identity_mode_group' => 'Menentukan apakah area berbrand menampilkan logo, atau ikon berdampingan dengan nama perusahaan.',
             'auth_layout_group' => 'Susunan halaman login, registrasi, dan password.',
             'app_layout_group' => 'Susunan navigasi di dalam aplikasi.',
             'color_theme_group' => 'Token warna brand. Mode terang dan gelap tetap preferensi terpisah.',
@@ -102,9 +109,19 @@ return [
         ],
         'button' => [
             'save' => 'Simpan',
+            'upload' => 'Unggah',
+            'replace' => 'Ganti',
+            'remove' => 'Hapus',
         ],
         'message' => [
             'updated' => 'Pengaturan branding berhasil diperbarui.',
+            'asset_updated' => 'Gambar branding berhasil diperbarui.',
+            'asset_removed' => 'Gambar branding berhasil dihapus.',
+        ],
+
+        'identity_mode' => [
+            'logo' => 'Logo',
+            'icon_text' => 'Ikon dan nama perusahaan',
         ],
 
         'auth_layout' => [

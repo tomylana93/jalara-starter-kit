@@ -17,6 +17,7 @@ return [
         'label' => [
             'name' => 'Name',
             'email' => 'Email address',
+            'avatar' => 'Avatar',
         ],
         'placeholder' => [
             'name' => 'Full name',
@@ -24,9 +25,14 @@ return [
         ],
         'button' => [
             'save' => 'Save',
+            'upload' => 'Upload',
+            'replace' => 'Replace',
+            'remove' => 'Remove',
         ],
         'message' => [
             'updated' => 'Profile updated.',
+            'avatar_updated' => 'Avatar updated.',
+            'avatar_removed' => 'Avatar removed.',
         ],
         'disable' => [
             'title' => 'Disable account',

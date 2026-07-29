@@ -80,6 +80,12 @@ return [
         'label' => [
             'company_name' => 'Company name',
             'footer_text' => 'Footer text',
+            'identity_mode_group' => 'Identity mode',
+            'logo' => 'Logo',
+            'logo_dark' => 'Logo (dark mode)',
+            'icon' => 'Icon',
+            'icon_dark' => 'Icon (dark mode)',
+            'auth_background' => 'Authentication background (split layout)',
             'auth_layout_group' => 'Authentication layout',
             'app_layout_group' => 'Application layout',
             'color_theme_group' => 'Color theme',
@@ -92,6 +98,7 @@ return [
         'help' => [
             'company_name' => 'The visible company identity used in logo text and branded interface elements. The document title suffix is configured under general settings.',
             'footer_text' => 'Optional line rendered in the footer of authentication and application pages.',
+            'identity_mode_group' => 'Whether branded areas show the logo, or the icon next to the company name.',
             'auth_layout_group' => 'Arrangement of the login, registration, and password pages.',
             'app_layout_group' => 'Navigation arrangement inside the application.',
             'color_theme_group' => 'Brand color tokens. Light and dark mode remain a separate preference.',
@@ -102,9 +109,19 @@ return [
         ],
         'button' => [
             'save' => 'Save',
+            'upload' => 'Upload',
+            'replace' => 'Replace',
+            'remove' => 'Remove',
         ],
         'message' => [
             'updated' => 'Branding settings updated.',
+            'asset_updated' => 'Branding image updated.',
+            'asset_removed' => 'Branding image removed.',
+        ],
+
+        'identity_mode' => [
+            'logo' => 'Logo',
+            'icon_text' => 'Icon and company name',
         ],
 
         'auth_layout' => [

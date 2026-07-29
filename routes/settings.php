@@ -47,4 +47,11 @@ Route::middleware(['auth', 'verified', 'permission:'.Permission::ManageSettings-
         Route::put('branding', [BrandingSettingsController::class, 'update'])
             ->middleware(HandlePrecognitiveRequests::class)
             ->name('branding.update');
+
+        /*
+         * Images use dedicated POST/DELETE endpoints: a multipart body cannot
+         * travel reliably through the spoofed PUT the settings form uses.
+         */
+        Route::post('branding/assets/{asset}', [BrandingSettingsController::class, 'storeAsset'])->name('branding.asset.store');
+        Route::delete('branding/assets/{asset}', [BrandingSettingsController::class, 'destroyAsset'])->name('branding.asset.destroy');
     });

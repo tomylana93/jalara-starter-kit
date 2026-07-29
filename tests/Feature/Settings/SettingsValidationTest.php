@@ -75,6 +75,7 @@ function brandingSettingsPayload(array $overrides = []): array
     return array_merge([
         'companyName' => 'Jalara Group',
         'footerText' => null,
+        'identityMode' => 'icon-text',
         'authLayout' => 'simple',
         'appLayout' => 'sidebar',
         'colorTheme' => 'neutral',

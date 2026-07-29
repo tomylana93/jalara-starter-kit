@@ -13,6 +13,7 @@ function updateBranding(array $overrides = []): void
     app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), array_merge([
         'companyName' => 'Jalara Group',
         'footerText' => null,
+        'identityMode' => 'icon-text',
         'authLayout' => 'simple',
         'appLayout' => 'sidebar',
         'colorTheme' => 'neutral',
@@ -44,7 +45,8 @@ it('shares scalars rather than settings or enum objects', function () {
 
     expect($branding)->toBeArray()
         ->and($branding)->toHaveKeys([
-            'companyName', 'footerText', 'authLayout', 'appLayout', 'colorTheme', 'fontPreset',
+            'companyName', 'footerText', 'identityMode', 'authLayout', 'appLayout', 'colorTheme', 'fontPreset',
+            'logoUrl', 'logoDarkUrl', 'iconUrl', 'iconDarkUrl', 'authBackgroundUrl',
         ]);
 
     foreach (['authLayout', 'appLayout', 'colorTheme', 'fontPreset'] as $preset) {

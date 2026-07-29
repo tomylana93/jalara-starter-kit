@@ -17,6 +17,7 @@ return [
         'label' => [
             'name' => 'Nama',
             'email' => 'Alamat email',
+            'avatar' => 'Avatar',
         ],
         'placeholder' => [
             'name' => 'Nama lengkap',
@@ -24,9 +25,14 @@ return [
         ],
         'button' => [
             'save' => 'Simpan',
+            'upload' => 'Unggah',
+            'replace' => 'Ganti',
+            'remove' => 'Hapus',
         ],
         'message' => [
             'updated' => 'Profil berhasil diperbarui.',
+            'avatar_updated' => 'Avatar berhasil diperbarui.',
+            'avatar_removed' => 'Avatar berhasil dihapus.',
         ],
         'disable' => [
             'title' => 'Nonaktifkan akun',

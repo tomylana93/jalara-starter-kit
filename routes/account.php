@@ -13,6 +13,9 @@ Route::middleware(['auth'])->prefix('account')->name('account.')->group(function
     Route::patch('profile', [ProfileController::class, 'update'])
         ->middleware(HandlePrecognitiveRequests::class)
         ->name('profile.update');
+
+    Route::post('profile/avatar', [ProfileController::class, 'storeAvatar'])->name('profile.avatar.store');
+    Route::delete('profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('profile.avatar.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {

@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/vue3';
+import { Primitive } from 'reka-ui';
 import { initializeTheme } from '@/composables/useAppearance';
 import AccountLayout from '@/layouts/account/Layout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -24,6 +25,14 @@ createInertiaApp({
     },
     progress: {
         color: '#4B5563',
+    },
+    withApp(app) {
+        /*
+         * AttachmentTrigger from the current shadcn-vue registry references
+         * Primitive as a global component. Registering it here keeps registry
+         * files update-safe while providing the missing runtime dependency.
+         */
+        app.component('Primitive', Primitive);
     },
 });
 

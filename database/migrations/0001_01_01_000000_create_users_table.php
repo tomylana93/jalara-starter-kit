@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('phone')->nullable()->unique();
+            $table->string('avatar_path')->nullable();
             $table->string('status')->default(UserStatus::Active->value);
             $table->boolean('is_system')->default(false);
             $table->string('password');

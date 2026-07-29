@@ -8,6 +8,7 @@ use App\Actions\Settings\UpdateMailSettings;
 use App\Actions\Settings\UpdateSecuritySettings;
 use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
+use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
 use App\Enums\DateFormat;
 use App\Enums\FontPreset;
@@ -96,6 +97,7 @@ it('persists the branding settings', function () {
     app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), [
         'companyName' => 'Jalara Group',
         'footerText' => 'All rights reserved.',
+        'identityMode' => 'logo',
         'authLayout' => 'split',
         'appLayout' => 'header',
         'colorTheme' => 'violet',
@@ -106,6 +108,7 @@ it('persists the branding settings', function () {
 
     expect($settings->companyName)->toBe('Jalara Group')
         ->and($settings->footerText)->toBe('All rights reserved.')
+        ->and($settings->identityMode)->toBe(BrandingIdentityMode::Logo)
         ->and($settings->authLayout)->toBe(AuthLayoutPreset::Split)
         ->and($settings->appLayout)->toBe(AppLayoutPreset::Header)
         ->and($settings->colorTheme)->toBe(ColorThemePreset::Violet)

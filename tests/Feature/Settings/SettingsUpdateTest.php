@@ -154,6 +154,7 @@ it('updates the branding settings', function () {
         ->put(route('settings.branding.update'), [
             'companyName' => 'Jalara Group',
             'footerText' => 'All rights reserved.',
+            'identityMode' => 'logo',
             'authLayout' => 'split',
             'appLayout' => 'header',
             'colorTheme' => 'emerald',
@@ -165,6 +166,7 @@ it('updates the branding settings', function () {
 
     expect($settings->companyName)->toBe('Jalara Group')
         ->and($settings->footerText)->toBe('All rights reserved.')
+        ->and($settings->identityMode->value)->toBe('logo')
         ->and($settings->authLayout->value)->toBe('split')
         ->and($settings->appLayout->value)->toBe('header')
         ->and($settings->colorTheme->value)->toBe('emerald')
@@ -176,6 +178,7 @@ it('rejects an unknown branding preset', function () {
         ->put(route('settings.branding.update'), [
             'companyName' => 'Jalara Group',
             'footerText' => null,
+            'identityMode' => 'icon-text',
             'authLayout' => 'simple',
             'appLayout' => 'sidebar',
             'colorTheme' => 'chartreuse',

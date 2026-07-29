@@ -41,9 +41,21 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        {{--
+            The uploaded icon wins when one is stored, with the light variant
+            covering both modes whenever no dark variant exists. The bundled
+            files stay as the fallback so there is always a favicon.
+        --}}
+        @if ($branding['iconUrl'])
+            <link rel="icon" href="{{ $branding['iconUrl'] }}" media="(prefers-color-scheme: light)">
+            <link rel="icon" href="{{ $branding['iconDarkUrl'] ?: $branding['iconUrl'] }}" media="(prefers-color-scheme: dark)">
+            <link rel="apple-touch-icon" href="{{ $branding['iconUrl'] }}">
+        @else
+            <link rel="icon" href="/assets/images/branding/favicon.ico" sizes="any">
+            <link rel="icon" href="/assets/images/branding/icon.png" type="image/png" media="(prefers-color-scheme: light)">
+            <link rel="icon" href="/assets/images/branding/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
+            <link rel="apple-touch-icon" href="/assets/images/branding/icon.png">
+        @endif
 
         @fonts
 

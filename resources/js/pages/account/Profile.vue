@@ -4,12 +4,19 @@ import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Account/ProfileController';
 import DisableAccount from '@/components/DisableAccount.vue';
 import Heading from '@/components/Heading.vue';
+import ImageUploadField from '@/components/ImageUploadField.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
+import { useInitials } from '@/composables/useInitials';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { edit } from '@/routes/account/profile';
+import {
+    destroy as avatarDestroy,
+    store as avatarStore,
+} from '@/routes/account/profile/avatar';
 
 type LayoutProps = {
     locale: string;
@@ -38,6 +45,7 @@ defineOptions({
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const { t } = useTranslations();
+const { getInitials } = useInitials();
 </script>
 
 <template>
@@ -57,6 +65,21 @@ const { t } = useTranslations();
             class="space-y-6"
             v-slot="{ errors, processing, validate }"
         >
+            <!--
+                The avatar sits in the profile form for layout, but posts to its
+                own endpoint: the input carries no name, so a pending file never
+                travels with the name and email submission.
+            -->
+            <ImageUploadField
+                :label="t('account.profile.label.avatar')"
+                :current-url="user.avatar"
+                :upload-url="avatarStore().url"
+                test-id="profile-avatar"
+                :delete-url="avatarDestroy().url"
+                shape="circle"
+                :fallback-text="getInitials(user.name)"
+            />
+
             <div class="grid gap-2">
                 <Label for="name">{{ t('account.profile.label.name') }}</Label>
                 <Input
@@ -101,4 +124,6 @@ const { t } = useTranslations();
     </div>
 
     <DisableAccount v-if="canDisableAccount" />
+
+    <UploadGuardOverlay />
 </template>

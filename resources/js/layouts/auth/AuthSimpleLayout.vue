@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import AppFooter from '@/components/AppFooter.vue';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import BrandIdentity from '@/components/BrandIdentity.vue';
 import { home } from '@/routes';
 
 defineProps<{
@@ -21,13 +21,7 @@ defineProps<{
                         :href="home()"
                         class="flex flex-col items-center gap-2 font-medium"
                     >
-                        <div
-                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
-                        >
-                            <AppLogoIcon
-                                class="size-9 fill-current text-[var(--foreground)] dark:text-white"
-                            />
-                        </div>
+                        <BrandIdentity hide-name class="mb-1" />
                         <span class="sr-only">{{ title }}</span>
                     </Link>
                     <div class="space-y-2 text-center">

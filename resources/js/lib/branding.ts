@@ -2,6 +2,7 @@ import type {
     AppLayoutPreset,
     AuthLayoutPreset,
     Branding,
+    BrandingIdentityMode,
     ColorThemePreset,
     FontPreset,
 } from '@/types/branding';
@@ -33,9 +34,20 @@ export const fontPresets: readonly FontPreset[] = [
     'system-mono',
 ] as const;
 
+export const brandingIdentityModes: readonly BrandingIdentityMode[] = [
+    'logo',
+    'icon-text',
+] as const;
+
 export const defaultBranding: Branding = {
     companyName: 'Laravel',
     footerText: null,
+    identityMode: 'icon-text',
+    logoUrl: null,
+    logoDarkUrl: null,
+    iconUrl: null,
+    iconDarkUrl: null,
+    authBackgroundUrl: null,
     authLayout: 'simple',
     appLayout: 'sidebar',
     colorTheme: 'neutral',

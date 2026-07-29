@@ -1,3 +1,4 @@
+import type { Primitive as PrimitiveComponent } from 'reka-ui';
 import type { Abilities, Auth } from '@/types/auth';
 import type { Branding } from '@/types/branding';
 
@@ -30,6 +31,10 @@ declare module '@inertiajs/core' {
 }
 
 declare module 'vue' {
+    interface GlobalComponents {
+        Primitive: typeof PrimitiveComponent;
+    }
+
     interface ComponentCustomProperties {
         $inertia: typeof Router;
         $page: Page;

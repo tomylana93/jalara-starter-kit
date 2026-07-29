@@ -106,13 +106,25 @@ test('builds the document title from the application identity', () => {
 });
 
 test('drives the visible identity from the branding company name', async () => {
+    /*
+     * BrandIdentity is the single owner of the visible identity: it resolves the
+     * identity mode, the dark variants, and the static fallback. Every branded
+     * surface must render through it rather than reaching for the name itself.
+     */
+    const identity = await readSource(
+        'resources/js/components/BrandIdentity.vue',
+    );
+
+    assert.match(identity, /branding\.companyName/);
+    assert.doesNotMatch(identity, /props\.name/);
+
     for (const file of [
         'resources/js/components/AppLogo.vue',
         'resources/js/layouts/auth/AuthSplitLayout.vue',
     ]) {
         const source = await readSource(file);
 
-        assert.match(source, /branding\.companyName/);
+        assert.match(source, /BrandIdentity/);
         assert.doesNotMatch(source, /props\.name/);
     }
 

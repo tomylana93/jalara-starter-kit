@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import BrandingSettingsController from '@/actions/App/Http/Controllers/Settings/BrandingSettingsController';
+import ImageUploadField from '@/components/ImageUploadField.vue';
 import InputError from '@/components/InputError.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
@@ -9,14 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
+import { useBranding } from '@/composables/useBranding';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/branding';
+import {
+    destroy as assetDestroy,
+    store as assetStore,
+} from '@/routes/settings/branding/asset';
 import type { SelectOption } from '@/types';
 
 type BrandingSettings = {
     companyName: string;
     footerText: string | null;
+    identityMode: string;
     authLayout: string;
     appLayout: string;
     colorTheme: string;
@@ -30,6 +38,7 @@ type LayoutProps = {
 
 const props = defineProps<{
     settings: BrandingSettings;
+    identityModeOptions: SelectOption[];
     authLayoutOptions: SelectOption[];
     appLayoutOptions: SelectOption[];
     colorThemeOptions: SelectOption[];
@@ -61,6 +70,12 @@ defineOptions({
 
 const { t } = useTranslations();
 
+/*
+ * The shared branding prop carries the stored image URLs, so the previews stay
+ * in step with every other branded surface after an upload.
+ */
+const { branding } = useBranding();
+
 /**
  * Radio cards carry the group's error state themselves, so an invalid choice is
  * visible across the whole option and not only on its radio circle.
@@ -70,6 +85,7 @@ const radioCardClass = (hasError: boolean): string =>
         ? 'border-destructive ring-3 ring-destructive/20 has-[[data-state=checked]]:border-destructive dark:ring-destructive/40'
         : 'has-[[data-state=checked]]:border-primary';
 
+const identityMode = ref(props.settings.identityMode);
 const authLayout = ref(props.settings.authLayout);
 const appLayout = ref(props.settings.appLayout);
 const colorTheme = ref(props.settings.colorTheme);
@@ -123,6 +139,44 @@ const fontPreset = ref(props.settings.fontPreset);
                     />
                     <InputError :message="errors.footerText" />
                 </div>
+
+                <fieldset class="grid gap-3">
+                    <legend class="text-sm font-medium">
+                        {{ t('setting.branding.label.identity_mode_group') }}
+                    </legend>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.identity_mode_group') }}
+                    </p>
+                    <input
+                        type="hidden"
+                        name="identityMode"
+                        :value="identityMode"
+                    />
+                    <RadioGroup
+                        v-model="identityMode"
+                        class="sm:grid-cols-2"
+                        :aria-invalid="Boolean(errors.identityMode)"
+                        @update:model-value="validate('identityMode')"
+                    >
+                        <Label
+                            v-for="option in identityModeOptions"
+                            :key="option.value"
+                            :for="`identityMode-${option.value}`"
+                            :class="[
+                                'flex cursor-pointer items-center gap-2 rounded-lg border p-3',
+                                radioCardClass(Boolean(errors.identityMode)),
+                            ]"
+                        >
+                            <RadioGroupItem
+                                :id="`identityMode-${option.value}`"
+                                :value="option.value"
+                                :aria-invalid="Boolean(errors.identityMode)"
+                            />
+                            <span class="text-sm">{{ option.label }}</span>
+                        </Label>
+                    </RadioGroup>
+                    <InputError :message="errors.identityMode" />
+                </fieldset>
 
                 <fieldset class="grid gap-3">
                     <legend class="text-sm font-medium">
@@ -320,6 +374,69 @@ const fontPreset = ref(props.settings.fontPreset);
                     <InputError :message="errors.fontPreset" />
                 </fieldset>
 
+                <!--
+                    The fields sit in the settings form for layout, but each
+                    posts to its own endpoint: the inputs carry no name, so a
+                    pending file never travels with a save.
+                -->
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <ImageUploadField
+                        :label="t('setting.branding.label.logo')"
+                        :current-url="branding.logoUrl"
+                        :upload-url="assetStore('logo').url"
+                        test-id="branding-logo"
+                        :delete-url="assetDestroy('logo').url"
+                        shape="wide"
+                        :ratio="3"
+                    />
+
+                    <ImageUploadField
+                        :label="t('setting.branding.label.logo_dark')"
+                        :current-url="branding.logoDarkUrl"
+                        :upload-url="assetStore('logo-dark').url"
+                        test-id="branding-logo-dark"
+                        :delete-url="assetDestroy('logo-dark').url"
+                        shape="wide"
+                        :ratio="3"
+                    />
+
+                    <ImageUploadField
+                        :label="t('setting.branding.label.icon')"
+                        :current-url="branding.iconUrl"
+                        :upload-url="assetStore('icon').url"
+                        test-id="branding-icon"
+                        :delete-url="assetDestroy('icon').url"
+                        shape="wide"
+                        :ratio="3"
+                    />
+
+                    <ImageUploadField
+                        :label="t('setting.branding.label.icon_dark')"
+                        :current-url="branding.iconDarkUrl"
+                        :upload-url="assetStore('icon-dark').url"
+                        test-id="branding-icon-dark"
+                        :delete-url="assetDestroy('icon-dark').url"
+                        shape="wide"
+                        :ratio="3"
+                    />
+
+                    <!--
+                        Always visible: the label carries the fact that only the
+                        split layout uses it, so the field never disappears with
+                        a layout change and the stored image stays reachable.
+                    -->
+                    <ImageUploadField
+                        class="lg:col-span-2"
+                        :label="t('setting.branding.label.auth_background')"
+                        :current-url="branding.authBackgroundUrl"
+                        :upload-url="assetStore('auth-background').url"
+                        test-id="branding-auth-background"
+                        :delete-url="assetDestroy('auth-background').url"
+                        shape="wide"
+                        :ratio="16 / 9"
+                    />
+                </div>
+
                 <div class="flex items-center gap-4">
                     <Button
                         :disabled="processing || validating"
@@ -330,5 +447,7 @@ const fontPreset = ref(props.settings.fontPreset);
                 </div>
             </Form>
         </PageWrapper>
+
+        <UploadGuardOverlay />
     </div>
 </template>

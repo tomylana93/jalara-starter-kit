@@ -8,11 +8,13 @@ const props = {
     settings: {
         companyName: 'Jalara',
         footerText: null,
+        identityMode: 'icon-text',
         authLayout: 'simple',
         appLayout: 'sidebar',
         colorTheme: 'neutral',
         fontPreset: 'instrument-sans',
     },
+    identityModeOptions: option('icon-text'),
     authLayoutOptions: option('simple'),
     appLayoutOptions: option('sidebar'),
     colorThemeOptions: option('neutral'),
@@ -26,9 +28,12 @@ describe('branding settings form', () => {
         const wrapper = mount(Branding, { props });
         const groups = wrapper.findAllComponents({ name: 'RadioGroup' });
 
-        await groups[2].vm.$emit('update:modelValue', 'emerald');
-        await groups[3].vm.$emit('update:modelValue', 'system-serif');
+        await groups[3].vm.$emit('update:modelValue', 'emerald');
+        await groups[4].vm.$emit('update:modelValue', 'system-serif');
 
+        expect(
+            wrapper.get('input[name="identityMode"]').attributes('value'),
+        ).toBe('icon-text');
         expect(
             wrapper.get('input[name="authLayout"]').attributes('value'),
         ).toBe('simple');
@@ -58,5 +63,24 @@ describe('branding settings form', () => {
                 .get('[data-test="update-branding-settings-button"]')
                 .attributes(),
         ).toHaveProperty('disabled');
+    });
+
+    it('uses the logo preview layout for both icon fields', () => {
+        const wrapper = mount(Branding, { props });
+        const uploadFields = wrapper.findAllComponents({
+            name: 'ImageUploadField',
+        });
+        const iconFields = uploadFields.filter((field) =>
+            ['branding-icon', 'branding-icon-dark'].includes(
+                field.props('testId'),
+            ),
+        );
+
+        expect(iconFields).toHaveLength(2);
+
+        for (const field of iconFields) {
+            expect(field.props('shape')).toBe('wide');
+            expect(field.props('ratio')).toBe(3);
+        }
     });
 });

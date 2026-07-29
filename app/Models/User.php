@@ -8,12 +8,15 @@ use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
+use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -22,6 +25,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $email
  * @property CarbonInterface|null $email_verified_at
  * @property string|null $phone
+ * @property string|null $avatar_path
+ * @property-read string|null $avatar
  * @property UserStatus $status
  * @property bool $is_system
  * @property string $password
@@ -36,10 +41,12 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  */
+#[Appends(['avatar'])]
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden([
     'password',
     'phone',
+    'avatar_path',
     'status',
     'must_change_password',
     'last_login_at',
@@ -69,6 +76,25 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function sendEmailVerificationNotification(): void
     {
         dispatch(new SendEmailVerification($this));
+    }
+
+    /**
+     * The public URL of the avatar, or null when none is stored.
+     *
+     * The underlying storage path stays hidden so only the URL crosses the
+     * boundary to the client.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function avatar(): Attribute
+    {
+        return Attribute::make(get: function (): ?string {
+            if ($this->avatar_path === null || $this->avatar_path === '') {
+                return null;
+            }
+
+            return Storage::disk('public')->url($this->avatar_path);
+        });
     }
 
     /**

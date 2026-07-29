@@ -5,5 +5,10 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 
+# Temporary: 2.8.1 is the first release carrying the official shimmer utility
+# and was published 2026-07-29. Remove this entry once it clears the age cutoff.
+minimumReleaseAgeExclude:
+  - shadcn-vue@2.8.1
+
 publicHoistPattern:
   - '@inertiajs/core'

@@ -66,6 +66,7 @@ it('precognizes valid settings without persisting them', function (string $route
         [
             'companyName' => 'Jalara Group',
             'footerText' => 'All rights reserved.',
+            'identityMode' => 'icon-text',
             'authLayout' => 'simple',
             'appLayout' => 'sidebar',
             'colorTheme' => 'emerald',

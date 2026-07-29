@@ -27,6 +27,8 @@ yarn-error.log
 /storage/framework/testing/*.sqlite
 /test-results
 /playwright-report
+/.playwright-cli
+/output/playwright
 /e2e/.auth
 /.fleet
 /.idea

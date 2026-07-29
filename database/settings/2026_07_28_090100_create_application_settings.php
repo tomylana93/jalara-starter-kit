@@ -2,6 +2,7 @@
 
 use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
+use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
 use App\Enums\DateFormat;
 use App\Enums\FontPreset;
@@ -43,6 +44,12 @@ return new class extends SettingsMigration
         $this->migrator->add('branding.appLayout', AppLayoutPreset::Sidebar->value);
         $this->migrator->add('branding.colorTheme', ColorThemePreset::Neutral->value);
         $this->migrator->add('branding.fontPreset', FontPreset::InstrumentSans->value);
+        $this->migrator->add('branding.identityMode', BrandingIdentityMode::IconText->value);
+        $this->migrator->add('branding.logoPath', null);
+        $this->migrator->add('branding.logoDarkPath', null);
+        $this->migrator->add('branding.iconPath', null);
+        $this->migrator->add('branding.iconDarkPath', null);
+        $this->migrator->add('branding.authBackgroundPath', null);
     }
 
     public function down(): void
@@ -67,6 +74,12 @@ return new class extends SettingsMigration
             'branding.appLayout',
             'branding.colorTheme',
             'branding.fontPreset',
+            'branding.identityMode',
+            'branding.logoPath',
+            'branding.logoDarkPath',
+            'branding.iconPath',
+            'branding.iconDarkPath',
+            'branding.authBackgroundPath',
         ] as $property) {
             $this->migrator->deleteIfExists($property);
         }
