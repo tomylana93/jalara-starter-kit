@@ -163,16 +163,40 @@ const fontPreset = ref(props.settings.fontPreset);
                             :key="option.value"
                             :for="`identityMode-${option.value}`"
                             :class="[
-                                'flex cursor-pointer items-center gap-2 rounded-lg border p-3',
+                                'flex cursor-pointer flex-col items-start gap-3 rounded-lg border p-3',
                                 radioCardClass(Boolean(errors.identityMode)),
                             ]"
                         >
-                            <RadioGroupItem
-                                :id="`identityMode-${option.value}`"
-                                :value="option.value"
-                                :aria-invalid="Boolean(errors.identityMode)"
-                            />
-                            <span class="text-sm">{{ option.label }}</span>
+                            <!--
+                                The sketch shows what a branded surface renders:
+                                the wide logo on its own, or the square icon
+                                followed by the company name.
+                            -->
+                            <div
+                                class="flex h-16 w-full items-center justify-center gap-2 rounded-md bg-muted p-2"
+                            >
+                                <template v-if="option.value === 'logo'">
+                                    <div
+                                        class="h-5 w-24 rounded-sm bg-foreground/30"
+                                    ></div>
+                                </template>
+                                <template v-else>
+                                    <div
+                                        class="size-5 shrink-0 rounded-sm bg-foreground/30"
+                                    ></div>
+                                    <div
+                                        class="h-2 w-16 rounded-full bg-foreground/20"
+                                    ></div>
+                                </template>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <RadioGroupItem
+                                    :id="`identityMode-${option.value}`"
+                                    :value="option.value"
+                                    :aria-invalid="Boolean(errors.identityMode)"
+                                />
+                                <span class="text-sm">{{ option.label }}</span>
+                            </div>
                         </Label>
                     </RadioGroup>
                     <InputError :message="errors.identityMode" />
@@ -202,20 +226,29 @@ const fontPreset = ref(props.settings.fontPreset);
                                 radioCardClass(Boolean(errors.authLayout)),
                             ]"
                         >
+                            <!--
+                                Each sketch mirrors the matching auth layout:
+                                the page background, where the brand mark sits,
+                                and whether the form is wrapped in a card.
+                            -->
                             <div
+                                v-if="option.value === 'split'"
                                 class="flex h-16 w-full gap-1 rounded-md bg-muted p-2"
                             >
+                                <!--
+                                    The split layout puts the brand mark in the
+                                    top-left of the image panel, not above the
+                                    form like the other two layouts.
+                                -->
                                 <div
-                                    v-if="option.value === 'split'"
-                                    class="h-full w-1/2 rounded-sm bg-foreground/20"
-                                ></div>
+                                    class="h-full w-1/2 rounded-sm bg-foreground/20 p-1"
+                                >
+                                    <div
+                                        class="size-1.5 rounded-full bg-background/80"
+                                    ></div>
+                                </div>
                                 <div
-                                    :class="[
-                                        'flex flex-1 flex-col justify-center gap-1',
-                                        option.value === 'card'
-                                            ? 'rounded-sm border bg-background p-1'
-                                            : '',
-                                    ]"
+                                    class="flex flex-1 flex-col items-center justify-center gap-1"
                                 >
                                     <div
                                         class="h-1.5 w-2/3 rounded-full bg-foreground/30"
@@ -224,6 +257,38 @@ const fontPreset = ref(props.settings.fontPreset);
                                         class="h-1.5 w-full rounded-full bg-foreground/20"
                                     ></div>
                                 </div>
+                            </div>
+                            <div
+                                v-else-if="option.value === 'card'"
+                                class="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-md bg-muted p-1.5"
+                            >
+                                <div
+                                    class="size-1.5 shrink-0 rounded-full bg-foreground/30"
+                                ></div>
+                                <div
+                                    class="flex w-full flex-1 flex-col items-center justify-center gap-1 rounded-md border bg-background px-2 shadow-sm"
+                                >
+                                    <div
+                                        class="h-1.5 w-1/2 rounded-full bg-foreground/30"
+                                    ></div>
+                                    <div
+                                        class="h-1.5 w-3/4 rounded-full bg-foreground/20"
+                                    ></div>
+                                </div>
+                            </div>
+                            <div
+                                v-else
+                                class="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-md border bg-background p-2"
+                            >
+                                <div
+                                    class="size-2 shrink-0 rounded-full bg-foreground/30"
+                                ></div>
+                                <div
+                                    class="h-1.5 w-1/2 rounded-full bg-foreground/30"
+                                ></div>
+                                <div
+                                    class="h-1.5 w-3/4 rounded-full bg-foreground/20"
+                                ></div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <RadioGroupItem
