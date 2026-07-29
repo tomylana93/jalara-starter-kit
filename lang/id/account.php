@@ -8,7 +8,6 @@ return [
         'label' => [
             'profile' => 'Profil',
             'security' => 'Security',
-            'appearance' => 'Tampilan',
         ],
     ],
 
@@ -73,12 +72,13 @@ return [
     ],
 
     'appearance' => [
-        'title' => 'Tampilan',
-        'description' => 'Perbarui pengaturan tampilan akun',
         'label' => [
             'light' => 'Terang',
             'dark' => 'Gelap',
             'system' => 'Sistem',
+        ],
+        'button' => [
+            'toggle' => 'Ubah tampilan',
         ],
     ],
 

@@ -25,6 +25,4 @@ Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->gr
     Route::put('password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('password.update');
-
-    Route::inertia('appearance', 'account/Appearance')->name('appearance.edit');
 });

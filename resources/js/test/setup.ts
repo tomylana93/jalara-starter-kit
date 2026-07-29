@@ -11,7 +11,7 @@ export const formState = {
 };
 
 export const inertiaPageProps = {
-    auth: { user: null },
+    auth: { user: null as { name: string; avatar?: string } | null },
     branding: {},
     can: { manageSettings: true },
     locale: 'en',
@@ -117,6 +117,29 @@ config.global.stubs = {
         inheritAttrs: false,
         template: '<button type="button" role="radio" v-bind="$attrs" />',
     },
+    DropdownMenu: { template: '<div><slot /></div>' },
+    DropdownMenuTrigger: { template: '<div><slot /></div>' },
+    DropdownMenuContent: { template: '<div><slot /></div>' },
+    DropdownMenuGroup: { template: '<div><slot /></div>' },
+    DropdownMenuLabel: { template: '<div><slot /></div>' },
+    DropdownMenuSeparator: { template: '<hr />' },
+    DropdownMenuItem: {
+        inheritAttrs: false,
+        template: '<div role="menuitem" v-bind="$attrs"><slot /></div>',
+    },
+    DropdownMenuRadioGroup: {
+        name: 'DropdownMenuRadioGroup',
+        props: ['modelValue'],
+        template:
+            '<div role="radiogroup" :data-value="modelValue"><slot /></div>',
+    },
+    DropdownMenuRadioItem: {
+        props: ['value'],
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="menuitemradio" v-bind="$attrs" @click="$emit(\'select\')"><slot /></button>',
+    },
     Separator: true,
     Badge: { template: '<span><slot /></span>' },
     AlertDialog: { template: '<div><slot /></div>' },
@@ -135,6 +158,7 @@ config.global.stubs = {
     SidebarMenu: { template: '<div><slot /></div>' },
     SidebarMenuItem: { template: '<div><slot /></div>' },
     SidebarMenuButton: { template: '<div><slot /></div>' },
+    SidebarTrigger: { template: '<button type="button" />' },
     NavMain: {
         name: 'NavMain',
         props: ['items'],

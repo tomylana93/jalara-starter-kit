@@ -8,7 +8,6 @@ return [
         'label' => [
             'profile' => 'Profile',
             'security' => 'Security',
-            'appearance' => 'Appearance',
         ],
     ],
 
@@ -73,12 +72,13 @@ return [
     ],
 
     'appearance' => [
-        'title' => 'Appearance',
-        'description' => 'Update the appearance settings for the account',
         'label' => [
             'light' => 'Light',
             'dark' => 'Dark',
             'system' => 'System',
+        ],
+        'button' => [
+            'toggle' => 'Change appearance',
         ],
     ],
 

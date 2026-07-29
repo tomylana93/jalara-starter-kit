@@ -9,6 +9,7 @@ import {
     Settings,
 } from '@lucide/vue';
 import { computed } from 'vue';
+import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
@@ -256,6 +257,8 @@ const rightNavItems = computed<NavItem[]>(() => [
                             </template>
                         </div>
                     </div>
+
+                    <AppearanceToggle />
 
                     <DropdownMenu>
                         <DropdownMenuTrigger :as-child="true">

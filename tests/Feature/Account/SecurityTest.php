@@ -144,7 +144,6 @@ it('requires the correct password to update the password', function () {
 it('requires authentication for security routes', function () {
     $this->get(route('account.security.edit'))->assertRedirect(route('login'));
     $this->put(route('account.password.update'))->assertRedirect(route('login'));
-    $this->get(route('account.appearance.edit'))->assertRedirect(route('login'));
 });
 
 it('throttles password update attempts', function () {
