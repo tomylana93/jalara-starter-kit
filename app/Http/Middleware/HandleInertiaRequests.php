@@ -40,6 +40,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'description' => config('app.description'),
             'locale' => app()->getLocale(),
             'fallbackLocale' => config('app.fallback_locale'),
             'branding' => BrandingPresenter::present(),

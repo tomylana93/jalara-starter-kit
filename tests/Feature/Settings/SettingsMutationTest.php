@@ -38,6 +38,7 @@ it('persists the general settings', function () {
         ->and($settings->defaultLocale)->toBe(Locale::Indonesian)
         ->and($settings->dateFormat)->toBe(DateFormat::Iso)
         ->and(config('app.name'))->toBe('Jalara')
+        ->and(config('app.description'))->toBe('Starter kit')
         ->and(config('app.locale'))->toBe(Locale::Indonesian->value)
         ->and(app()->getLocale())->toBe(Locale::Indonesian->value);
 });

@@ -41,7 +41,7 @@ class SettingsServiceProvider extends ServiceProvider
     }
 
     /**
-     * Apply the application name and locale.
+     * Apply the application name, description, and locale.
      */
     private function applyGeneralSettings(bool $refresh): void
     {
@@ -52,6 +52,7 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         Config::set('app.name', $general->applicationName);
+        Config::set('app.description', $general->description);
         Config::set('app.locale', $general->defaultLocale->value);
 
         $this->app->setLocale($general->defaultLocale->value);

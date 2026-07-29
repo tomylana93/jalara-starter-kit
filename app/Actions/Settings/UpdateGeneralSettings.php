@@ -24,6 +24,7 @@ final class UpdateGeneralSettings
         $settings->save();
 
         Config::set('app.name', $settings->applicationName);
+        Config::set('app.description', $settings->description);
         Config::set('app.locale', $settings->defaultLocale->value);
         app()->setLocale($settings->defaultLocale->value);
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppFooter from '@/components/AppFooter.vue';
 import BrandIdentity from '@/components/BrandIdentity.vue';
@@ -7,6 +7,12 @@ import { useBranding } from '@/composables/useBranding';
 import { home } from '@/routes';
 
 const { branding } = useBranding();
+const page = usePage();
+
+/** The description is optional, so the whole block disappears without one. */
+const applicationDescription = computed(
+    () => (page.props.description as string | null | undefined)?.trim() || null,
+);
 
 /*
  * Kept in the consumer so `branding.authBackgroundUrl` stays nullable and the
@@ -48,10 +54,19 @@ defineProps<{
             >
                 <BrandIdentity class="[&_span]:text-primary-foreground" />
             </Link>
+            <!-- Sits at the foot of the image panel, aligned to its left edge. -->
+            <p
+                v-if="applicationDescription"
+                class="relative z-20 mt-auto max-w-sm text-sm text-primary-foreground/80"
+                data-test="auth-split-about"
+            >
+                {{ applicationDescription }}
+            </p>
         </div>
-        <div class="lg:p-8">
+        <!-- The form stays centred in the space the footer leaves behind. -->
+        <div class="flex h-full flex-col lg:p-8">
             <div
-                class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
+                class="mx-auto flex w-full flex-1 flex-col justify-center space-y-6 sm:w-[350px]"
             >
                 <div class="flex flex-col space-y-2 text-center">
                     <h1 class="text-xl font-medium tracking-tight" v-if="title">

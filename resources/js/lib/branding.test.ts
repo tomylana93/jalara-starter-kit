@@ -171,6 +171,8 @@ test('renders the branding footer text in every layout', async () => {
     const footer = await readSource('resources/js/components/AppFooter.vue');
 
     assert.match(footer, /branding\.footerText/);
+    // The footer is pinned to the bottom of its column, not trailing content.
+    assert.match(footer, /class="mt-auto/);
 
     for (const layout of [
         'resources/js/layouts/auth/AuthSimpleLayout.vue',

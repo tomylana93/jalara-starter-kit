@@ -101,6 +101,22 @@ it('renders the application name as the document title independently of branding
         ->assertDontSee('<title>Renamed Company</title>', false);
 });
 
+it('shares the application name and description with the auth layouts', function () {
+    $general = app(GeneralSettings::class);
+
+    app(UpdateGeneralSettings::class)->handle($general, [
+        'applicationName' => 'Jalara App',
+        'description' => 'Operational starter kit',
+        'defaultLocale' => $general->defaultLocale->value,
+        'dateFormat' => $general->dateFormat->value,
+    ]);
+
+    get(route('login'))->assertInertia(fn (Assert $page) => $page
+        ->where('name', 'Jalara App')
+        ->where('description', 'Operational starter kit'),
+    );
+});
+
 it('shares the footer text with the layouts', function () {
     updateBranding(['footerText' => 'Copyright Jalara Group.']);
 
