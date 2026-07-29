@@ -89,7 +89,7 @@ return [
             'auth_layout_group' => 'Authentication layout',
             'app_layout_group' => 'Application layout',
             'color_theme_group' => 'Color theme',
-            'font_preset_group' => 'Font',
+            'font_pair_group' => 'Font pair',
         ],
         'placeholder' => [
             'company_name' => 'Company name',
@@ -102,10 +102,10 @@ return [
             'auth_layout_group' => 'Arrangement of the login, registration, and password pages.',
             'app_layout_group' => 'Navigation arrangement inside the application.',
             'color_theme_group' => 'Brand color tokens. Light and dark mode remain a separate preference.',
-            'font_preset_group' => 'Typeface used across the interface.',
+            'font_pair_group' => 'Heading and body typefaces used across the interface.',
         ],
         'preview' => [
-            'font' => 'The quick brown fox jumps over the lazy dog',
+            'font_body' => 'Comfortable body text throughout the application',
         ],
         'button' => [
             'save' => 'Save',
@@ -148,11 +148,12 @@ return [
             'orange' => 'Orange',
         ],
 
-        'font_preset' => [
-            'instrument_sans' => 'Instrument Sans',
-            'system_sans' => 'System sans-serif',
-            'system_serif' => 'System serif',
-            'system_mono' => 'System monospace',
+        'font_pair' => [
+            'instrument_sans' => 'Instrument Sans + Instrument Sans',
+            'space_grotesk_inter' => 'Space Grotesk + Inter',
+            'poppins_inter' => 'Poppins + Inter',
+            'montserrat_open_sans' => 'Montserrat + Open Sans',
+            'playfair_display_source_sans' => 'Playfair Display + Source Sans 3',
         ],
     ],
 

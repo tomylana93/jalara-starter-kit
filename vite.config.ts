@@ -27,6 +27,41 @@ export default defineConfig({
             fonts: [
                 bunny('Instrument Sans', {
                     optimizedFallbacks: false,
+                    weights: [400, 500, 600, 700],
+                }),
+                bunny('Inter', {
+                    optimizedFallbacks: false,
+                    preload: false,
+                    weights: [400, 500, 600],
+                }),
+                bunny('Space Grotesk', {
+                    optimizedFallbacks: false,
+                    preload: false,
+                    weights: [500, 600, 700],
+                }),
+                bunny('Poppins', {
+                    optimizedFallbacks: false,
+                    preload: false,
+                    weights: [500, 600, 700],
+                }),
+                bunny('Montserrat', {
+                    optimizedFallbacks: false,
+                    preload: false,
+                    weights: [500, 600, 700],
+                }),
+                bunny('Open Sans', {
+                    optimizedFallbacks: false,
+                    preload: false,
+                    weights: [400, 500, 600],
+                }),
+                bunny('Playfair Display', {
+                    optimizedFallbacks: false,
+                    preload: false,
+                    weights: [500, 600, 700],
+                }),
+                bunny('Source Sans 3', {
+                    optimizedFallbacks: false,
+                    preload: false,
                     weights: [400, 500, 600],
                 }),
             ],

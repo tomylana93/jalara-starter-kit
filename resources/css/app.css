@@ -10,7 +10,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-sans: var(--app-font-family);
+    --font-sans: var(--app-font-body);
+    --font-heading: var(--app-font-heading);
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -76,33 +77,59 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    [data-slot='alert-dialog-title'],
+    [data-slot='dialog-title'],
+    [data-slot='sheet-title'] {
+        font-family: var(--app-font-heading);
+    }
 }
 
 /*
-  Font presets. The active stack is selected by the `data-font-preset`
-  attribute the server renders on <html>, so the font never flashes.
+  Font pairs. The active heading and body stacks are selected by the
+  `data-font-pair` attribute the server renders on <html>.
 */
+:root {
+    --app-font-sans-fallback:
+        ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --app-font-serif-fallback:
+        ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+}
+
 :root,
-[data-font-preset='instrument-sans'] {
-    --app-font-family:
+[data-font-pair='instrument-sans'] {
+    --app-font-heading:
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+    --app-font-body: var(--app-font-heading);
 }
 
-[data-font-preset='system-sans'] {
-    --app-font-family:
-        ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+[data-font-pair='space-grotesk-inter'] {
+    --app-font-heading: 'Space Grotesk', var(--app-font-sans-fallback);
+    --app-font-body: 'Inter', var(--app-font-sans-fallback);
 }
 
-[data-font-preset='system-serif'] {
-    --app-font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+[data-font-pair='poppins-inter'] {
+    --app-font-heading: 'Poppins', var(--app-font-sans-fallback);
+    --app-font-body: 'Inter', var(--app-font-sans-fallback);
 }
 
-[data-font-preset='system-mono'] {
-    --app-font-family:
-        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+[data-font-pair='montserrat-open-sans'] {
+    --app-font-heading: 'Montserrat', var(--app-font-sans-fallback);
+    --app-font-body: 'Open Sans', var(--app-font-sans-fallback);
+}
+
+[data-font-pair='playfair-display-source-sans'] {
+    --app-font-heading: 'Playfair Display', var(--app-font-serif-fallback);
+    --app-font-body: 'Source Sans 3', var(--app-font-sans-fallback);
 }
 
 :root {

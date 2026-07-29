@@ -79,7 +79,7 @@ function brandingSettingsPayload(array $overrides = []): array
         'authLayout' => 'simple',
         'appLayout' => 'sidebar',
         'colorTheme' => 'neutral',
-        'fontPreset' => 'instrument-sans',
+        'fontPair' => 'instrument-sans',
     ], $overrides);
 }
 
@@ -112,9 +112,10 @@ it('accepts valid settings payloads', function (string $request, array $payload)
     'branding cyan theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'cyan'])],
     'branding indigo theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'indigo'])],
     'branding orange theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'orange'])],
-    'branding system sans font' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPreset' => 'system-sans'])],
-    'branding system serif font' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPreset' => 'system-serif'])],
-    'branding system mono font' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPreset' => 'system-mono'])],
+    'branding Space Grotesk and Inter font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'space-grotesk-inter'])],
+    'branding Poppins and Inter font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'poppins-inter'])],
+    'branding Montserrat and Open Sans font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'montserrat-open-sans'])],
+    'branding Playfair Display and Source Sans font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'playfair-display-source-sans'])],
 ]);
 
 it('rejects invalid general settings', function (array $overrides, string $field) {
@@ -179,8 +180,8 @@ it('rejects invalid branding settings', function (array $overrides, string $fiel
     'unknown auth layout' => [['authLayout' => 'modal'], 'authLayout'],
     'unknown app layout' => [['appLayout' => 'floating'], 'appLayout'],
     'unknown color theme' => [['colorTheme' => 'chartreuse'], 'colorTheme'],
-    'unknown font preset' => [['fontPreset' => 'comic'], 'fontPreset'],
+    'unknown font pair' => [['fontPair' => 'comic'], 'fontPair'],
     'missing auth layout' => [['authLayout' => ''], 'authLayout'],
-    'missing font preset' => [['fontPreset' => ''], 'fontPreset'],
+    'missing font pair' => [['fontPair' => ''], 'fontPair'],
     'long footer text' => [['footerText' => str_repeat('a', 501)], 'footerText'],
 ]);

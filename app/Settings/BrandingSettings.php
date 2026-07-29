@@ -6,7 +6,7 @@ use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use Spatie\LaravelSettings\Settings;
 
 class BrandingSettings extends Settings
@@ -33,7 +33,7 @@ class BrandingSettings extends Settings
 
     public ColorThemePreset $colorTheme;
 
-    public FontPreset $fontPreset;
+    public FontPairPreset $fontPair;
 
     public static function group(): string
     {

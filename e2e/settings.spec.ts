@@ -78,7 +78,7 @@ test('previews and persists branding in light and dark authentication layouts', 
     );
     await page.locator('#companyName').fill('Jalara E2E');
     await page.locator('#colorTheme-teal').click();
-    await page.locator('#fontPreset-system-serif').click();
+    await page.locator('#fontPair-playfair-display-source-sans').click();
     await page.locator('#appLayout-header').click();
 
     for (const preview of [
@@ -105,8 +105,8 @@ test('previews and persists branding in light and dark authentication layouts', 
         'teal',
     );
     await expect(page.locator('html')).toHaveAttribute(
-        'data-font-preset',
-        'system-serif',
+        'data-font-pair',
+        'playfair-display-source-sans',
     );
 
     await page.evaluate(() => localStorage.setItem('appearance', 'dark'));

@@ -4,7 +4,7 @@ import type {
     Branding,
     BrandingIdentityMode,
     ColorThemePreset,
-    FontPreset,
+    FontPairPreset,
 } from '@/types/branding';
 
 export const authLayoutPresets: readonly AuthLayoutPreset[] = [
@@ -31,11 +31,12 @@ export const colorThemePresets: readonly ColorThemePreset[] = [
     'orange',
 ] as const;
 
-export const fontPresets: readonly FontPreset[] = [
+export const fontPairPresets: readonly FontPairPreset[] = [
     'instrument-sans',
-    'system-sans',
-    'system-serif',
-    'system-mono',
+    'space-grotesk-inter',
+    'poppins-inter',
+    'montserrat-open-sans',
+    'playfair-display-source-sans',
 ] as const;
 
 export const brandingIdentityModes: readonly BrandingIdentityMode[] = [
@@ -60,7 +61,7 @@ export const defaultBranding: Branding = {
     authLayout: 'simple',
     appLayout: 'sidebar',
     colorTheme: 'neutral',
-    fontPreset: 'instrument-sans',
+    fontPair: 'instrument-sans',
 };
 
 /**
@@ -85,14 +86,14 @@ export function resolvePreset<Preset extends string, Value>(
  */
 export function syncBrandingAttributes(
     colorTheme: ColorThemePreset,
-    fontPreset: FontPreset,
+    fontPair: FontPairPreset,
 ): void {
     if (typeof document === 'undefined') {
         return;
     }
 
     document.documentElement.dataset.colorTheme = colorTheme;
-    document.documentElement.dataset.fontPreset = fontPreset;
+    document.documentElement.dataset.fontPair = fontPair;
 }
 
 /**

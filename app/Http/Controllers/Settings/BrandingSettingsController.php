@@ -10,7 +10,7 @@ use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingAsset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateBrandingAssetRequest;
 use App\Http\Requests\Settings\UpdateBrandingSettingsRequest;
@@ -34,13 +34,13 @@ class BrandingSettingsController extends Controller
                 'authLayout' => $settings->authLayout->value,
                 'appLayout' => $settings->appLayout->value,
                 'colorTheme' => $settings->colorTheme->value,
-                'fontPreset' => $settings->fontPreset->value,
+                'fontPair' => $settings->fontPair->value,
             ],
             'identityModeOptions' => BrandingIdentityMode::options(),
             'authLayoutOptions' => AuthLayoutPreset::options(),
             'appLayoutOptions' => AppLayoutPreset::options(),
             'colorThemeOptions' => ColorThemePreset::options(),
-            'fontPresetOptions' => FontPreset::options(),
+            'fontPairOptions' => FontPairPreset::options(),
         ]);
     }
 
@@ -59,7 +59,7 @@ class BrandingSettingsController extends Controller
             'authLayout' => (string) $request->validated('authLayout'),
             'appLayout' => (string) $request->validated('appLayout'),
             'colorTheme' => (string) $request->validated('colorTheme'),
-            'fontPreset' => (string) $request->validated('fontPreset'),
+            'fontPair' => (string) $request->validated('fontPair'),
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.branding.message.updated')]);

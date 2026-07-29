@@ -12,7 +12,7 @@ const props = {
         authLayout: 'simple',
         appLayout: 'sidebar',
         colorTheme: 'neutral',
-        fontPreset: 'instrument-sans',
+        fontPair: 'instrument-sans',
     },
     identityModeOptions: option('icon-text'),
     authLayoutOptions: option('simple'),
@@ -21,7 +21,7 @@ const props = {
         value,
         label: value,
     })),
-    fontPresetOptions: option('instrument-sans'),
+    fontPairOptions: option('instrument-sans'),
 };
 
 describe('branding settings form', () => {
@@ -32,7 +32,7 @@ describe('branding settings form', () => {
         const groups = wrapper.findAllComponents({ name: 'RadioGroup' });
 
         await groups[3].vm.$emit('update:modelValue', 'emerald');
-        await groups[4].vm.$emit('update:modelValue', 'system-serif');
+        await groups[4].vm.$emit('update:modelValue', 'poppins-inter');
 
         expect(
             wrapper.get('input[name="identityMode"]').attributes('value'),
@@ -46,9 +46,9 @@ describe('branding settings form', () => {
         expect(
             wrapper.get('input[name="colorTheme"]').attributes('value'),
         ).toBe('emerald');
-        expect(
-            wrapper.get('input[name="fontPreset"]').attributes('value'),
-        ).toBe('system-serif');
+        expect(wrapper.get('input[name="fontPair"]').attributes('value')).toBe(
+            'poppins-inter',
+        );
     });
 
     it('renders radio errors and disables the submit button while processing', () => {

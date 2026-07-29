@@ -6,7 +6,7 @@ use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,7 +27,7 @@ class UpdateBrandingSettingsRequest extends FormRequest
             'authLayout' => ['required', 'string', Rule::enum(AuthLayoutPreset::class)],
             'appLayout' => ['required', 'string', Rule::enum(AppLayoutPreset::class)],
             'colorTheme' => ['required', 'string', Rule::enum(ColorThemePreset::class)],
-            'fontPreset' => ['required', 'string', Rule::enum(FontPreset::class)],
+            'fontPair' => ['required', 'string', Rule::enum(FontPairPreset::class)],
         ];
     }
 }

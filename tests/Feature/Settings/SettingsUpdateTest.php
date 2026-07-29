@@ -158,7 +158,7 @@ it('updates the branding settings', function () {
             'authLayout' => 'split',
             'appLayout' => 'header',
             'colorTheme' => 'emerald',
-            'fontPreset' => 'system-serif',
+            'fontPair' => 'playfair-display-source-sans',
         ])
         ->assertRedirectToRoute('settings.branding.edit');
 
@@ -170,7 +170,7 @@ it('updates the branding settings', function () {
         ->and($settings->authLayout->value)->toBe('split')
         ->and($settings->appLayout->value)->toBe('header')
         ->and($settings->colorTheme->value)->toBe('emerald')
-        ->and($settings->fontPreset->value)->toBe('system-serif');
+        ->and($settings->fontPair->value)->toBe('playfair-display-source-sans');
 });
 
 it('rejects an unknown branding preset', function () {
@@ -182,7 +182,7 @@ it('rejects an unknown branding preset', function () {
             'authLayout' => 'simple',
             'appLayout' => 'sidebar',
             'colorTheme' => 'chartreuse',
-            'fontPreset' => 'system-serif',
+            'fontPair' => 'poppins-inter',
         ])
         ->assertSessionHasErrors('colorTheme');
 });

@@ -6,7 +6,7 @@ use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use App\Settings\BrandingSettings;
 
 final class UpdateBrandingSettings
@@ -14,7 +14,7 @@ final class UpdateBrandingSettings
     /**
      * Update the branding settings.
      *
-     * @param  array{companyName: string, footerText: string|null, identityMode: string, authLayout: string, appLayout: string, colorTheme: string, fontPreset: string}  $attributes
+     * @param  array{companyName: string, footerText: string|null, identityMode: string, authLayout: string, appLayout: string, colorTheme: string, fontPair: string}  $attributes
      */
     public function handle(BrandingSettings $settings, array $attributes): BrandingSettings
     {
@@ -24,7 +24,7 @@ final class UpdateBrandingSettings
         $settings->authLayout = AuthLayoutPreset::from($attributes['authLayout']);
         $settings->appLayout = AppLayoutPreset::from($attributes['appLayout']);
         $settings->colorTheme = ColorThemePreset::from($attributes['colorTheme']);
-        $settings->fontPreset = FontPreset::from($attributes['fontPreset']);
+        $settings->fontPair = FontPairPreset::from($attributes['fontPair']);
 
         $settings->save();
 

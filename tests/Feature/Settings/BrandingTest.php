@@ -3,6 +3,7 @@
 use App\Actions\Settings\UpdateBrandingSettings;
 use App\Actions\Settings\UpdateGeneralSettings;
 use App\Enums\ColorThemePreset;
+use App\Enums\FontPairPreset;
 use App\Settings\BrandingSettings;
 use App\Settings\GeneralSettings;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -18,7 +19,7 @@ function updateBranding(array $overrides = []): void
         'authLayout' => 'simple',
         'appLayout' => 'sidebar',
         'colorTheme' => 'neutral',
-        'fontPreset' => 'instrument-sans',
+        'fontPair' => 'instrument-sans',
     ], $overrides));
 }
 
@@ -37,13 +38,23 @@ it('exposes all supported color theme presets', function () {
     ]);
 });
 
+it('exposes common heading and body font pairs', function () {
+    expect(array_column(FontPairPreset::options(), 'value'))->toBe([
+        'instrument-sans',
+        'space-grotesk-inter',
+        'poppins-inter',
+        'montserrat-open-sans',
+        'playfair-display-source-sans',
+    ]);
+});
+
 it('shares the branding presets as string values', function () {
     updateBranding([
         'footerText' => 'All rights reserved.',
         'authLayout' => 'split',
         'appLayout' => 'header',
         'colorTheme' => 'emerald',
-        'fontPreset' => 'system-serif',
+        'fontPair' => 'playfair-display-source-sans',
     ]);
 
     get(route('login'))->assertInertia(fn (Assert $page) => $page
@@ -52,7 +63,7 @@ it('shares the branding presets as string values', function () {
         ->where('branding.authLayout', 'split')
         ->where('branding.appLayout', 'header')
         ->where('branding.colorTheme', 'emerald')
-        ->where('branding.fontPreset', 'system-serif'),
+        ->where('branding.fontPair', 'playfair-display-source-sans'),
     );
 });
 
@@ -61,21 +72,21 @@ it('shares scalars rather than settings or enum objects', function () {
 
     expect($branding)->toBeArray()
         ->and($branding)->toHaveKeys([
-            'companyName', 'footerText', 'identityMode', 'authLayout', 'appLayout', 'colorTheme', 'fontPreset',
+            'companyName', 'footerText', 'identityMode', 'authLayout', 'appLayout', 'colorTheme', 'fontPair',
             'logoUrl', 'logoDarkUrl', 'iconUrl', 'iconDarkUrl', 'authBackgroundUrl',
         ]);
 
-    foreach (['authLayout', 'appLayout', 'colorTheme', 'fontPreset'] as $preset) {
+    foreach (['authLayout', 'appLayout', 'colorTheme', 'fontPair'] as $preset) {
         expect($branding[$preset])->toBeString();
     }
 });
 
 it('renders the branding attributes on the root element', function () {
-    updateBranding(['colorTheme' => 'violet', 'fontPreset' => 'system-mono']);
+    updateBranding(['colorTheme' => 'violet', 'fontPair' => 'space-grotesk-inter']);
 
     get(route('login'))
         ->assertSee('data-color-theme="violet"', false)
-        ->assertSee('data-font-preset="system-mono"', false);
+        ->assertSee('data-font-pair="space-grotesk-inter"', false);
 });
 
 it('renders the application name as the document title independently of branding', function () {
@@ -91,14 +102,14 @@ it('renders the application name as the document title independently of branding
     updateBranding(['companyName' => 'Jalara Group']);
 
     get(route('login'))
-        ->assertSee('<title>Jalara App</title>', false)
-        ->assertDontSee('<title>Jalara Group</title>', false);
+        ->assertSee('Jalara App</title>', false)
+        ->assertDontSee('Jalara Group</title>', false);
 
     updateBranding(['companyName' => 'Renamed Company']);
 
     get(route('login'))
-        ->assertSee('<title>Jalara App</title>', false)
-        ->assertDontSee('<title>Renamed Company</title>', false);
+        ->assertSee('Jalara App</title>', false)
+        ->assertDontSee('Renamed Company</title>', false);
 });
 
 it('shares the application name and description with the auth layouts', function () {
@@ -128,5 +139,5 @@ it('shares the footer text with the layouts', function () {
 it('renders the default branding attributes before the settings are persisted', function () {
     get(route('login'))
         ->assertSee('data-color-theme="neutral"', false)
-        ->assertSee('data-font-preset="instrument-sans"', false);
+        ->assertSee('data-font-pair="instrument-sans"', false);
 });

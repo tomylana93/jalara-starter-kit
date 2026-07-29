@@ -6,7 +6,7 @@ use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use App\Settings\BrandingSettings;
 use App\Settings\SettingsResolver;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +32,7 @@ final class BrandingPresenter
      *     authLayout: string,
      *     appLayout: string,
      *     colorTheme: string,
-     *     fontPreset: string,
+     *     fontPair: string,
      * }
      */
     public static function present(): array
@@ -55,7 +55,7 @@ final class BrandingPresenter
             'authLayout' => $branding->authLayout->value,
             'appLayout' => $branding->appLayout->value,
             'colorTheme' => $branding->colorTheme->value,
-            'fontPreset' => $branding->fontPreset->value,
+            'fontPair' => $branding->fontPair->value,
         ];
     }
 
@@ -74,7 +74,7 @@ final class BrandingPresenter
      *     authLayout: string,
      *     appLayout: string,
      *     colorTheme: string,
-     *     fontPreset: string,
+     *     fontPair: string,
      * }
      */
     public static function defaults(): array
@@ -91,7 +91,7 @@ final class BrandingPresenter
             'authLayout' => AuthLayoutPreset::Simple->value,
             'appLayout' => AppLayoutPreset::Sidebar->value,
             'colorTheme' => ColorThemePreset::Neutral->value,
-            'fontPreset' => FontPreset::InstrumentSans->value,
+            'fontPair' => FontPairPreset::InstrumentSans->value,
         ];
     }
 

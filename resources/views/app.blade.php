@@ -8,7 +8,7 @@
 <html
     lang="{{ str_replace('_', '-', app()->getLocale()) }}"
     data-color-theme="{{ $branding['colorTheme'] }}"
-    data-font-preset="{{ $branding['fontPreset'] }}"
+    data-font-pair="{{ $branding['fontPair'] }}"
     @class(['dark' => ($appearance ?? 'system') == 'dark'])
 >
     <head>

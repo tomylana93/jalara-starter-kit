@@ -46,9 +46,9 @@ export function useBranding(): UseBrandingReturn {
     }));
 
     watch(
-        () => [branding.value.colorTheme, branding.value.fontPreset] as const,
-        ([colorTheme, fontPreset]) =>
-            syncBrandingAttributes(colorTheme, fontPreset),
+        () => [branding.value.colorTheme, branding.value.fontPair] as const,
+        ([colorTheme, fontPair]) =>
+            syncBrandingAttributes(colorTheme, fontPair),
         { immediate: true },
     );
 

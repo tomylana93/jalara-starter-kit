@@ -8,7 +8,7 @@ import {
     authLayoutPresets,
     colorThemePresets,
     defaultBranding,
-    fontPresets,
+    fontPairPresets,
     resolvePreset,
     syncBrandingAttributes,
 } from './branding.ts';
@@ -193,10 +193,10 @@ test('syncs the branding attributes onto the document element', () => {
         configurable: true,
     });
 
-    syncBrandingAttributes('blue', 'system-mono');
+    syncBrandingAttributes('blue', 'poppins-inter');
 
     assert.equal(documentElement.dataset.colorTheme, 'blue');
-    assert.equal(documentElement.dataset.fontPreset, 'system-mono');
+    assert.equal(documentElement.dataset.fontPair, 'poppins-inter');
 
     Reflect.deleteProperty(globalThis, 'document');
 });
@@ -244,15 +244,17 @@ test('maps brand tokens while keeping application surfaces neutral', async () =>
     assert.doesNotMatch(dark, /--destructive:/);
 });
 
-test('ships a font stack for every font preset', async () => {
+test('ships heading and body stacks for every font pair preset', async () => {
     const css = await readSource('resources/css/app.css');
 
-    assert.match(css, /--font-sans:\s*var\(--app-font-family\)/);
+    assert.match(css, /--font-sans:\s*var\(--app-font-body\)/);
+    assert.match(css, /--font-heading:\s*var\(--app-font-heading\)/);
 
-    for (const preset of fontPresets) {
-        const block = blockFor(css, `[data-font-preset='${preset}']`);
+    for (const preset of fontPairPresets) {
+        const block = blockFor(css, `[data-font-pair='${preset}']`);
 
-        assert.match(block, /--app-font-family:\s*\S/);
+        assert.match(block, /--app-font-heading:\s*\S/);
+        assert.match(block, /--app-font-body:\s*\S/);
     }
 });
 

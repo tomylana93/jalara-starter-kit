@@ -4,7 +4,7 @@ use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\ColorThemePreset;
 use App\Enums\DateFormat;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use App\Enums\Locale;
 use App\Enums\PasswordPolicy;
 use App\Settings\AuthenticationSettings;
@@ -47,7 +47,7 @@ it('resolves every settings class with its initial values', function () {
         ->and(app(BrandingSettings::class)->authLayout)->toBe(AuthLayoutPreset::Simple)
         ->and(app(BrandingSettings::class)->appLayout)->toBe(AppLayoutPreset::Sidebar)
         ->and(app(BrandingSettings::class)->colorTheme)->toBe(ColorThemePreset::Neutral)
-        ->and(app(BrandingSettings::class)->fontPreset)->toBe(FontPreset::InstrumentSans)
+        ->and(app(BrandingSettings::class)->fontPair)->toBe(FontPairPreset::InstrumentSans)
         ->and(app(BrandingSettings::class)->footerText)->toBeNull();
 });
 

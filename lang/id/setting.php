@@ -89,7 +89,7 @@ return [
             'auth_layout_group' => 'Layout autentikasi',
             'app_layout_group' => 'Layout aplikasi',
             'color_theme_group' => 'Tema warna',
-            'font_preset_group' => 'Font',
+            'font_pair_group' => 'Kombinasi font',
         ],
         'placeholder' => [
             'company_name' => 'Nama perusahaan',
@@ -102,10 +102,10 @@ return [
             'auth_layout_group' => 'Susunan halaman login, registrasi, dan password.',
             'app_layout_group' => 'Susunan navigasi di dalam aplikasi.',
             'color_theme_group' => 'Token warna brand. Mode terang dan gelap tetap preferensi terpisah.',
-            'font_preset_group' => 'Jenis huruf yang dipakai di seluruh antarmuka.',
+            'font_pair_group' => 'Pasangan font untuk judul dan teks biasa di seluruh antarmuka.',
         ],
         'preview' => [
-            'font' => 'Kancil cerdik melompati pagar bambu yang jebol',
+            'font_body' => 'Teks biasa yang nyaman dibaca di seluruh aplikasi',
         ],
         'button' => [
             'save' => 'Simpan',
@@ -148,11 +148,12 @@ return [
             'orange' => 'Oranye',
         ],
 
-        'font_preset' => [
-            'instrument_sans' => 'Instrument Sans',
-            'system_sans' => 'Sans-serif sistem',
-            'system_serif' => 'Serif sistem',
-            'system_mono' => 'Monospace sistem',
+        'font_pair' => [
+            'instrument_sans' => 'Instrument Sans + Instrument Sans',
+            'space_grotesk_inter' => 'Space Grotesk + Inter',
+            'poppins_inter' => 'Poppins + Inter',
+            'montserrat_open_sans' => 'Montserrat + Open Sans',
+            'playfair_display_source_sans' => 'Playfair Display + Source Sans 3',
         ],
     ],
 

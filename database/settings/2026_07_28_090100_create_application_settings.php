@@ -5,7 +5,7 @@ use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
 use App\Enums\DateFormat;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use App\Enums\Locale;
 use App\Enums\PasswordPolicy;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
@@ -43,7 +43,7 @@ return new class extends SettingsMigration
         $this->migrator->add('branding.authLayout', AuthLayoutPreset::Simple->value);
         $this->migrator->add('branding.appLayout', AppLayoutPreset::Sidebar->value);
         $this->migrator->add('branding.colorTheme', ColorThemePreset::Neutral->value);
-        $this->migrator->add('branding.fontPreset', FontPreset::InstrumentSans->value);
+        $this->migrator->add('branding.fontPair', FontPairPreset::InstrumentSans->value);
         $this->migrator->add('branding.identityMode', BrandingIdentityMode::IconText->value);
         $this->migrator->add('branding.logoPath', null);
         $this->migrator->add('branding.logoDarkPath', null);
@@ -73,7 +73,7 @@ return new class extends SettingsMigration
             'branding.authLayout',
             'branding.appLayout',
             'branding.colorTheme',
-            'branding.fontPreset',
+            'branding.fontPair',
             'branding.identityMode',
             'branding.logoPath',
             'branding.logoDarkPath',

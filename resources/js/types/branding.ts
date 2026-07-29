@@ -11,8 +11,12 @@ export type ColorThemePreset =
     | 'cyan'
     | 'indigo'
     | 'orange';
-export type FontPreset =
-    'instrument-sans' | 'system-sans' | 'system-serif' | 'system-mono';
+export type FontPairPreset =
+    | 'instrument-sans'
+    | 'space-grotesk-inter'
+    | 'poppins-inter'
+    | 'montserrat-open-sans'
+    | 'playfair-display-source-sans';
 export type BrandingIdentityMode = 'logo' | 'icon-text';
 export type BrandingAsset =
     'logo' | 'logo-dark' | 'icon' | 'icon-dark' | 'auth-background';
@@ -29,5 +33,5 @@ export type Branding = {
     authLayout: AuthLayoutPreset;
     appLayout: AppLayoutPreset;
     colorTheme: ColorThemePreset;
-    fontPreset: FontPreset;
+    fontPair: FontPairPreset;
 };

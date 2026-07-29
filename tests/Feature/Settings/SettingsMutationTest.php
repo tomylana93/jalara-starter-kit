@@ -11,7 +11,7 @@ use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
 use App\Enums\DateFormat;
-use App\Enums\FontPreset;
+use App\Enums\FontPairPreset;
 use App\Enums\Locale;
 use App\Enums\PasswordPolicy;
 use App\Mail\TestMailConfiguration;
@@ -102,7 +102,7 @@ it('persists the branding settings', function () {
         'authLayout' => 'split',
         'appLayout' => 'header',
         'colorTheme' => 'violet',
-        'fontPreset' => 'system-mono',
+        'fontPair' => 'space-grotesk-inter',
     ]);
 
     $settings = app(BrandingSettings::class)->refresh();
@@ -113,7 +113,7 @@ it('persists the branding settings', function () {
         ->and($settings->authLayout)->toBe(AuthLayoutPreset::Split)
         ->and($settings->appLayout)->toBe(AppLayoutPreset::Header)
         ->and($settings->colorTheme)->toBe(ColorThemePreset::Violet)
-        ->and($settings->fontPreset)->toBe(FontPreset::SystemMono);
+        ->and($settings->fontPair)->toBe(FontPairPreset::SpaceGroteskInter);
 });
 
 it('sends the test message to the managing user with the configured identity', function () {

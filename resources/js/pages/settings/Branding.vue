@@ -28,7 +28,7 @@ type BrandingSettings = {
     authLayout: string;
     appLayout: string;
     colorTheme: string;
-    fontPreset: string;
+    fontPair: string;
 };
 
 type LayoutProps = {
@@ -42,7 +42,7 @@ const props = defineProps<{
     authLayoutOptions: SelectOption[];
     appLayoutOptions: SelectOption[];
     colorThemeOptions: SelectOption[];
-    fontPresetOptions: SelectOption[];
+    fontPairOptions: SelectOption[];
 }>();
 
 defineOptions({
@@ -89,7 +89,7 @@ const identityMode = ref(props.settings.identityMode);
 const authLayout = ref(props.settings.authLayout);
 const appLayout = ref(props.settings.appLayout);
 const colorTheme = ref(props.settings.colorTheme);
-const fontPreset = ref(props.settings.fontPreset);
+const fontPair = ref(props.settings.fontPair);
 </script>
 
 <template>
@@ -412,45 +412,47 @@ const fontPreset = ref(props.settings.fontPreset);
 
                 <fieldset class="grid gap-3">
                     <legend class="text-sm font-medium">
-                        {{ t('setting.branding.label.font_preset_group') }}
+                        {{ t('setting.branding.label.font_pair_group') }}
                     </legend>
-                    <input
-                        type="hidden"
-                        name="fontPreset"
-                        :value="fontPreset"
-                    />
+                    <input type="hidden" name="fontPair" :value="fontPair" />
                     <RadioGroup
-                        v-model="fontPreset"
+                        v-model="fontPair"
                         class="sm:grid-cols-2"
-                        :aria-invalid="Boolean(errors.fontPreset)"
-                        @update:model-value="validate('fontPreset')"
+                        :aria-invalid="Boolean(errors.fontPair)"
+                        @update:model-value="validate('fontPair')"
                     >
                         <Label
-                            v-for="option in fontPresetOptions"
+                            v-for="option in fontPairOptions"
                             :key="option.value"
-                            :for="`fontPreset-${option.value}`"
+                            :for="`fontPair-${option.value}`"
                             :class="[
                                 'flex cursor-pointer items-center gap-3 rounded-lg border p-3',
-                                radioCardClass(Boolean(errors.fontPreset)),
+                                radioCardClass(Boolean(errors.fontPair)),
                             ]"
                         >
                             <RadioGroupItem
-                                :id="`fontPreset-${option.value}`"
+                                :id="`fontPair-${option.value}`"
                                 :value="option.value"
-                                :aria-invalid="Boolean(errors.fontPreset)"
+                                :aria-invalid="Boolean(errors.fontPair)"
                             />
                             <span
-                                :data-font-preset="option.value"
+                                :data-font-pair="option.value"
                                 class="flex flex-col font-sans"
                             >
-                                <span class="text-sm">{{ option.label }}</span>
+                                <span
+                                    class="font-heading text-base font-semibold"
+                                >
+                                    {{ option.label }}
+                                </span>
                                 <span class="text-sm text-muted-foreground">
-                                    {{ t('setting.branding.preview.font') }}
+                                    {{
+                                        t('setting.branding.preview.font_body')
+                                    }}
                                 </span>
                             </span>
                         </Label>
                     </RadioGroup>
-                    <InputError :message="errors.fontPreset" />
+                    <InputError :message="errors.fontPair" />
                 </fieldset>
 
                 <!--

@@ -70,7 +70,7 @@ it('precognizes valid settings without persisting them', function (string $route
             'authLayout' => 'simple',
             'appLayout' => 'sidebar',
             'colorTheme' => 'emerald',
-            'fontPreset' => 'system-serif',
+            'fontPair' => 'poppins-inter',
         ],
     ],
 ]);
