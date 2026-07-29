@@ -55,6 +55,12 @@
             "pnpm install",
             "pnpm run build"
         ],
+        "ci:setup": [
+            "composer install --no-interaction --prefer-dist",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate --no-interaction",
+            "pnpm install --frozen-lockfile"
+        ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
@@ -62,23 +68,25 @@
         "lint": [
             "pint --parallel"
         ],
+        "format:agent": [
+            "pint --dirty --format agent"
+        ],
         "lint:check": [
             "pint --parallel --test"
         ],
         "rector": [
-            "rector process"
+            "rector process --no-progress-bar --output-format=json"
         ],
         "rector:check": [
-            "rector process --dry-run --no-progress-bar"
+            "rector process --dry-run --no-progress-bar --output-format=json"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
             "pnpm run lint:check",
             "pnpm run format:check",
-            "pnpm run test:unit",
             "pnpm run types:check",
+            "pnpm run test:unit",
             "@test",
-            "pnpm run build",
             "pnpm run test:e2e"
         ],
         "types:check": [
@@ -86,14 +94,24 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@lint:check",
             "@rector:check",
+            "@lint:check",
             "@types:check",
             "pest"
         ],
         "test:tia": [
             "Composer\\Config::disableProcessTimeout",
             "pest --tia"
+        ],
+        "test:tia:fresh": [
+            "Composer\\Config::disableProcessTimeout",
+            "pest --tia --fresh"
+        ],
+        "test:tia:baseline": [
+            "pest --baseline"
+        ],
+        "agents:update": [
+            "@php artisan boost:update --no-interaction"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

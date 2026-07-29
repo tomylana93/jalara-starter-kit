@@ -24,9 +24,11 @@
   Use web search only when the purpose-built documentation tool is unavailable
   or unhelpful.
 - Use shadcn tools for registry-backed UI components when available.
-- Use the shell for Git, Artisan, tests, builds, and cases not covered by a
-  purpose-built tool. Fall back to local inspection when an optional MCP tool
-  is unavailable; report the limitation only when it affects the result.
+- Use the shell for Git and cases not covered by a purpose-built tool. Invoke
+  repository-configured development tools through Composer scripts; use direct
+  Artisan or package-manager commands only when no repository script exists.
+  Fall back to local inspection when an optional MCP tool is unavailable;
+  report the limitation only when it affects the result.
 - Avoid repeating equivalent discovery through several tools after an
   authoritative source has answered the question.
 
@@ -56,6 +58,34 @@
    checks for the affected surface.
 6. Review the diff and update Serena memory only when the task revealed stable,
    non-obvious project knowledge.
+
+## Verification Boundaries
+
+- After changing PHP, run Rector before Pint: use `composer run rector` for
+  automated structural refactoring, then `composer run format:agent` to format
+  the resulting dirty files with agent-readable output. Reserve
+  `composer run lint` for an explicitly requested repository-wide formatting
+  pass.
+- Rector scripts must use JSON output without a progress bar. If
+  `composer run rector:check` blocks CI by reporting transformable code, run
+  `composer run rector` as the required first fix; do not reproduce Rector's
+  changes manually. Then run `composer run format:agent`, recheck Rector and
+  Pint, and rerun the full gate.
+- For frontend auto-fixes, run `pnpm run lint` before `pnpm run format` because
+  ESLint may change source structure and Prettier should normalize the final
+  output. If `lint:check` or `format:check` blocks CI, the matching auto-fix
+  script is mandatory before manual edits; manually address only issues the
+  tool leaves unresolved. Type-check, unit-test, build, and E2E failures have no
+  general auto-fixer and require focused diagnosis.
+- Keep the CI gate ordered from fast static checks to broader execution:
+  frontend lint, format, types, and unit tests; PHP Rector, Pint, Larastan, and
+  Pest; then the single production build performed by the Playwright command.
+- Always run the required `composer run ci:check` final gate. If it exposes a
+  failure outside the original task scope, treat that failure as required
+  follow-up work: isolate its cause, make the smallest safe fix while
+  preserving unrelated user changes, rerun the focused check, and continue
+  until the full gate passes. Stop only when the fix requires user approval,
+  destructive action, external coordination, or another unavailable authority.
 
 ## Memory Discipline
 

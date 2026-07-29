@@ -30,11 +30,14 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Record baseline
-        run: vendor/bin/pest --tia --fresh
+        run: composer run test:tia:fresh
 
       - name: Locate baseline
         id: baseline
-        run: echo "path=$(vendor/bin/pest --baseline)" >> "$GITHUB_OUTPUT"
+        run: |
+          baseline_output="$(composer run test:tia:baseline --no-interaction | tail -n 1)"
+          baseline_path="$(php -r '$decoded = json_decode($argv[1], true); echo is_array($decoded) ? $decoded["raw"][0] : $argv[1];' "$baseline_output")"
+          echo "path=$baseline_path" >> "$GITHUB_OUTPUT"
 
       - name: Upload baseline
         uses: actions/upload-artifact@v4

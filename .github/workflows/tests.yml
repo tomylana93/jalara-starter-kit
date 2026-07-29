@@ -37,10 +37,10 @@ jobs:
           version: '10'
 
       - name: Setup Application
-        run: composer setup
+        run: composer run ci:setup
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run CI Checks
-        run: composer ci:check
+        run: composer run ci:check
