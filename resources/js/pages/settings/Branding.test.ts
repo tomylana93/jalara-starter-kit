@@ -17,7 +17,10 @@ const props = {
     identityModeOptions: option('icon-text'),
     authLayoutOptions: option('simple'),
     appLayoutOptions: option('sidebar'),
-    colorThemeOptions: option('neutral'),
+    colorThemeOptions: ['neutral', 'teal'].map((value) => ({
+        value,
+        label: value,
+    })),
     fontPresetOptions: option('instrument-sans'),
 };
 
@@ -63,6 +66,26 @@ describe('branding settings form', () => {
                 .get('[data-test="update-branding-settings-button"]')
                 .attributes(),
         ).toHaveProperty('disabled');
+    });
+
+    it('previews a draft color theme without changing the document theme', async () => {
+        document.documentElement.dataset.colorTheme = 'neutral';
+        const wrapper = mount(Branding, { props });
+        const groups = wrapper.findAllComponents({ name: 'RadioGroup' });
+
+        await groups[3].vm.$emit('update:modelValue', 'teal');
+
+        for (const preview of [
+            'identity-preview',
+            'auth-preview',
+            'app-preview',
+        ]) {
+            for (const element of wrapper.findAll(`[data-test="${preview}"]`)) {
+                expect(element.attributes('data-color-theme')).toBe('teal');
+            }
+        }
+
+        expect(document.documentElement.dataset.colorTheme).toBe('neutral');
     });
 
     it('uses the logo preview layout for both icon fields', () => {

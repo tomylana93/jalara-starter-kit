@@ -142,6 +142,10 @@ return [
             'violet' => 'Ungu',
             'rose' => 'Merah muda',
             'amber' => 'Kuning',
+            'teal' => 'Hijau kebiruan',
+            'cyan' => 'Sian',
+            'indigo' => 'Nila',
+            'orange' => 'Oranye',
         ],
 
         'font_preset' => [

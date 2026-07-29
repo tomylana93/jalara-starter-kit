@@ -24,16 +24,16 @@ defineProps<{
 
 <template>
     <div
-        class="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0"
+        class="relative grid h-dvh flex-col items-center justify-center bg-background px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0"
     >
         <div
-            class="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r"
+            class="relative hidden h-full flex-col bg-primary p-10 text-primary-foreground lg:flex dark:border-r"
         >
             <!--
                 The image is decorative; the solid colour stays as the base so
                 the panel is never empty while it loads.
             -->
-            <div class="absolute inset-0 bg-zinc-900" />
+            <div class="absolute inset-0 bg-primary" />
             <img
                 :src="backgroundUrl"
                 alt=""
@@ -41,12 +41,12 @@ defineProps<{
                 class="absolute inset-0 size-full object-cover"
             />
             <!-- Keeps the heading legible whatever the image contains. -->
-            <div class="absolute inset-0 bg-zinc-900/60" />
+            <div class="absolute inset-0 bg-primary/70" />
             <Link
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"
             >
-                <BrandIdentity class="[&_span]:text-white" />
+                <BrandIdentity class="[&_span]:text-primary-foreground" />
             </Link>
         </div>
         <div class="lg:p-8">

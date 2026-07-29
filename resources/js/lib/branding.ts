@@ -25,6 +25,10 @@ export const colorThemePresets: readonly ColorThemePreset[] = [
     'violet',
     'rose',
     'amber',
+    'teal',
+    'cyan',
+    'indigo',
+    'orange',
 ] as const;
 
 export const fontPresets: readonly FontPreset[] = [

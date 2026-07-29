@@ -2,6 +2,7 @@
 
 use App\Actions\Settings\UpdateBrandingSettings;
 use App\Actions\Settings\UpdateGeneralSettings;
+use App\Enums\ColorThemePreset;
 use App\Settings\BrandingSettings;
 use App\Settings\GeneralSettings;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -20,6 +21,21 @@ function updateBranding(array $overrides = []): void
         'fontPreset' => 'instrument-sans',
     ], $overrides));
 }
+
+it('exposes all supported color theme presets', function () {
+    expect(array_column(ColorThemePreset::options(), 'value'))->toBe([
+        'neutral',
+        'blue',
+        'emerald',
+        'violet',
+        'rose',
+        'amber',
+        'teal',
+        'cyan',
+        'indigo',
+        'orange',
+    ]);
+});
 
 it('shares the branding presets as string values', function () {
     updateBranding([

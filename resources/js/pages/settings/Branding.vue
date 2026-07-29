@@ -173,19 +173,21 @@ const fontPreset = ref(props.settings.fontPreset);
                                 followed by the application name.
                             -->
                             <div
+                                :data-color-theme="colorTheme"
+                                data-test="identity-preview"
                                 class="flex h-16 w-full items-center justify-center gap-2 rounded-md bg-muted p-2"
                             >
                                 <template v-if="option.value === 'logo'">
                                     <div
-                                        class="h-5 w-24 rounded-sm bg-foreground/30"
+                                        class="h-5 w-24 rounded-sm bg-primary"
                                     ></div>
                                 </template>
                                 <template v-else>
                                     <div
-                                        class="size-5 shrink-0 rounded-sm bg-foreground/30"
+                                        class="size-5 shrink-0 rounded-sm bg-primary"
                                     ></div>
                                     <div
-                                        class="h-2 w-16 rounded-full bg-foreground/20"
+                                        class="h-2 w-16 rounded-full bg-accent-foreground/40"
                                     ></div>
                                 </template>
                             </div>
@@ -233,7 +235,9 @@ const fontPreset = ref(props.settings.fontPreset);
                             -->
                             <div
                                 v-if="option.value === 'split'"
-                                class="flex h-16 w-full gap-1 rounded-md bg-muted p-2"
+                                :data-color-theme="colorTheme"
+                                data-test="auth-preview"
+                                class="flex h-16 w-full gap-1 rounded-md bg-primary p-2"
                             >
                                 <!--
                                     The split layout puts the brand mark in the
@@ -241,53 +245,57 @@ const fontPreset = ref(props.settings.fontPreset);
                                     form like the other two layouts.
                                 -->
                                 <div
-                                    class="h-full w-1/2 rounded-sm bg-foreground/20 p-1"
+                                    class="h-full w-1/2 rounded-sm bg-primary-foreground/20 p-1"
                                 >
                                     <div
-                                        class="size-1.5 rounded-full bg-background/80"
+                                        class="size-1.5 rounded-full bg-primary-foreground/80"
                                     ></div>
                                 </div>
                                 <div
                                     class="flex flex-1 flex-col items-center justify-center gap-1"
                                 >
                                     <div
-                                        class="h-1.5 w-2/3 rounded-full bg-foreground/30"
+                                        class="h-1.5 w-2/3 rounded-full bg-primary-foreground/50"
                                     ></div>
                                     <div
-                                        class="h-1.5 w-full rounded-full bg-foreground/20"
+                                        class="h-1.5 w-full rounded-full bg-primary-foreground/30"
                                     ></div>
                                 </div>
                             </div>
                             <div
                                 v-else-if="option.value === 'card'"
+                                :data-color-theme="colorTheme"
+                                data-test="auth-preview"
                                 class="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-md bg-muted p-1.5"
                             >
                                 <div
-                                    class="size-1.5 shrink-0 rounded-full bg-foreground/30"
+                                    class="size-1.5 shrink-0 rounded-full bg-primary"
                                 ></div>
                                 <div
                                     class="flex w-full flex-1 flex-col items-center justify-center gap-1 rounded-md border bg-background px-2 shadow-sm"
                                 >
                                     <div
-                                        class="h-1.5 w-1/2 rounded-full bg-foreground/30"
+                                        class="h-1.5 w-1/2 rounded-full bg-primary"
                                     ></div>
                                     <div
-                                        class="h-1.5 w-3/4 rounded-full bg-foreground/20"
+                                        class="h-1.5 w-3/4 rounded-full bg-accent"
                                     ></div>
                                 </div>
                             </div>
                             <div
                                 v-else
+                                :data-color-theme="colorTheme"
+                                data-test="auth-preview"
                                 class="flex h-16 w-full flex-col items-center justify-center gap-1 rounded-md border bg-background p-2"
                             >
                                 <div
-                                    class="size-2 shrink-0 rounded-full bg-foreground/30"
+                                    class="size-2 shrink-0 rounded-full bg-primary"
                                 ></div>
                                 <div
-                                    class="h-1.5 w-1/2 rounded-full bg-foreground/30"
+                                    class="h-1.5 w-1/2 rounded-full bg-primary"
                                 ></div>
                                 <div
-                                    class="h-1.5 w-3/4 rounded-full bg-foreground/20"
+                                    class="h-1.5 w-3/4 rounded-full bg-accent"
                                 ></div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -324,6 +332,8 @@ const fontPreset = ref(props.settings.fontPreset);
                             ]"
                         >
                             <div
+                                :data-color-theme="colorTheme"
+                                data-test="app-preview"
                                 :class="[
                                     'flex h-16 w-full gap-1 rounded-md bg-muted p-2',
                                     option.value === 'sidebar'
@@ -333,14 +343,14 @@ const fontPreset = ref(props.settings.fontPreset);
                             >
                                 <div
                                     :class="[
-                                        'rounded-sm bg-foreground/30',
+                                        'rounded-sm bg-primary',
                                         option.value === 'sidebar'
                                             ? 'h-full w-1/4'
                                             : 'h-1/4 w-full',
                                     ]"
                                 ></div>
                                 <div
-                                    class="flex-1 rounded-sm bg-foreground/10"
+                                    class="flex-1 rounded-sm border bg-card"
                                 ></div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -387,9 +397,13 @@ const fontPreset = ref(props.settings.fontPreset);
                             />
                             <span
                                 :data-color-theme="option.value"
-                                class="size-4 shrink-0 rounded-full bg-primary"
+                                class="flex shrink-0 overflow-hidden rounded-full border border-border"
                                 aria-hidden="true"
-                            ></span>
+                            >
+                                <span class="size-4 bg-primary"></span>
+                                <span class="size-4 bg-accent"></span>
+                                <span class="size-4 bg-background"></span>
+                            </span>
                             <span class="text-sm">{{ option.label }}</span>
                         </Label>
                     </RadioGroup>

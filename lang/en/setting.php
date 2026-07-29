@@ -142,6 +142,10 @@ return [
             'violet' => 'Violet',
             'rose' => 'Rose',
             'amber' => 'Amber',
+            'teal' => 'Teal',
+            'cyan' => 'Cyan',
+            'indigo' => 'Indigo',
+            'orange' => 'Orange',
         ],
 
         'font_preset' => [

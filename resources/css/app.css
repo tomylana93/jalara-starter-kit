@@ -179,129 +179,177 @@
 }
 
 /*
-  Color presets. `data-color-theme` selects the brand palette; `.dark` keeps
-  owning light/dark, so every preset ships a matching pair. Neutral base
-  tokens (background, card, muted) are deliberately left untouched.
+  Every preset aliases one complete Tailwind ramp. Only brand accents are
+  remapped; application surfaces stay neutral in both the global interface and
+  locally scoped previews.
 */
 
 [data-color-theme='neutral'] {
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --ring: oklch(0.556 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.205 0 0);
-}
-
-.dark[data-color-theme='neutral'] {
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --ring: oklch(0.708 0 0);
-    --sidebar-primary: oklch(0.922 0 0);
-    --sidebar-primary-foreground: oklch(0.205 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.922 0 0);
+    --theme-50: var(--color-neutral-50);
+    --theme-100: var(--color-neutral-100);
+    --theme-200: var(--color-neutral-200);
+    --theme-300: var(--color-neutral-300);
+    --theme-400: var(--color-neutral-400);
+    --theme-500: var(--color-neutral-500);
+    --theme-600: var(--color-neutral-600);
+    --theme-700: var(--color-neutral-700);
+    --theme-800: var(--color-neutral-800);
+    --theme-900: var(--color-neutral-900);
+    --theme-950: var(--color-neutral-950);
 }
 
 [data-color-theme='blue'] {
-    --primary: oklch(0.546 0.215 262.9);
-    --primary-foreground: oklch(0.985 0.01 262.9);
-    --ring: oklch(0.546 0.215 262.9);
-    --sidebar-primary: oklch(0.546 0.215 262.9);
-    --sidebar-primary-foreground: oklch(0.985 0.01 262.9);
-    --sidebar-ring: oklch(0.546 0.215 262.9);
-    --chart-1: oklch(0.546 0.215 262.9);
-}
-
-.dark[data-color-theme='blue'] {
-    --primary: oklch(0.685 0.169 262.9);
-    --primary-foreground: oklch(0.19 0.05 262.9);
-    --ring: oklch(0.685 0.169 262.9);
-    --sidebar-primary: oklch(0.685 0.169 262.9);
-    --sidebar-primary-foreground: oklch(0.19 0.05 262.9);
-    --sidebar-ring: oklch(0.685 0.169 262.9);
-    --chart-1: oklch(0.685 0.169 262.9);
+    --theme-50: var(--color-blue-50);
+    --theme-100: var(--color-blue-100);
+    --theme-200: var(--color-blue-200);
+    --theme-300: var(--color-blue-300);
+    --theme-400: var(--color-blue-400);
+    --theme-500: var(--color-blue-500);
+    --theme-600: var(--color-blue-600);
+    --theme-700: var(--color-blue-700);
+    --theme-800: var(--color-blue-800);
+    --theme-900: var(--color-blue-900);
+    --theme-950: var(--color-blue-950);
 }
 
 [data-color-theme='emerald'] {
-    --primary: oklch(0.58 0.132 160.6);
-    --primary-foreground: oklch(0.985 0.01 160.6);
-    --ring: oklch(0.58 0.132 160.6);
-    --sidebar-primary: oklch(0.58 0.132 160.6);
-    --sidebar-primary-foreground: oklch(0.985 0.01 160.6);
-    --sidebar-ring: oklch(0.58 0.132 160.6);
-    --chart-1: oklch(0.58 0.132 160.6);
-}
-
-.dark[data-color-theme='emerald'] {
-    --primary: oklch(0.723 0.14 160.6);
-    --primary-foreground: oklch(0.19 0.04 160.6);
-    --ring: oklch(0.723 0.14 160.6);
-    --sidebar-primary: oklch(0.723 0.14 160.6);
-    --sidebar-primary-foreground: oklch(0.19 0.04 160.6);
-    --sidebar-ring: oklch(0.723 0.14 160.6);
-    --chart-1: oklch(0.723 0.14 160.6);
+    --theme-50: var(--color-emerald-50);
+    --theme-100: var(--color-emerald-100);
+    --theme-200: var(--color-emerald-200);
+    --theme-300: var(--color-emerald-300);
+    --theme-400: var(--color-emerald-400);
+    --theme-500: var(--color-emerald-500);
+    --theme-600: var(--color-emerald-600);
+    --theme-700: var(--color-emerald-700);
+    --theme-800: var(--color-emerald-800);
+    --theme-900: var(--color-emerald-900);
+    --theme-950: var(--color-emerald-950);
 }
 
 [data-color-theme='violet'] {
-    --primary: oklch(0.541 0.226 293.7);
-    --primary-foreground: oklch(0.985 0.01 293.7);
-    --ring: oklch(0.541 0.226 293.7);
-    --sidebar-primary: oklch(0.541 0.226 293.7);
-    --sidebar-primary-foreground: oklch(0.985 0.01 293.7);
-    --sidebar-ring: oklch(0.541 0.226 293.7);
-    --chart-1: oklch(0.541 0.226 293.7);
-}
-
-.dark[data-color-theme='violet'] {
-    --primary: oklch(0.68 0.181 293.7);
-    --primary-foreground: oklch(0.19 0.05 293.7);
-    --ring: oklch(0.68 0.181 293.7);
-    --sidebar-primary: oklch(0.68 0.181 293.7);
-    --sidebar-primary-foreground: oklch(0.19 0.05 293.7);
-    --sidebar-ring: oklch(0.68 0.181 293.7);
-    --chart-1: oklch(0.68 0.181 293.7);
+    --theme-50: var(--color-violet-50);
+    --theme-100: var(--color-violet-100);
+    --theme-200: var(--color-violet-200);
+    --theme-300: var(--color-violet-300);
+    --theme-400: var(--color-violet-400);
+    --theme-500: var(--color-violet-500);
+    --theme-600: var(--color-violet-600);
+    --theme-700: var(--color-violet-700);
+    --theme-800: var(--color-violet-800);
+    --theme-900: var(--color-violet-900);
+    --theme-950: var(--color-violet-950);
 }
 
 [data-color-theme='rose'] {
-    --primary: oklch(0.586 0.222 17.6);
-    --primary-foreground: oklch(0.985 0.01 17.6);
-    --ring: oklch(0.586 0.222 17.6);
-    --sidebar-primary: oklch(0.586 0.222 17.6);
-    --sidebar-primary-foreground: oklch(0.985 0.01 17.6);
-    --sidebar-ring: oklch(0.586 0.222 17.6);
-    --chart-1: oklch(0.586 0.222 17.6);
-}
-
-.dark[data-color-theme='rose'] {
-    --primary: oklch(0.712 0.176 17.6);
-    --primary-foreground: oklch(0.19 0.05 17.6);
-    --ring: oklch(0.712 0.176 17.6);
-    --sidebar-primary: oklch(0.712 0.176 17.6);
-    --sidebar-primary-foreground: oklch(0.19 0.05 17.6);
-    --sidebar-ring: oklch(0.712 0.176 17.6);
-    --chart-1: oklch(0.712 0.176 17.6);
+    --theme-50: var(--color-rose-50);
+    --theme-100: var(--color-rose-100);
+    --theme-200: var(--color-rose-200);
+    --theme-300: var(--color-rose-300);
+    --theme-400: var(--color-rose-400);
+    --theme-500: var(--color-rose-500);
+    --theme-600: var(--color-rose-600);
+    --theme-700: var(--color-rose-700);
+    --theme-800: var(--color-rose-800);
+    --theme-900: var(--color-rose-900);
+    --theme-950: var(--color-rose-950);
 }
 
 [data-color-theme='amber'] {
-    --primary: oklch(0.703 0.161 74.4);
-    --primary-foreground: oklch(0.21 0.04 74.4);
-    --ring: oklch(0.703 0.161 74.4);
-    --sidebar-primary: oklch(0.703 0.161 74.4);
-    --sidebar-primary-foreground: oklch(0.21 0.04 74.4);
-    --sidebar-ring: oklch(0.703 0.161 74.4);
-    --chart-1: oklch(0.703 0.161 74.4);
+    --theme-50: var(--color-amber-50);
+    --theme-100: var(--color-amber-100);
+    --theme-200: var(--color-amber-200);
+    --theme-300: var(--color-amber-300);
+    --theme-400: var(--color-amber-400);
+    --theme-500: var(--color-amber-500);
+    --theme-600: var(--color-amber-600);
+    --theme-700: var(--color-amber-700);
+    --theme-800: var(--color-amber-800);
+    --theme-900: var(--color-amber-900);
+    --theme-950: var(--color-amber-950);
 }
 
-.dark[data-color-theme='amber'] {
-    --primary: oklch(0.795 0.156 74.4);
-    --primary-foreground: oklch(0.19 0.04 74.4);
-    --ring: oklch(0.795 0.156 74.4);
-    --sidebar-primary: oklch(0.795 0.156 74.4);
-    --sidebar-primary-foreground: oklch(0.19 0.04 74.4);
-    --sidebar-ring: oklch(0.795 0.156 74.4);
-    --chart-1: oklch(0.795 0.156 74.4);
+[data-color-theme='teal'] {
+    --theme-50: var(--color-teal-50);
+    --theme-100: var(--color-teal-100);
+    --theme-200: var(--color-teal-200);
+    --theme-300: var(--color-teal-300);
+    --theme-400: var(--color-teal-400);
+    --theme-500: var(--color-teal-500);
+    --theme-600: var(--color-teal-600);
+    --theme-700: var(--color-teal-700);
+    --theme-800: var(--color-teal-800);
+    --theme-900: var(--color-teal-900);
+    --theme-950: var(--color-teal-950);
+}
+
+[data-color-theme='cyan'] {
+    --theme-50: var(--color-cyan-50);
+    --theme-100: var(--color-cyan-100);
+    --theme-200: var(--color-cyan-200);
+    --theme-300: var(--color-cyan-300);
+    --theme-400: var(--color-cyan-400);
+    --theme-500: var(--color-cyan-500);
+    --theme-600: var(--color-cyan-600);
+    --theme-700: var(--color-cyan-700);
+    --theme-800: var(--color-cyan-800);
+    --theme-900: var(--color-cyan-900);
+    --theme-950: var(--color-cyan-950);
+}
+
+[data-color-theme='indigo'] {
+    --theme-50: var(--color-indigo-50);
+    --theme-100: var(--color-indigo-100);
+    --theme-200: var(--color-indigo-200);
+    --theme-300: var(--color-indigo-300);
+    --theme-400: var(--color-indigo-400);
+    --theme-500: var(--color-indigo-500);
+    --theme-600: var(--color-indigo-600);
+    --theme-700: var(--color-indigo-700);
+    --theme-800: var(--color-indigo-800);
+    --theme-900: var(--color-indigo-900);
+    --theme-950: var(--color-indigo-950);
+}
+
+[data-color-theme='orange'] {
+    --theme-50: var(--color-orange-50);
+    --theme-100: var(--color-orange-100);
+    --theme-200: var(--color-orange-200);
+    --theme-300: var(--color-orange-300);
+    --theme-400: var(--color-orange-400);
+    --theme-500: var(--color-orange-500);
+    --theme-600: var(--color-orange-600);
+    --theme-700: var(--color-orange-700);
+    --theme-800: var(--color-orange-800);
+    --theme-900: var(--color-orange-900);
+    --theme-950: var(--color-orange-950);
+}
+
+[data-color-theme] {
+    --primary: var(--theme-700);
+    --primary-foreground: var(--theme-50);
+    --ring: var(--theme-600);
+    --chart-1: var(--theme-700);
+    --chart-2: var(--theme-600);
+    --chart-3: var(--theme-500);
+    --chart-4: var(--theme-400);
+    --chart-5: var(--theme-300);
+    --sidebar-primary: var(--theme-700);
+    --sidebar-primary-foreground: var(--theme-50);
+    --sidebar-ring: var(--theme-600);
+}
+
+:is(.dark[data-color-theme], .dark [data-color-theme]) {
+    --primary: var(--theme-400);
+    --primary-foreground: var(--theme-950);
+    --ring: var(--theme-400);
+    --chart-1: var(--theme-400);
+    --chart-2: var(--theme-500);
+    --chart-3: var(--theme-300);
+    --chart-4: var(--theme-600);
+    --chart-5: var(--theme-200);
+    --sidebar-primary: var(--theme-400);
+    --sidebar-primary-foreground: var(--theme-950);
+    --sidebar-ring: var(--theme-400);
 }
 
 @layer base {

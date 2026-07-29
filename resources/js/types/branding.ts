@@ -1,7 +1,16 @@
 export type AuthLayoutPreset = 'simple' | 'card' | 'split';
 export type AppLayoutPreset = 'sidebar' | 'header';
 export type ColorThemePreset =
-    'neutral' | 'blue' | 'emerald' | 'violet' | 'rose' | 'amber';
+    | 'neutral'
+    | 'blue'
+    | 'emerald'
+    | 'violet'
+    | 'rose'
+    | 'amber'
+    | 'teal'
+    | 'cyan'
+    | 'indigo'
+    | 'orange';
 export type FontPreset =
     'instrument-sans' | 'system-sans' | 'system-serif' | 'system-mono';
 export type BrandingIdentityMode = 'logo' | 'icon-text';

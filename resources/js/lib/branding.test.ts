@@ -22,10 +22,42 @@ const brandTokens = [
     '--primary:',
     '--primary-foreground:',
     '--ring:',
+    '--chart-1:',
+    '--chart-2:',
+    '--chart-3:',
+    '--chart-4:',
+    '--chart-5:',
     '--sidebar-primary:',
     '--sidebar-primary-foreground:',
     '--sidebar-ring:',
-    '--chart-1:',
+];
+
+const neutralSurfaceTokens = [
+    '--background:',
+    '--card:',
+    '--popover:',
+    '--secondary:',
+    '--muted:',
+    '--accent:',
+    '--border:',
+    '--input:',
+    '--sidebar-background:',
+    '--sidebar-accent:',
+    '--sidebar-border:',
+];
+
+const rampTokens = [
+    '--theme-50:',
+    '--theme-100:',
+    '--theme-200:',
+    '--theme-300:',
+    '--theme-400:',
+    '--theme-500:',
+    '--theme-600:',
+    '--theme-700:',
+    '--theme-800:',
+    '--theme-900:',
+    '--theme-950:',
 ];
 
 const blockFor = (css: string, selector: string): string => {
@@ -167,24 +199,47 @@ test('syncs the branding attributes onto the document element', () => {
     Reflect.deleteProperty(globalThis, 'document');
 });
 
-test('ships light and dark tokens for every color preset', async () => {
+test('builds every color preset from a complete Tailwind ramp', async () => {
     const css = await readSource('resources/css/app.css');
 
     for (const preset of colorThemePresets) {
-        const light = blockFor(css, `[data-color-theme='${preset}']`);
-        const dark = blockFor(css, `.dark[data-color-theme='${preset}']`);
+        const ramp = blockFor(css, `[data-color-theme='${preset}']`);
 
-        for (const token of brandTokens) {
-            assert.ok(
-                light.includes(token),
-                `${preset} is missing ${token} in light mode`,
-            );
-            assert.ok(
-                dark.includes(token),
-                `${preset} is missing ${token} in dark mode`,
-            );
+        for (const token of rampTokens) {
+            assert.ok(ramp.includes(token), `${preset} is missing ${token}`);
         }
+
+        assert.match(ramp, new RegExp(`var\\(--color-${preset}-`));
     }
+});
+
+test('maps brand tokens while keeping application surfaces neutral', async () => {
+    const css = await readSource('resources/css/app.css');
+    const light = blockFor(css, '[data-color-theme]');
+    const darkSelector =
+        ':is(.dark[data-color-theme], .dark [data-color-theme])';
+    const dark = blockFor(css, darkSelector);
+
+    for (const token of brandTokens) {
+        assert.ok(light.includes(token), `light mode is missing ${token}`);
+        assert.ok(dark.includes(token), `dark mode is missing ${token}`);
+    }
+
+    for (const token of neutralSurfaceTokens) {
+        assert.ok(
+            !light.includes(token),
+            `light theme must not override neutral ${token}`,
+        );
+        assert.ok(
+            !dark.includes(token),
+            `dark theme must not override neutral ${token}`,
+        );
+    }
+
+    assert.match(darkSelector, /\.dark\[data-color-theme\]/);
+    assert.match(darkSelector, /\.dark \[data-color-theme\]/);
+    assert.doesNotMatch(light, /--destructive:/);
+    assert.doesNotMatch(dark, /--destructive:/);
 });
 
 test('ships a font stack for every font preset', async () => {
