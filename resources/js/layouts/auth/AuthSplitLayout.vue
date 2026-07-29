@@ -46,8 +46,14 @@ defineProps<{
                 aria-hidden="true"
                 class="absolute inset-0 size-full object-cover"
             />
-            <!-- Keeps the heading legible whatever the image contains. -->
-            <div class="absolute inset-0 bg-primary/70" />
+            <!--
+                The stronger edges protect the identity and description while
+                the softer centre keeps the image from looking flat.
+            -->
+            <div
+                class="absolute inset-0 bg-linear-to-b from-primary/80 via-primary/55 to-primary/80"
+                data-test="auth-split-tint"
+            />
             <Link
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"

@@ -20,6 +20,20 @@ afterEach(() => {
 });
 
 describe('auth split layout', () => {
+    it('uses a graduated brand tint over the background image', () => {
+        const tint = mountLayout().get('[data-test="auth-split-tint"]');
+
+        expect(tint.classes()).toEqual(
+            expect.arrayContaining([
+                'bg-linear-to-b',
+                'from-primary/80',
+                'via-primary/55',
+                'to-primary/80',
+            ]),
+        );
+        expect(tint.classes()).not.toContain('bg-primary/70');
+    });
+
     it('shows the application description at the foot of the panel', () => {
         inertiaPageProps.name = 'Jalara App';
         inertiaPageProps.description = 'Operational starter kit';
