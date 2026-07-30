@@ -66,7 +66,8 @@ test('creates a user that starts active and then disables it', async ({
     await expect(row).toBeVisible();
     await expect(row.getByText('Active', { exact: true })).toBeVisible();
 
-    await row.getByRole('link', { name: 'Edit' }).click();
+    await row.getByRole('button', { name: 'Open row actions' }).click();
+    await page.getByRole('menuitem', { name: 'Edit' }).click();
 
     await expect(page).toHaveURL(/\/master-data\/users\/[^/]+\/edit$/);
 

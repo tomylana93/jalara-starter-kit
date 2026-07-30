@@ -40,6 +40,20 @@
   TanStack's `ColumnMeta` in `data-table/types.ts`); the visibility menu is built
   from `getAllColumns().filter(c => c.getCanHide())`, so select/actions never
   appear. The empty row's colspan must use `getVisibleLeafColumns().length`.
+- Filters stay domain free: the page passes `TableFilterConfig[]` (key, label,
+  options) and the table only routes the key back into `TableQuery.filters`.
+  Filters render before the Columns menu, ride the `pendingQuery` snapshot, reset
+  to page 1, and join `selectionScope` so a filter change clears the selection.
+  An emptied filter key is deleted rather than sent as an empty list.
+- Wayfinder `queryParams` serializes an array as `key[]=v` (URL-encoded), which
+  Laravel parses back as an ordered list — that is how `ids[]` and the filter
+  arrays reach the server. Spread `query.filters` into the visit's `query`.
+- A reka-ui `DropdownMenuItem as-child` wrapping an Inertia `Link` must be given
+  `route(...).url`, not the route definition object: the bound href lands on the
+  anchor as `[object Object]` before Inertia can resolve it.
+- Under jsdom, `DropdownMenuContent` is force mounted, so a menu item is findable
+  without opening the menu. Assert on the trigger's presence for authorization
+  gating; a closed-menu assertion proves nothing.
 - Timestamps arrive as UTC ISO 8601 and render through
   `resources/js/lib/dateTime.ts` (`formatBrowserDateTime`), which never passes a
   `timeZone` to `Intl` — that omission is what applies the viewer's zone. Vitest

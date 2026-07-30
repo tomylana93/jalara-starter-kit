@@ -47,8 +47,31 @@ const users: TablePayload<UserRow> = {
         sort: 'createdAt',
         direction: 'desc',
         perPage: 10,
+        filters: {},
     },
 };
+
+const filterOptions = {
+    status: [
+        { value: 'active', label: 'Active' },
+        { value: 'disabled', label: 'Disabled' },
+    ],
+    role: [
+        { value: 'admin', label: 'Admin' },
+        { value: 'user', label: 'User' },
+    ],
+};
+
+const mountIndex = (overrides: Record<string, unknown> = {}) =>
+    mount(Index, {
+        props: {
+            users,
+            filterOptions,
+            canCreate: true,
+            dateFormat: 'd/m/Y',
+            ...overrides,
+        },
+    });
 
 describe('master data user index', () => {
     beforeEach(() => {
@@ -56,9 +79,7 @@ describe('master data user index', () => {
     });
 
     it('renders every user with its role and status', () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
+        const wrapper = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
 
         expect(wrapper.text()).toContain('Ada Lovelace');
         expect(wrapper.text()).toContain('ada@example.com');
@@ -69,9 +90,7 @@ describe('master data user index', () => {
     });
 
     it('renders the created instant in the browser timezone', () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
+        const wrapper = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
 
         /* 22:30 UTC on the 30th is 05:30 on the 31st in the test timezone. */
         expect(wrapper.text()).toContain('31/07/2026 05:30');
@@ -80,17 +99,13 @@ describe('master data user index', () => {
     });
 
     it('follows the configured date format preset', () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'Y-m-d' },
-        });
+        const wrapper = mountIndex({ canCreate: true, dateFormat: 'Y-m-d' });
 
         expect(wrapper.text()).toContain('2026-07-31 05:30');
     });
 
     it('reports the ids of the rows selected on this page', async () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
+        const wrapper = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
 
         await wrapper.get('[data-test="table-select-all"]').trigger('click');
 
@@ -102,26 +117,31 @@ describe('master data user index', () => {
         ).toBe('true');
     });
 
-    it('offers the edit action only for a user that may be updated', () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
+    it('offers a row action menu only for a user that may be updated', () => {
+        const wrapper = mountIndex();
 
-        expect(wrapper.find('[data-test="edit-user-user-1"]').exists()).toBe(
+        expect(wrapper.find('[data-test="user-actions-user-1"]').exists()).toBe(
             true,
         );
-        expect(wrapper.find('[data-test="edit-user-user-2"]').exists()).toBe(
+        expect(wrapper.find('[data-test="user-actions-user-2"]').exists()).toBe(
             false,
         );
     });
 
+    it('opens the edit action from the row action menu', async () => {
+        const wrapper = mountIndex();
+
+        await wrapper.get('[data-test="user-actions-user-1"]').trigger('click');
+
+        /* The menu content is force mounted here, so only the link is asserted. */
+        expect(
+            wrapper.get('[data-test="edit-user-user-1"]').attributes('href'),
+        ).toBe('/master-data/users/user-1/edit');
+    });
+
     it('hides the create action without the permission', () => {
-        const allowed = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
-        const denied = mount(Index, {
-            props: { users, canCreate: false, dateFormat: 'd/m/Y' },
-        });
+        const allowed = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
+        const denied = mountIndex({ canCreate: false, dateFormat: 'd/m/Y' });
 
         expect(allowed.find('[data-test="create-user-button"]').exists()).toBe(
             true,
@@ -132,9 +152,7 @@ describe('master data user index', () => {
     });
 
     it('asks the server for a new page of rows and parks the query in the URL', () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
+        const wrapper = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
 
         wrapper.findComponent({ name: 'DataTable' }).vm.$emit('query-change', {
             search: 'ada',
@@ -142,6 +160,7 @@ describe('master data user index', () => {
             direction: 'asc',
             page: 2,
             perPage: 25,
+            filters: {},
         });
 
         expect(routerGet).toHaveBeenCalledTimes(1);
@@ -161,9 +180,7 @@ describe('master data user index', () => {
     });
 
     it('omits an absent search term from the URL', () => {
-        const wrapper = mount(Index, {
-            props: { users, canCreate: true, dateFormat: 'd/m/Y' },
-        });
+        const wrapper = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
 
         wrapper.findComponent({ name: 'DataTable' }).vm.$emit('query-change', {
             search: null,
@@ -171,8 +188,73 @@ describe('master data user index', () => {
             direction: 'desc',
             page: 1,
             perPage: 10,
+            filters: {},
         });
 
         expect(routerGet.mock.calls[0]?.[0]).not.toContain('search');
+    });
+
+    it('renders a filter for the status and role catalogs', () => {
+        const wrapper = mountIndex();
+
+        expect(wrapper.find('[data-test="table-filter-status"]').exists()).toBe(
+            true,
+        );
+        expect(
+            wrapper.get('[data-test="table-filter-role-admin"]').text(),
+        ).toBe('Admin');
+    });
+
+    it('parks the selected filters in the URL', () => {
+        const wrapper = mountIndex();
+
+        wrapper.findComponent({ name: 'DataTable' }).vm.$emit('query-change', {
+            search: null,
+            sort: 'createdAt',
+            direction: 'desc',
+            page: 1,
+            perPage: 10,
+            filters: { status: ['active', 'disabled'], role: ['admin'] },
+        });
+
+        const url = routerGet.mock.calls[0]?.[0] as string;
+
+        expect(decodeURIComponent(url)).toContain('status[]=active');
+        expect(decodeURIComponent(url)).toContain('status[]=disabled');
+        expect(decodeURIComponent(url)).toContain('role[]=admin');
+    });
+
+    it('offers the export only once rows are selected', async () => {
+        const wrapper = mountIndex();
+
+        expect(wrapper.find('[data-test="export-users-button"]').exists()).toBe(
+            false,
+        );
+
+        await wrapper.get('[data-test="table-select-all"]').trigger('click');
+
+        expect(
+            decodeURIComponent(
+                wrapper
+                    .get('[data-test="export-users-button"]')
+                    .attributes('href') ?? '',
+            ),
+        ).toBe('/master-data/users/export?ids[]=user-1&ids[]=user-2');
+    });
+
+    it('exports a single selected row', async () => {
+        const wrapper = mountIndex();
+
+        await wrapper
+            .get('[data-test="table-select-row-user-2"]')
+            .trigger('click');
+
+        expect(
+            decodeURIComponent(
+                wrapper
+                    .get('[data-test="export-users-button"]')
+                    .attributes('href') ?? '',
+            ),
+        ).toBe('/master-data/users/export?ids[]=user-2');
     });
 });

@@ -22,6 +22,7 @@ return [
         ],
 
         'label' => [
+            'id' => 'ID',
             'name' => 'Name',
             'email' => 'Email',
             'role' => 'Role',
@@ -43,6 +44,7 @@ return [
             'save' => 'Save',
             'cancel' => 'Cancel',
             'edit' => 'Edit',
+            'export' => 'Export XLSX',
         ],
 
         'message' => [
@@ -53,6 +55,11 @@ return [
         'empty' => [
             'title' => 'No users found',
             'description' => 'No user matches the current search.',
+        ],
+
+        'filter' => [
+            'status' => 'Status',
+            'role' => 'Role',
         ],
 
         'role_missing' => 'No role',

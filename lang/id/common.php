@@ -19,6 +19,10 @@ return [
         'summary' => 'Menampilkan :from sampai :to dari :total',
         'empty' => 'Data tidak ditemukan.',
         'selected' => ':count dari :total baris di halaman ini dipilih',
+        'filter' => [
+            'clear' => 'Hapus filter',
+        ],
+        'row_actions' => 'Buka aksi baris',
         'columns' => [
             'label' => 'Kolom',
             'description' => 'Atur kolom',

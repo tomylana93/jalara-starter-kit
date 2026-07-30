@@ -19,6 +19,10 @@ return [
         'summary' => 'Showing :from to :to of :total',
         'empty' => 'No data found.',
         'selected' => ':count of :total rows on this page selected',
+        'filter' => [
+            'clear' => 'Clear filter',
+        ],
+        'row_actions' => 'Open row actions',
         'columns' => [
             'label' => 'Columns',
             'description' => 'Toggle columns',

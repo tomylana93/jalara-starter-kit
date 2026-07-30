@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import DataTable from './DataTable.vue';
 import DataTableColumnHeader from './DataTableColumnHeader.vue';
 import DataTablePagination from './DataTablePagination.vue';
-import type { TablePayload } from './types';
+import type { TableFilterConfig, TablePayload } from './types';
 
 type Row = {
     id: string;
@@ -74,16 +74,32 @@ const payload = (
         sort: 'name',
         direction: 'asc',
         perPage: 10,
+        filters: {},
     },
     ...overrides,
 });
 
-const mountTable = (tablePayload: TablePayload<Row> = payload()) =>
+const filters: TableFilterConfig[] = [
+    {
+        key: 'status',
+        label: 'Status',
+        options: [
+            { value: 'active', label: 'Active' },
+            { value: 'disabled', label: 'Disabled' },
+        ],
+    },
+];
+
+const mountTable = (
+    tablePayload: TablePayload<Row> = payload(),
+    filterConfigs: TableFilterConfig[] = filters,
+) =>
     mount(DataTable<Row, unknown>, {
         props: {
             columns,
             payload: tablePayload,
             getRowId: (row: Row) => row.id,
+            filters: filterConfigs,
         },
     });
 
@@ -136,6 +152,7 @@ describe('DataTable', () => {
                 direction: 'desc',
                 page: 1,
                 perPage: 10,
+                filters: {},
             },
         ]);
     });
@@ -158,6 +175,7 @@ describe('DataTable', () => {
                 direction: 'asc',
                 page: 1,
                 perPage: 10,
+                filters: {},
             },
         ]);
     });
@@ -406,5 +424,135 @@ describe('DataTable', () => {
 
         expect(wrapper.text()).toContain('No users found');
         expect(wrapper.text()).toContain('Nothing matches the search.');
+    });
+
+    it('renders a filter for every configured key', () => {
+        const wrapper = mountTable();
+
+        expect(wrapper.find('[data-test="table-filter-status"]').exists()).toBe(
+            true,
+        );
+        expect(wrapper.find('[data-test="table-filter-role"]').exists()).toBe(
+            false,
+        );
+    });
+
+    it('renders no filter at all when none is configured', () => {
+        const wrapper = mountTable(payload(), []);
+
+        expect(wrapper.find('[data-test="table-filter-status"]').exists()).toBe(
+            false,
+        );
+    });
+
+    it('asks the server for a filtered set and resets to the first page', async () => {
+        const wrapper = mountTable(
+            payload({ meta: { ...payload().meta, page: 4 } }),
+        );
+
+        await wrapper
+            .get('[data-test="table-filter-status-active"]')
+            .trigger('click');
+
+        expect(wrapper.emitted('query-change')?.at(0)).toEqual([
+            {
+                search: null,
+                sort: 'name',
+                direction: 'asc',
+                page: 1,
+                perPage: 10,
+                filters: { status: ['active'] },
+            },
+        ]);
+    });
+
+    it('treats several values of one filter as alternatives', async () => {
+        const wrapper = mountTable(
+            payload({
+                state: { ...payload().state, filters: { status: ['active'] } },
+            }),
+        );
+
+        await wrapper
+            .get('[data-test="table-filter-status-disabled"]')
+            .trigger('click');
+
+        expect(wrapper.emitted('query-change')?.at(0)?.[0]).toMatchObject({
+            filters: { status: ['active', 'disabled'] },
+        });
+    });
+
+    it('drops a filter key once its last value is unselected', async () => {
+        const wrapper = mountTable(
+            payload({
+                state: { ...payload().state, filters: { status: ['active'] } },
+            }),
+        );
+
+        await wrapper
+            .get('[data-test="table-filter-status-active"]')
+            .trigger('click');
+
+        expect(wrapper.emitted('query-change')?.at(0)?.[0]).toMatchObject({
+            filters: {},
+        });
+    });
+
+    it('clears every selected value of one filter at once', async () => {
+        const wrapper = mountTable(
+            payload({
+                state: {
+                    ...payload().state,
+                    filters: { status: ['active', 'disabled'] },
+                },
+            }),
+        );
+
+        await wrapper
+            .get('[data-test="table-filter-status-clear"]')
+            .trigger('click');
+
+        expect(wrapper.emitted('query-change')?.at(0)?.[0]).toMatchObject({
+            filters: {},
+            page: 1,
+        });
+    });
+
+    it('counts the selected values on the filter trigger', () => {
+        const wrapper = mountTable(
+            payload({
+                state: {
+                    ...payload().state,
+                    filters: { status: ['active', 'disabled'] },
+                },
+            }),
+        );
+
+        expect(
+            wrapper.get('[data-test="table-filter-status-count"]').text(),
+        ).toBe('2');
+    });
+
+    it('offers no clear action while nothing is selected', () => {
+        const wrapper = mountTable();
+
+        expect(
+            wrapper.find('[data-test="table-filter-status-clear"]').exists(),
+        ).toBe(false);
+    });
+
+    it('drops the selection when the filters change', async () => {
+        const wrapper = mountTable();
+
+        await wrapper.get('[data-test="table-select-all"]').trigger('click');
+        expect(wrapper.emitted('selection-change')?.at(-1)?.[0]).toHaveLength(
+            2,
+        );
+
+        await wrapper
+            .get('[data-test="table-filter-status-active"]')
+            .trigger('click');
+
+        expect(wrapper.emitted('selection-change')?.at(-1)).toEqual([[]]);
     });
 });

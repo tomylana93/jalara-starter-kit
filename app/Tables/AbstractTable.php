@@ -31,7 +31,13 @@ abstract class AbstractTable
      *         from: int|null,
      *         to: int|null,
      *     },
-     *     state: array{search: string|null, sort: string, direction: string, perPage: int},
+     *     state: array{
+     *         search: string|null,
+     *         sort: string,
+     *         direction: string,
+     *         perPage: int,
+     *         filters: array<string, list<string>>,
+     *     },
      * }
      */
     public function paginate(TableQuery $tableQuery): array
@@ -44,6 +50,9 @@ abstract class AbstractTable
         if ($resolved->search !== null) {
             $query->whereAny($this->searchable(), 'like', '%'.$resolved->search.'%');
         }
+
+        /* Filters narrow the set before it is counted, ordered, and paged. */
+        $this->applyFilters($query, $resolved->filters);
 
         $query
             ->orderBy($sortable[(string) $resolved->sort], $resolved->direction)
@@ -89,6 +98,7 @@ abstract class AbstractTable
                 'sort' => (string) $resolved->sort,
                 'direction' => $resolved->direction,
                 'perPage' => $perPage,
+                'filters' => $resolved->filters,
             ],
         ];
     }
@@ -126,6 +136,22 @@ abstract class AbstractTable
      * @return array<string, mixed>
      */
     abstract protected function transform(Model $model): array;
+
+    /**
+     * Narrow the query by the filters the request selected.
+     *
+     * A table opts in by overriding this. The keys are the ones the controller
+     * named when building the query, so a filter key is never a raw column; the
+     * subclass still owns mapping each key to a safe constraint. Values inside
+     * one filter are alternatives, while separate filters combine.
+     *
+     * @param  Builder<TModel>  $query
+     * @param  array<string, list<string>>  $filters
+     */
+    protected function applyFilters(Builder $query, array $filters): void
+    {
+        //
+    }
 
     /**
      * The column that breaks ties between equal sort values.

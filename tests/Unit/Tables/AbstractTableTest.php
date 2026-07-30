@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\Authorization\SyncAuthorization;
+use App\Enums\Role;
+use App\Enums\UserStatus;
 use App\Models\User;
 use App\Tables\TableQuery;
 use App\Tables\UsersTable;
@@ -132,4 +135,85 @@ it('reports an empty window when no row matches', function () {
         ->and($result['meta']['total'])->toBe(0)
         ->and($result['meta']['from'])->toBeNull()
         ->and($result['meta']['to'])->toBeNull();
+});
+
+it('drops a filter that selects nothing at all', function (mixed $values) {
+    $query = TableQuery::fromValidated(['status' => $values], ['status']);
+
+    expect($query->filters)->toBe([]);
+})->with(['empty' => [[]], 'blank values' => [['', '   ']], 'not a list' => ['active']]);
+
+it('normalizes a filter into a distinct list of strings', function () {
+    $query = TableQuery::fromValidated(
+        ['status' => ['active', 'active', 'disabled'], 'ignored' => ['x']],
+        ['status'],
+    );
+
+    expect($query->filters)->toBe(['status' => ['active', 'disabled']]);
+});
+
+it('discards a filter key the table was never asked about', function () {
+    $query = TableQuery::fromValidated(['role' => ['admin']], ['status']);
+
+    expect($query->filters)->toBe([]);
+});
+
+it('keeps the filters when the sort key is resolved', function () {
+    $query = new TableQuery(filters: ['status' => ['active']])->withResolvedSort('name', 'asc');
+
+    expect($query->filters)->toBe(['status' => ['active']]);
+});
+
+it('reports the effective filters alongside the page of data', function () {
+    $result = usersTable()->paginate(new TableQuery(filters: ['status' => ['active']]));
+
+    expect($result['state']['filters'])->toBe(['status' => ['active']]);
+});
+
+it('treats the values inside one filter as alternatives', function () {
+    User::factory()->create(['status' => UserStatus::Active]);
+    User::factory()->create(['status' => UserStatus::Disabled]);
+    User::factory()->create(['status' => UserStatus::Suspended]);
+
+    $result = usersTable()->paginate(new TableQuery(
+        perPage: 50,
+        filters: ['status' => [UserStatus::Disabled->value, UserStatus::Suspended->value]],
+    ));
+
+    expect(array_column($result['data'], 'status'))
+        ->each->toHaveKey('value')
+        ->and(array_column(array_column($result['data'], 'status'), 'value'))
+        ->not->toContain(UserStatus::Active->value)
+        ->toHaveCount(2);
+});
+
+it('narrows the result set when separate filters combine', function () {
+    app(SyncAuthorization::class)->handle();
+
+    $match = User::factory()->create(['status' => UserStatus::Active]);
+    $match->assignRole(Role::Admin->value);
+
+    $wrongRole = User::factory()->create(['status' => UserStatus::Active]);
+    $wrongRole->assignRole(Role::User->value);
+
+    $wrongStatus = User::factory()->create(['status' => UserStatus::Disabled]);
+    $wrongStatus->assignRole(Role::Admin->value);
+
+    $result = usersTable()->paginate(new TableQuery(
+        perPage: 50,
+        filters: [
+            'status' => [UserStatus::Active->value],
+            'role' => [Role::Admin->value],
+        ],
+    ));
+
+    expect(array_column($result['data'], 'id'))->toBe([$match->id]);
+});
+
+it('leaves the result set alone when no filter is selected', function () {
+    User::factory()->count(2)->create(['status' => UserStatus::Disabled]);
+
+    $result = usersTable()->paginate(new TableQuery(perPage: 50));
+
+    expect($result['data'])->toHaveCount(3);
 });

@@ -27,6 +27,34 @@ export type SortableColumn = {
 };
 
 /**
+ * One selectable value of a filter, already labelled by the page.
+ */
+export type TableFilterOption = {
+    value: string;
+    label: string;
+};
+
+/**
+ * A filter the toolbar offers, named by the key the server validates.
+ *
+ * The table stays domain free: it never knows what a key means, only that the
+ * server understands it.
+ */
+export type TableFilterConfig = {
+    key: string;
+    label: string;
+    options: TableFilterOption[];
+};
+
+/**
+ * The selected values per filter key.
+ *
+ * Values within one key are alternatives; separate keys narrow together. A key
+ * that selects nothing is absent rather than empty.
+ */
+export type TableFilters = Record<string, string[]>;
+
+/**
  * The effective query the server resolved for the current page of rows.
  */
 export type TableState = {
@@ -34,6 +62,7 @@ export type TableState = {
     sort: string;
     direction: TableSortDirection;
     perPage: number;
+    filters: TableFilters;
 };
 
 export type TableMeta = {
@@ -64,4 +93,5 @@ export type TableQuery = {
     direction: TableSortDirection;
     page: number;
     perPage: number;
+    filters: TableFilters;
 };

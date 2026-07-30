@@ -27,4 +27,18 @@
   8601 (`->toISOString()`) and let the browser format it — see the timezone rule
   in `mem:backend/settings`. The controller passes `GeneralSettings::$dateFormat`
   as a separate scalar page prop; the table itself takes no settings dependency.
+- Filters are reusable and domain free: `TableQuery::fromValidated($validated,
+  $filterKeys)` keeps only the keys the caller names, normalizing each to a
+  distinct non-empty `list<string>` and dropping a key that selects nothing, so
+  an empty list never has to mean "match everything". Expose the keys as a
+  public const (`UsersTable::FILTERABLE`) alongside `SORTABLE`. Subclasses opt in
+  by overriding `applyFilters()`, which runs after search and before the count,
+  and still own mapping each key to a safe constraint — a filter key is never a
+  raw column. Values inside one key are alternatives, separate keys narrow
+  together. `state.filters` echoes what was applied.
+- Exporting a selection writes a temp `.xlsx` via
+  `SimpleExcelWriter::create($path)` and returns
+  `response()->download(...)->deleteFileAfterSend()`. Do NOT use
+  `SimpleExcelWriter::streamDownload()`: its `toBrowser()` calls `exit`, which
+  bypasses the response cycle and cannot be asserted against.
 - Consumed by the generic frontend table described in `mem:frontend/data_table`.

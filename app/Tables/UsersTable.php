@@ -27,6 +27,14 @@ final class UsersTable extends AbstractTable
         'createdAt' => 'created_at',
     ];
 
+    /**
+     * The filter keys the table understands.
+     *
+     * Public for the same reason as `SORTABLE`: the request validating the
+     * query and the controller building it share one source of truth.
+     */
+    public const array FILTERABLE = ['status', 'role'];
+
     public function __construct(private readonly User $actor) {}
 
     /**
@@ -58,6 +66,23 @@ final class UsersTable extends AbstractTable
     protected function defaultSort(): string
     {
         return 'createdAt';
+    }
+
+    /**
+     * @param  Builder<User>  $query
+     * @param  array<string, list<string>>  $filters
+     */
+    protected function applyFilters(Builder $query, array $filters): void
+    {
+        if (($statuses = $filters['status'] ?? []) !== []) {
+            $query->whereIn('status', $statuses);
+        }
+
+        if (($roles = $filters['role'] ?? []) !== []) {
+            $query->whereHas('roles', function (Builder $roleQuery) use ($roles): void {
+                $roleQuery->whereIn('name', $roles);
+            });
+        }
     }
 
     /**

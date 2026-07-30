@@ -22,6 +22,7 @@ return [
         ],
 
         'label' => [
+            'id' => 'ID',
             'name' => 'Nama',
             'email' => 'Email',
             'role' => 'Role',
@@ -43,6 +44,7 @@ return [
             'save' => 'Simpan',
             'cancel' => 'Batal',
             'edit' => 'Ubah',
+            'export' => 'Ekspor XLSX',
         ],
 
         'message' => [
@@ -53,6 +55,11 @@ return [
         'empty' => [
             'title' => 'User tidak ditemukan',
             'description' => 'Tidak ada user yang cocok dengan pencarian saat ini.',
+        ],
+
+        'filter' => [
+            'status' => 'Status',
+            'role' => 'Role',
         ],
 
         'role_missing' => 'Tanpa role',

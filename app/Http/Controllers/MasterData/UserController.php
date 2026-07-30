@@ -31,7 +31,10 @@ class UserController extends Controller
         $table = new UsersTable($request->user());
 
         return Inertia::render('master-data/users/Index', [
-            'users' => $table->paginate(TableQuery::fromValidated($request->validated())),
+            'users' => $table->paginate(
+                TableQuery::fromValidated($request->validated(), UsersTable::FILTERABLE),
+            ),
+            'filterOptions' => $this->filterOptions(),
             'canCreate' => Gate::allows('create', User::class),
             'dateFormat' => $generalSettings->dateFormat->value,
         ]);
@@ -116,6 +119,22 @@ class UserController extends Controller
         ]);
 
         return to_route('master-data.users.index');
+    }
+
+    /**
+     * The values each table filter offers, labelled for the current locale.
+     *
+     * The role filter spans the whole catalog rather than the assignable roles:
+     * an account that already holds a protected role still has to be findable.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function filterOptions(): array
+    {
+        return [
+            'status' => UserStatus::options(),
+            'role' => Role::options(),
+        ];
     }
 
     /**

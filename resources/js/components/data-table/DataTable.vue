@@ -30,14 +30,23 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTranslations } from '@/composables/useTranslations';
+import DataTableFilter from './DataTableFilter.vue';
 import DataTablePagination from './DataTablePagination.vue';
-import type { TablePayload, TableQuery, TableSortDirection } from './types';
+import type {
+    TableFilterConfig,
+    TableFilters,
+    TablePayload,
+    TableQuery,
+    TableSortDirection,
+} from './types';
 
 const props = defineProps<{
     columns: ColumnDef<TData, TValue>[];
     payload: TablePayload<TData>;
     /* Stable domain identity; a row index would break selection across pages. */
     getRowId: (row: TData) => string;
+    /* Domain-free filter descriptors; the server owns what each key means. */
+    filters?: TableFilterConfig[];
     searchPlaceholder?: string;
     emptyTitle?: string;
     emptyDescription?: string;
@@ -61,6 +70,7 @@ const queryFromPayload = (payload: TablePayload<TData>): TableQuery => ({
     direction: payload.state.direction,
     page: payload.meta.page,
     perPage: payload.meta.perPage,
+    filters: payload.state.filters,
 });
 
 /*
@@ -108,6 +118,25 @@ watchDebounced(
     },
     { debounce: 300 },
 );
+
+const selectedFilterValues = (key: string): string[] =>
+    pendingQuery.value.filters[key] ?? [];
+
+/*
+ * A filter narrows the result set, so the current page stops being meaningful.
+ * An empty selection drops the key entirely rather than sending an empty list.
+ */
+const applyFilter = (key: string, values: string[]): void => {
+    const filters: TableFilters = { ...pendingQuery.value.filters };
+
+    if (values.length === 0) {
+        delete filters[key];
+    } else {
+        filters[key] = values;
+    }
+
+    emitQuery({ filters, page: 1 });
+};
 
 const sorting = computed<SortingState>(() => [
     {
@@ -204,6 +233,7 @@ const selectionScope = computed(() =>
         pendingQuery.value.direction,
         pendingQuery.value.page,
         pendingQuery.value.perPage,
+        pendingQuery.value.filters,
         props.payload.data.map((row) => props.getRowId(row)),
     ]),
 );
@@ -247,6 +277,16 @@ const selectedCount = computed(() => table.getSelectedRowModel().rows.length);
 
             <div class="flex items-center gap-2">
                 <slot name="actions" />
+
+                <DataTableFilter
+                    v-for="filter in props.filters ?? []"
+                    :key="filter.key"
+                    :filter-key="filter.key"
+                    :label="filter.label"
+                    :options="filter.options"
+                    :selected="selectedFilterValues(filter.key)"
+                    @update:selected="applyFilter(filter.key, $event)"
+                />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger as-child>

@@ -5,12 +5,15 @@ use App\Enums\DateFormat;
 use App\Enums\Permission;
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Exports\UsersExport;
+use App\Http\Requests\MasterData\ExportUsersRequest;
 use App\Models\User;
 use App\Settings\GeneralSettings;
 use App\Settings\UserProvisioningSettings;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission as PermissionModel;
+use Spatie\SimpleExcel\SimpleExcelReader;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -388,4 +391,165 @@ it('shares whether the user may browse master data', function () {
     actingAs(User::factory()->create())
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('can.viewUsers', false));
+});
+
+it('offers the status and role catalogs as filter options', function () {
+    actingAs(userManager())
+        ->get(route('master-data.users.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('filterOptions.status', count(UserStatus::cases()))
+            ->has('filterOptions.role', count(Role::cases()))
+            ->where('filterOptions.status.0.value', UserStatus::Active->value),
+        );
+});
+
+it('filters users by status', function () {
+    $manager = userManager();
+    User::factory()->create(['status' => UserStatus::Disabled]);
+    User::factory()->create(['status' => UserStatus::Suspended]);
+
+    actingAs($manager)
+        ->get(route('master-data.users.index', ['status' => [UserStatus::Disabled->value]]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.status.value', UserStatus::Disabled->value)
+            ->where('users.state.filters.status', [UserStatus::Disabled->value]),
+        );
+});
+
+it('treats several values of one filter as alternatives', function () {
+    $manager = userManager();
+    User::factory()->create(['status' => UserStatus::Disabled]);
+    User::factory()->create(['status' => UserStatus::Suspended]);
+
+    actingAs($manager)
+        ->get(route('master-data.users.index', [
+            'status' => [UserStatus::Disabled->value, UserStatus::Suspended->value],
+        ]))
+        ->assertInertia(fn (Assert $page) => $page->has('users.data', 2));
+});
+
+it('filters users by role', function () {
+    $manager = userManager();
+    $target = User::factory()->create();
+    $target->assignRole(Role::User->value);
+
+    actingAs($manager)
+        ->get(route('master-data.users.index', ['role' => [Role::User->value]]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.id', $target->id),
+        );
+});
+
+it('narrows the table when the status and role filters combine', function () {
+    $manager = userManager();
+    $match = User::factory()->create(['status' => UserStatus::Disabled]);
+    $match->assignRole(Role::User->value);
+
+    $wrongStatus = User::factory()->create(['status' => UserStatus::Active]);
+    $wrongStatus->assignRole(Role::User->value);
+
+    actingAs($manager)
+        ->get(route('master-data.users.index', [
+            'status' => [UserStatus::Disabled->value],
+            'role' => [Role::User->value],
+        ]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.id', $match->id),
+        );
+});
+
+it('rejects a filter value outside the allowed catalog', function (array $query) {
+    actingAs(userManager())
+        ->get(route('master-data.users.index', $query))
+        ->assertSessionHasErrors();
+})->with([
+    'unknown status' => [['status' => ['exploded']]],
+    'unknown role' => [['role' => ['root']]],
+    'duplicated status' => [['status' => ['active', 'active']]],
+    'status is not a list' => [['status' => 'active']],
+]);
+
+it('downloads the selected users as a spreadsheet', function () {
+    $manager = userManager();
+    $first = User::factory()->create(['name' => 'Ada Lovelace']);
+    $second = User::factory()->create(['name' => 'Grace Hopper']);
+
+    actingAs($manager)
+        ->get(route('master-data.users.export', ['ids' => [$second->id, $first->id]]))
+        ->assertOk()
+        ->assertDownload('users.xlsx');
+});
+
+it('writes the exported rows in the order they were selected', function () {
+    $manager = userManager();
+    $first = User::factory()->create(['name' => 'Ada Lovelace']);
+    $second = User::factory()->create(['name' => 'Grace Hopper']);
+
+    $path = app(UsersExport::class)->write([$second->id, $first->id]);
+    $rows = SimpleExcelReader::create($path)->getRows()->all();
+
+    expect(array_column($rows, __('master_data.user.label.name')))
+        ->toBe(['Grace Hopper', 'Ada Lovelace']);
+
+    unlink($path);
+});
+
+it('exports no credential material', function () {
+    $manager = userManager();
+
+    $path = app(UsersExport::class)->write([$manager->id]);
+    $contents = SimpleExcelReader::create($path)->getRows()->all();
+
+    expect(array_keys($contents[0]))->toBe([
+        __('master_data.user.label.id'),
+        __('master_data.user.label.name'),
+        __('master_data.user.label.email'),
+        __('master_data.user.label.role'),
+        __('master_data.user.label.status'),
+        __('master_data.user.label.created_at'),
+    ]);
+
+    unlink($path);
+});
+
+it('rejects an export selection that cannot have come from one page', function (array $query) {
+    actingAs(userManager())
+        ->get(route('master-data.users.export', $query))
+        ->assertSessionHasErrors();
+})->with([
+    'no selection' => [[]],
+    'empty selection' => [['ids' => []]],
+    'malformed id' => [['ids' => ['not-a-uuid']]],
+    'unknown id' => [['ids' => ['0199a1f0-0000-7000-8000-000000000000']]],
+]);
+
+it('rejects a duplicated export selection', function () {
+    $manager = userManager();
+
+    actingAs($manager)
+        ->get(route('master-data.users.export', ['ids' => [$manager->id, $manager->id]]))
+        ->assertSessionHasErrors();
+});
+
+it('rejects an export selection larger than a page of rows', function () {
+    $manager = userManager();
+    $ids = User::factory()->count(ExportUsersRequest::MAX_IDS)->create()->pluck('id')->all();
+
+    actingAs($manager)
+        ->get(route('master-data.users.export', ['ids' => [...$ids, $manager->id]]))
+        ->assertSessionHasErrors('ids');
+});
+
+it('protects the export behind the view users permission', function () {
+    $manager = userManager();
+
+    get(route('master-data.users.export', ['ids' => [$manager->id]]))
+        ->assertRedirectToRoute('login');
+
+    actingAs(User::factory()->create())
+        ->get(route('master-data.users.export', ['ids' => [$manager->id]]))
+        ->assertForbidden();
 });

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Http\Controllers\MasterData\ExportUsersController;
 use App\Http\Controllers\MasterData\UserController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,9 @@ Route::middleware(['auth', 'verified', 'permission:'.Permission::ViewUsers->valu
     ->name('master-data.')
     ->group(function (): void {
         Route::inertia('/', 'master-data/Index')->name('index');
+
+        /* Declared first so the literal segment is not read as a {user}. */
+        Route::get('users/export', ExportUsersController::class)->name('users.export');
 
         Route::resource('users', UserController::class)
             ->only(['index', 'create', 'store', 'edit', 'update'])
