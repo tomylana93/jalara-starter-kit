@@ -22,7 +22,7 @@ A professional and production-ready Laravel application starter kit. Jalara prov
 
 ## Key Features
 
-- **Robust Authentication & Security**: Complete user registration, secure session management, and two-factor authentication (2FA) powered by Laravel Fortify.
+- **Robust Authentication & Security**: Secure authentication, password reset, email verification, and secure session handling powered by Laravel Fortify.
 - **Dynamic Settings & Customization**: Comprehensive administration panels for system configuration, including general settings, authentication options, mail servers, user provisioning, security parameters, and dynamic brand assets.
 - **Granular Authorization**: Comprehensive roles and permissions system built with Spatie Laravel Permission.
 - **Type-Safe Routing**: End-to-end integration via Laravel Wayfinder, enabling auto-generation of strongly-typed route helpers directly in Vue.
