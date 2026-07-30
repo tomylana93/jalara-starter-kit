@@ -12,6 +12,7 @@ use App\Settings\GeneralSettings;
 use App\Settings\UserProvisioningSettings;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Spatie\Permission\Models\Permission as PermissionModel;
 use Spatie\SimpleExcel\SimpleExcelReader;
 
@@ -489,30 +490,118 @@ it('writes the exported rows in the order they were selected', function () {
     $second = User::factory()->create(['name' => 'Grace Hopper']);
 
     $path = app(UsersExport::class)->write([$second->id, $first->id]);
-    $rows = SimpleExcelReader::create($path)->getRows()->all();
 
-    expect(array_column($rows, __('master_data.user.label.name')))
-        ->toBe(['Grace Hopper', 'Ada Lovelace']);
+    try {
+        $rows = SimpleExcelReader::create($path, 'xlsx')->getRows()->all();
 
-    unlink($path);
+        expect(array_column($rows, __('master_data.user.label.name')))
+            ->toBe(['Grace Hopper', 'Ada Lovelace']);
+    } finally {
+        unlink($path);
+    }
 });
 
 it('exports no credential material', function () {
     $manager = userManager();
 
     $path = app(UsersExport::class)->write([$manager->id]);
-    $contents = SimpleExcelReader::create($path)->getRows()->all();
 
-    expect(array_keys($contents[0]))->toBe([
-        __('master_data.user.label.id'),
-        __('master_data.user.label.name'),
-        __('master_data.user.label.email'),
-        __('master_data.user.label.role'),
-        __('master_data.user.label.status'),
-        __('master_data.user.label.created_at'),
+    try {
+        $contents = SimpleExcelReader::create($path, 'xlsx')->getRows()->all();
+
+        expect(array_keys($contents[0]))->toBe([
+            __('master_data.user.label.name'),
+            __('master_data.user.label.email'),
+            __('master_data.user.label.role'),
+            __('master_data.user.label.status'),
+            __('master_data.user.label.created_at'),
+        ]);
+    } finally {
+        unlink($path);
+    }
+});
+
+it('writes the created instant as a native spreadsheet date', function () {
+    $manager = userManager();
+    $user = User::factory()->create(['created_at' => '2026-07-30 22:30:00']);
+
+    $path = app(UsersExport::class)->write([$user->id]);
+
+    try {
+        $rows = SimpleExcelReader::create($path, 'xlsx')->getRows()->all();
+        $created = $rows[0][__('master_data.user.label.created_at')];
+
+        expect($created)->toBeInstanceOf(DateTimeInterface::class);
+        /* The cell keeps the very instant the table sends, not a rendering. */
+        expect($created->format('Y-m-d H:i:s'))->toBe('2026-07-30 22:30:00');
+    } finally {
+        unlink($path);
+    }
+});
+
+it('leaves an empty cell for a user with no created instant', function () {
+    $manager = userManager();
+    $user = User::factory()->create();
+    $user->forceFill(['created_at' => null])->saveQuietly();
+
+    $path = app(UsersExport::class)->write([$user->id]);
+
+    try {
+        $rows = SimpleExcelReader::create($path, 'xlsx')->getRows()->all();
+
+        expect($rows[0][__('master_data.user.label.created_at')])->toBeEmpty();
+    } finally {
+        unlink($path);
+    }
+});
+
+it('sizes every exported column to its longest value', function () {
+    $manager = userManager();
+    $user = User::factory()->create([
+        'name' => 'A Considerably Longer Name Than The Heading',
+        'email' => 'considerably.longer.address@example.test',
     ]);
 
-    unlink($path);
+    $path = app(UsersExport::class)->write([$user->id]);
+
+    try {
+        $reader = new XlsxReader;
+        $reader->open($path);
+
+        $sheets = $reader->getSheetIterator();
+        $sheets->rewind();
+        $widths = [];
+
+        foreach ($sheets->current()->getColumnWidths() as $columnWidth) {
+            for ($column = $columnWidth->start; $column <= $columnWidth->end; $column++) {
+                $widths[$column] = $columnWidth->width;
+            }
+        }
+
+        expect($widths)->toHaveCount(5);
+        /* The measured value is the longest of heading and data, plus padding. */
+        expect($widths[1])->toBe((float) (mb_strlen($user->name) + 2));
+        expect($widths[2])->toBe((float) (mb_strlen($user->email) + 2));
+        expect($widths[5])->toBe((float) (mb_strlen('2026-07-30 22:30:00') + 2));
+
+        $reader->close();
+    } finally {
+        unlink($path);
+    }
+});
+
+it('leaves no temporary seed file behind', function () {
+    $manager = userManager();
+
+    $path = app(UsersExport::class)->write([$manager->id]);
+
+    try {
+        /* A suffixed sibling would mean the tempnam() seed was abandoned. */
+        expect(file_exists($path.'.xlsx'))->toBeFalse();
+        expect(file_exists($path))->toBeTrue();
+    } finally {
+        unlink($path);
+    }
 });
 
 it('rejects an export selection that cannot have come from one page', function (array $query) {

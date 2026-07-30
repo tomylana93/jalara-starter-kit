@@ -4,8 +4,18 @@ namespace App\Exports;
 
 use App\Enums\Role;
 use App\Models\User;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\WriterInterface;
+use OpenSpout\Writer\XLSX\Writer;
+use RuntimeException;
 use Spatie\SimpleExcel\SimpleExcelWriter;
+use Throwable;
 
 /**
  * A spreadsheet of the users a request selected.
@@ -16,21 +26,64 @@ use Spatie\SimpleExcel\SimpleExcelWriter;
 final class UsersExport
 {
     /**
+     * The zero based column holding the created instant.
+     */
+    private const int CREATED_AT_COLUMN = 4;
+
+    /**
+     * The Excel display format for the created instant.
+     */
+    private const string DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss';
+
+    /**
+     * Breathing room, in characters, added to every measured column.
+     */
+    private const int WIDTH_PADDING = 2;
+
+    /**
      * Write the selected users to a spreadsheet and return its path.
      *
      * @param  list<string>  $ids
      */
     public function write(array $ids): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'users-export').'.xlsx';
+        $path = tempnam(sys_get_temp_dir(), 'users-export');
 
-        $writer = SimpleExcelWriter::create($path)->addHeader($this->heading());
+        throw_if($path === false, RuntimeException::class, 'Unable to create a temporary export file.');
 
-        foreach ($this->users($ids) as $user) {
-            $writer->addRow($this->row($user));
+        try {
+            $heading = $this->heading();
+            /* Rows are materialized first because column widths must be known
+               before the writer opens the file, and a selection is capped at
+               a single page of rows. */
+            $rows = array_values(
+                $this->users($ids)->map(fn (User $user): array => $this->row($user))->all(),
+            );
+
+            /* The type is explicit so the path from tempnam() can be used as
+               it is, leaving no second file behind to leak. */
+            $writer = SimpleExcelWriter::create(
+                file: $path,
+                type: 'xlsx',
+                configureWriter: function (WriterInterface $writer) use ($heading, $rows): void {
+                    $this->configureColumnWidths($writer, $heading, $rows);
+                },
+            );
+
+            $writer->addHeader($heading);
+
+            foreach ($rows as $row) {
+                $writer->addRow(Row::fromValuesWithStyles($row, columnStyles: [
+                    self::CREATED_AT_COLUMN => (new Style)->setFormat(self::DATE_FORMAT),
+                ]));
+            }
+
+            $writer->close();
+        } catch (Throwable $throwable) {
+            @unlink($path);
+
+            throw $throwable;
         }
-
-        $writer->close();
 
         return $path;
     }
@@ -43,7 +96,6 @@ final class UsersExport
     private function heading(): array
     {
         return [
-            __('master_data.user.label.id'),
             __('master_data.user.label.name'),
             __('master_data.user.label.email'),
             __('master_data.user.label.role'),
@@ -72,18 +124,21 @@ final class UsersExport
     }
 
     /**
-     * @return list<string>
+     * @return array{0: string, 1: string, 2: string, 3: string, 4: ?DateTimeInterface}
      */
     private function row(User $user): array
     {
         return [
-            (string) $user->id,
             $user->name,
             $user->email,
             $this->role($user) ?? __('master_data.user.role_missing'),
             $user->status->label(),
-            /* The instant stays UTC ISO 8601, exactly as the table sends it. */
-            $user->created_at?->toISOString() ?? '',
+            /* A native date/time cell, still carrying the UTC instant the
+               table sends, so the workbook can sort and filter on it. */
+            $user->created_at === null
+                ? null
+                : DateTimeImmutable::createFromInterface($user->created_at)
+                    ->setTimezone(new DateTimeZone('UTC')),
         ];
     }
 
@@ -99,5 +154,45 @@ final class UsersExport
         }
 
         return null;
+    }
+
+    /**
+     * Size every column to the longest value it actually carries.
+     *
+     * OpenSpout has no autosize, so the widths are measured from the exported
+     * values themselves and handed to the writer before the file is opened.
+     *
+     * @param  list<string>  $heading
+     * @param  list<array{0: string, 1: string, 2: string, 3: string, 4: ?DateTimeInterface}>  $rows
+     */
+    private function configureColumnWidths(WriterInterface $writer, array $heading, array $rows): void
+    {
+        if (! $writer instanceof Writer) {
+            return;
+        }
+
+        $options = $writer->getOptions();
+
+        foreach ($heading as $column => $title) {
+            $width = Str::length($title);
+
+            foreach ($rows as $row) {
+                $width = max($width, Str::length($this->displayValue($row[$column])));
+            }
+
+            $options->setColumnWidth((float) ($width + self::WIDTH_PADDING), $column + 1);
+        }
+    }
+
+    /**
+     * The text a reader sees for a cell, used only to measure column width.
+     */
+    private function displayValue(string|DateTimeInterface|null $value): string
+    {
+        return match (true) {
+            $value === null => '',
+            $value instanceof DateTimeInterface => $value->format('Y-m-d H:i:s'),
+            default => $value,
+        };
     }
 }

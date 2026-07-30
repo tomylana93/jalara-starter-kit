@@ -22,7 +22,6 @@ return [
         ],
 
         'label' => [
-            'id' => 'ID',
             'name' => 'Name',
             'email' => 'Email',
             'role' => 'Role',

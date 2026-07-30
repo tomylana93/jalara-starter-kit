@@ -36,9 +36,23 @@
   and still own mapping each key to a safe constraint — a filter key is never a
   raw column. Values inside one key are alternatives, separate keys narrow
   together. `state.filters` echoes what was applied.
-- Exporting a selection writes a temp `.xlsx` via
-  `SimpleExcelWriter::create($path)` and returns
+- Exporting a selection writes a temp `.xlsx` and returns
   `response()->download(...)->deleteFileAfterSend()`. Do NOT use
   `SimpleExcelWriter::streamDownload()`: its `toBrowser()` calls `exit`, which
   bypasses the response cycle and cannot be asserted against.
+- `tempnam()` creates a real file, so never append a suffix to its result —
+  that abandons the seed. Pass the path as it is with an explicit
+  `SimpleExcelWriter::create(file: $path, type: 'xlsx')`, and unlink on throw.
+  Readers then also need the explicit type: `SimpleExcelReader::create($path,
+  'xlsx')`.
+- Timestamp columns are native date/time cells: hand OpenSpout a
+  `DateTimeInterface` in UTC and attach
+  `(new Style)->setFormat('yyyy-mm-dd hh:mm:ss')` through
+  `Row::fromValuesWithStyles(columnStyles: [...])`, keyed by zero-based column.
+  A null timestamp stays an empty cell, never an epoch date.
+- OpenSpout has no autosize. Materialize rows first, measure the longest of
+  heading and display value per column, then set widths inside the
+  `configureWriter` callback via
+  `$writer->getOptions()->setColumnWidth($width, $oneBasedColumn)` — options are
+  only writable before the file is opened.
 - Consumed by the generic frontend table described in `mem:frontend/data_table`.
