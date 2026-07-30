@@ -2,9 +2,15 @@
 
 namespace App\Providers;
 
+use App\Actions\Auth\RecordSuccessfulLogin;
+use App\Actions\Fortify\AuthenticateUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Settings\SecuritySettings;
+use App\Settings\SettingsResolver;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -38,7 +44,12 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureActions(): void
     {
+        Fortify::authenticateUsing(
+            fn (Request $request) => app(AuthenticateUser::class)->handle($request),
+        );
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        Event::listen(Login::class, [RecordSuccessfulLogin::class, 'handle']);
     }
 
     /**
@@ -62,6 +73,10 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
+
+        Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/VerifyEmail', [
+            'status' => $request->session()->get('status'),
+        ]));
     }
 
     /**
@@ -69,12 +84,14 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
-
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $security = SettingsResolver::tryResolve(SecuritySettings::class);
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return Limit::perMinutes(
+                $security->suspensionDurationMinutes ?? 15,
+                $security->maxFailedLoginAttempts ?? 5,
+            )->by($throttleKey);
         });
-
     }
 }

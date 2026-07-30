@@ -1,0 +1,167 @@
+import { expect, test } from '@playwright/test';
+
+test('smokes and navigates every settings screen', async ({ page }) => {
+    await page.goto('/settings');
+
+    const cards = [
+        'general',
+        'authentication',
+        'user-provisioning',
+        'mail',
+        'security',
+        'branding',
+    ];
+
+    for (const card of cards) {
+        await expect(
+            page.locator(`[data-test="settings-card-${card}"]`),
+        ).toBeVisible();
+    }
+
+    await page.locator('[data-test="settings-card-general"]').click();
+    await expect(page).toHaveURL(/\/settings\/general$/);
+
+    for (const path of cards.slice(1)) {
+        await page.goto(`/settings/${path}`);
+        await expect(page.locator('main')).toBeVisible();
+    }
+});
+
+test('updates general settings and precognizes invalid input', async ({
+    page,
+}) => {
+    await page.goto('/settings/general');
+    await page.locator('#applicationName').fill('');
+    await page.locator('#dateFormat').click();
+
+    await expect(
+        page.getByText('The application name field is required.'),
+    ).toBeVisible();
+    await expect(page.locator('#applicationName')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+    );
+
+    await page.locator('#applicationName').fill('Jalara Playwright');
+    await page.locator('[data-test="date-format-option-d/m/Y"]').click();
+    await page.locator('[data-test="update-general-settings-button"]').click();
+
+    await expect(page.getByText('General settings updated.')).toBeVisible();
+    await expect(page).toHaveTitle(/Jalara Playwright/);
+});
+
+test('updates the authentication switch', async ({ page }) => {
+    await page.goto('/settings/authentication');
+    const switchControl = page.locator('#requireEmailVerification');
+    const previousState = await switchControl.getAttribute('data-state');
+
+    await switchControl.click();
+    await page
+        .locator('[data-test="update-authentication-settings-button"]')
+        .click();
+
+    await expect(
+        page.getByText('Authentication settings updated.'),
+    ).toBeVisible();
+    await expect(switchControl).not.toHaveAttribute(
+        'data-state',
+        previousState ?? '',
+    );
+});
+
+test('previews and persists branding in light and dark authentication layouts', async ({
+    page,
+}) => {
+    await page.goto('/settings/branding');
+    const storedTheme = await page.locator('html').getAttribute(
+        'data-color-theme',
+    );
+    await page.locator('#companyName').fill('Jalara E2E');
+    await page.locator('#colorTheme-teal').click();
+    await page.locator('#fontPair-playfair-display-source-sans').click();
+    await page.locator('#appLayout-header').click();
+
+    for (const preview of [
+        'identity-preview',
+        'auth-preview',
+        'app-preview',
+    ]) {
+        await expect(page.locator(`[data-test="${preview}"]`).first()).toHaveAttribute(
+            'data-color-theme',
+            'teal',
+        );
+    }
+
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-color-theme',
+        storedTheme ?? 'neutral',
+    );
+
+    await page.locator('[data-test="update-branding-settings-button"]').click();
+
+    await expect(page.getByText('Branding settings updated.')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-color-theme',
+        'teal',
+    );
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-font-pair',
+        'playfair-display-source-sans',
+    );
+
+    await page.evaluate(() => localStorage.setItem('appearance', 'dark'));
+    await page.reload();
+
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-color-theme',
+        'teal',
+    );
+
+    await page.context().clearCookies();
+    await page.goto('/login');
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-color-theme',
+        'teal',
+    );
+    const darkBackground = await page.locator('body').evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+    );
+
+    await page.evaluate(() => localStorage.setItem('appearance', 'light'));
+    await page.reload();
+
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-color-theme',
+        'teal',
+    );
+    await expect(page.locator('body')).not.toHaveCSS(
+        'background-color',
+        darkBackground,
+    );
+});
+
+test('adds and removes the default password through confirmation', async ({
+    page,
+}) => {
+    await page.goto('/settings/user-provisioning');
+    await page.locator('#defaultPassword').fill('Jalara-Def4ult!');
+    await page.locator('#defaultPassword_confirmation').fill('Jalara-Def4ult!');
+    await page.locator('[data-test="update-default-password-button"]').click();
+
+    await expect(
+        page.locator('[data-test="default-password-status"]'),
+    ).toContainText('Configured');
+
+    await page.locator('[data-test="remove-default-password-button"]').click();
+    await expect(page.getByText('Remove the default password?')).toBeVisible();
+    await page
+        .locator('[data-test="confirm-remove-default-password-button"]')
+        .click();
+
+    await expect(
+        page.locator('[data-test="default-password-status"]'),
+    ).toContainText('Not configured');
+});

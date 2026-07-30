@@ -1,10 +1,26 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { computed } from 'vue';
+import AppFooter from '@/components/AppFooter.vue';
+import BrandIdentity from '@/components/BrandIdentity.vue';
+import { useBranding } from '@/composables/useBranding';
 import { home } from '@/routes';
 
+const { branding } = useBranding();
 const page = usePage();
-const name = page.props.name;
+
+/** The description is optional, so the whole block disappears without one. */
+const applicationDescription = computed(
+    () => (page.props.description as string | null | undefined)?.trim() || null,
+);
+
+/*
+ * Kept in the consumer so `branding.authBackgroundUrl` stays nullable and the
+ * uploader never mistakes the bundled image for a stored, deletable file.
+ */
+const backgroundUrl = computed(
+    () => branding.value.authBackgroundUrl ?? '/assets/images/auth-bg.jpg',
+);
 
 defineProps<{
     title?: string;
@@ -14,23 +30,49 @@ defineProps<{
 
 <template>
     <div
-        class="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0"
+        class="relative grid h-dvh flex-col items-center justify-center bg-background px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0"
     >
         <div
-            class="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r"
+            class="relative hidden h-full flex-col bg-neutral-950 p-10 text-white lg:flex dark:border-r"
         >
-            <div class="absolute inset-0 bg-zinc-900" />
+            <!--
+                The image is decorative; the solid colour stays as the base so
+                the panel is never empty while it loads.
+            -->
+            <div class="absolute inset-0 bg-neutral-950" />
+            <img
+                :src="backgroundUrl"
+                alt=""
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+            />
+            <!--
+                The stronger edges protect the identity and description while
+                the softer centre keeps the image from looking flat.
+            -->
+            <div
+                class="absolute inset-0 bg-linear-to-b from-black/70 via-black/40 to-black/70"
+                data-test="auth-split-tint"
+            />
             <Link
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"
             >
-                <AppLogoIcon class="mr-2 size-8 fill-current text-white" />
-                {{ name }}
+                <BrandIdentity class="[&_span]:text-white" />
             </Link>
+            <!-- Sits at the foot of the image panel, aligned to its left edge. -->
+            <p
+                v-if="applicationDescription"
+                class="relative z-20 mt-auto max-w-sm text-sm text-white/80"
+                data-test="auth-split-about"
+            >
+                {{ applicationDescription }}
+            </p>
         </div>
-        <div class="lg:p-8">
+        <!-- The form stays centred in the space the footer leaves behind. -->
+        <div class="flex h-full flex-col lg:p-8">
             <div
-                class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
+                class="mx-auto flex w-full flex-1 flex-col justify-center space-y-6 sm:w-[350px]"
             >
                 <div class="flex flex-col space-y-2 text-center">
                     <h1 class="text-xl font-medium tracking-tight" v-if="title">
@@ -42,6 +84,7 @@ defineProps<{
                 </div>
                 <slot />
             </div>
+            <AppFooter />
         </div>
     </div>
 </template>

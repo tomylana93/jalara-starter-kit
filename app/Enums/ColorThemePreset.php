@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Enums;
+
+use App\Concerns\HasOptions;
+use App\Contracts\HasLabel;
+
+enum ColorThemePreset: string implements HasLabel
+{
+    use HasOptions;
+
+    case Neutral = 'neutral';
+    case Blue = 'blue';
+    case Emerald = 'emerald';
+    case Violet = 'violet';
+    case Rose = 'rose';
+    case Amber = 'amber';
+    case Teal = 'teal';
+    case Cyan = 'cyan';
+    case Indigo = 'indigo';
+    case Orange = 'orange';
+
+    /**
+     * Get the human-readable label for the preset.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Neutral => __('setting.branding.color_theme.neutral'),
+            self::Blue => __('setting.branding.color_theme.blue'),
+            self::Emerald => __('setting.branding.color_theme.emerald'),
+            self::Violet => __('setting.branding.color_theme.violet'),
+            self::Rose => __('setting.branding.color_theme.rose'),
+            self::Amber => __('setting.branding.color_theme.amber'),
+            self::Teal => __('setting.branding.color_theme.teal'),
+            self::Cyan => __('setting.branding.color_theme.cyan'),
+            self::Indigo => __('setting.branding.color_theme.indigo'),
+            self::Orange => __('setting.branding.color_theme.orange'),
+        };
+    }
+}

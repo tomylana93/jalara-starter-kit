@@ -6,8 +6,10 @@
 /public/hot
 /public/storage
 /storage/*.key
+/tests/Browser/Screenshots
 /storage/pail
 /resources/js/actions
+/resources/js/generated/lang
 /resources/js/routes
 /resources/js/wayfinder
 /vendor
@@ -22,7 +24,14 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /auth.json
+/storage/framework/testing/*.sqlite
+/test-results
+/playwright-report
+/.playwright-cli
+/output/playwright
+/e2e/.auth
 /.fleet
+/.gemini
 /.idea
 /.nova
 /.vscode

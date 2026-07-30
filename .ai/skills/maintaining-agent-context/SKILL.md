@@ -16,7 +16,10 @@ regenerate.
   Treat `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/` as
   generated outputs.
 - Change generated outputs only through
-  `php artisan boost:update --no-interaction`; do not patch them independently.
+  `composer run agents:update`; do not patch them independently.
+- Invoke dependency-backed repository tooling through Composer scripts. Add or
+  update the Composer entry point before documenting a direct vendor binary or
+  Artisan command; keep Serena memory operations Serena-native.
 - Keep MCP client configuration outside Boost publication. Change it only when
   the user explicitly includes that client and server in scope.
 
@@ -55,7 +58,7 @@ regenerate.
 
 ## Publish and Verify
 
-1. Run `php artisan boost:update --no-interaction`.
+1. Run `composer run agents:update`.
 2. Confirm the custom guideline and skills appear in every configured agent
    output without manually enumerating unrelated installed skills.
 3. Run the update again and confirm it produces no further tracked diff.

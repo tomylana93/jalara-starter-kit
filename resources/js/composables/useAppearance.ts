@@ -85,8 +85,18 @@ export function initializeTheme(): void {
 
 const appearance = ref<Appearance>('system');
 
+/*
+ * Neither localStorage nor the color-scheme media query exists while the page
+ * is server rendered, so both are only consulted after mount. Reading them
+ * during setup would make the first client render disagree with the server
+ * markup and trigger a hydration mismatch.
+ */
+const hydrated = ref(false);
+
 export function useAppearance(): UseAppearanceReturn {
     onMounted(() => {
+        hydrated.value = true;
+
         const savedAppearance = localStorage.getItem(
             'appearance',
         ) as Appearance | null;
@@ -98,7 +108,7 @@ export function useAppearance(): UseAppearanceReturn {
 
     const resolvedAppearance = computed<ResolvedAppearance>(() => {
         if (appearance.value === 'system') {
-            return prefersDark() ? 'dark' : 'light';
+            return hydrated.value && prefersDark() ? 'dark' : 'light';
         }
 
         return appearance.value;

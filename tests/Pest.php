@@ -1,5 +1,10 @@
 <?php
 
+use App\Enums\PasswordPolicy;
+use App\Enums\Permission;
+use App\Models\User;
+use App\Settings\AuthenticationSettings;
+use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,9 +19,32 @@ use Tests\TestCase;
 |
 */
 
+/*
+ * The strict preset performs a compromised-password lookup, so the verifier is
+ * always faked. Tests that do not exercise passwords run against the basic
+ * preset; password and authentication tests opt back into the real policy with
+ * usePasswordPolicy().
+ */
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function (): void {
+        app()->instance(UncompromisedVerifier::class, new class implements UncompromisedVerifier
+        {
+            public function verify($data): bool
+            {
+                return true;
+            }
+        });
+
+        usePasswordPolicy(PasswordPolicy::Basic);
+    })
     ->in('Feature');
+
+pest()->printer()->compact();
+
+pest()->tia()
+    ->filtered()
+    ->baselined();
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +72,24 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Run the current test against a specific password policy preset.
+ */
+function usePasswordPolicy(PasswordPolicy $policy): void
 {
-    // ..
+    app(AuthenticationSettings::class)->passwordPolicy = $policy;
+}
+
+/**
+ * Create a user allowed to manage the application settings.
+ */
+function settingsManager(): User
+{
+    $user = User::factory()->create();
+
+    $user->givePermissionTo(
+        Spatie\Permission\Models\Permission::findOrCreate(Permission::ManageSettings->value, 'web'),
+    );
+
+    return $user;
 }

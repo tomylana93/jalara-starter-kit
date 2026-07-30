@@ -1,5 +1,16 @@
+@php
+    $branding = array_merge(
+        \App\Http\Presenters\BrandingPresenter::defaults(),
+        (array) data_get($page, 'props.branding', []),
+    );
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html
+    lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+    data-color-theme="{{ $branding['colorTheme'] }}"
+    data-font-pair="{{ $branding['fontPair'] }}"
+    @class(['dark' => ($appearance ?? 'system') == 'dark'])
+>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,15 +41,27 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        {{--
+            The uploaded icon wins when one is stored, with the light variant
+            covering both modes whenever no dark variant exists. The bundled
+            files stay as the fallback so there is always a favicon.
+        --}}
+        @if ($branding['iconUrl'])
+            <link rel="icon" href="{{ $branding['iconUrl'] }}" media="(prefers-color-scheme: light)">
+            <link rel="icon" href="{{ $branding['iconDarkUrl'] ?: $branding['iconUrl'] }}" media="(prefers-color-scheme: dark)">
+            <link rel="apple-touch-icon" href="{{ $branding['iconUrl'] }}">
+        @else
+            <link rel="icon" href="/assets/images/branding/favicon.ico" sizes="any">
+            <link rel="icon" href="/assets/images/branding/icon.png" type="image/png" media="(prefers-color-scheme: light)">
+            <link rel="icon" href="/assets/images/branding/icon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
+            <link rel="apple-touch-icon" href="/assets/images/branding/icon.png">
+        @endif
 
         @fonts
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ config('app.name') }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

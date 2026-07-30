@@ -7,13 +7,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { translate, useTranslations } from '@/composables/useTranslations';
 import { update } from '@/routes/password';
 
+type LayoutProps = {
+    locale: string;
+    fallbackLocale: string;
+};
+
 defineOptions({
-    layout: {
-        title: 'Reset password',
-        description: 'Please enter your new password below',
-    },
+    /*
+     * Inertia hands every shared prop to the page component, and these pages
+     * render a fragment, so undeclared props would otherwise leak onto the DOM
+     * as extraneous attributes.
+     */
+    inheritAttrs: false,
+    layout: (props: LayoutProps) => ({
+        title: translate(
+            'auth.reset_password.title',
+            props.locale,
+            props.fallbackLocale,
+        ),
+        description: translate(
+            'auth.reset_password.description',
+            props.locale,
+            props.fallbackLocale,
+        ),
+    }),
 });
 
 const props = defineProps<{
@@ -23,10 +43,11 @@ const props = defineProps<{
 }>();
 
 const inputEmail = ref(props.email);
+const { t } = useTranslations();
 </script>
 
 <template>
-    <Head title="Reset password" />
+    <Head :title="t('auth.reset_password.title')" />
 
     <Form
         v-bind="update.form()"
@@ -36,41 +57,52 @@ const inputEmail = ref(props.email);
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email</Label>
+                <Label for="email">
+                    {{ t('auth.reset_password.label.email') }}
+                </Label>
                 <Input
                     id="email"
-                    type="email"
+                    type="text"
+                    inputmode="email"
                     name="email"
+                    :aria-invalid="Boolean(errors.email)"
                     autocomplete="email"
                     v-model="inputEmail"
-                    class="mt-1 block w-full"
                     readonly
                 />
-                <InputError :message="errors.email" class="mt-2" />
+                <InputError :message="errors.email" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">Password</Label>
+                <Label for="password">
+                    {{ t('auth.reset_password.label.password') }}
+                </Label>
                 <PasswordInput
                     id="password"
                     name="password"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
+                    :aria-invalid="Boolean(errors.password)"
                     autofocus
-                    placeholder="Password"
+                    :placeholder="t('auth.reset_password.placeholder.password')"
                     :passwordrules="passwordRules"
                 />
                 <InputError :message="errors.password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm password </Label>
+                <Label for="password_confirmation">
+                    {{ t('auth.reset_password.label.password_confirmation') }}
+                </Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    placeholder="Confirm password"
+                    :aria-invalid="Boolean(errors.password_confirmation)"
+                    :placeholder="
+                        t(
+                            'auth.reset_password.placeholder.password_confirmation',
+                        )
+                    "
                     :passwordrules="passwordRules"
                 />
                 <InputError :message="errors.password_confirmation" />
@@ -83,7 +115,7 @@ const inputEmail = ref(props.email);
                 data-test="reset-password-button"
             >
                 <Spinner v-if="processing" />
-                Reset password
+                {{ t('auth.reset_password.button.submit') }}
             </Button>
         </div>
     </Form>

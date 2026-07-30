@@ -1,103 +1,160 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import Heading from '@/components/Heading.vue';
+import { TriangleAlert } from '@lucide/vue';
+import { ref } from 'vue';
+import SecuritySettingsController from '@/actions/App/Http/Controllers/Settings/SecuritySettingsController';
 import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import PageWrapper from '@/components/PageWrapper.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/security';
+import { Switch } from '@/components/ui/switch';
+import { translate, useTranslations } from '@/composables/useTranslations';
+import { index as settingsIndex } from '@/routes/settings';
+import { edit } from '@/routes/settings/security';
 
-type Props = {
-    passwordRules: string;
+type SecuritySettings = {
+    maxFailedLoginAttempts: number;
+    suspensionDurationMinutes: number;
+    maintenanceEnabled: boolean;
 };
 
-const props = defineProps<Props>();
+type LayoutProps = {
+    locale: string;
+    fallbackLocale: string;
+};
+
+const props = defineProps<{
+    settings: SecuritySettings;
+}>();
 
 defineOptions({
-    layout: {
+    layout: (layoutProps: LayoutProps) => ({
         breadcrumbs: [
             {
-                title: 'Security settings',
+                title: translate(
+                    'setting.layout.title',
+                    layoutProps.locale,
+                    layoutProps.fallbackLocale,
+                ),
+                href: settingsIndex(),
+            },
+            {
+                title: translate(
+                    'setting.security.title',
+                    layoutProps.locale,
+                    layoutProps.fallbackLocale,
+                ),
                 href: edit(),
             },
         ],
-    },
+    }),
 });
+
+const { t } = useTranslations();
+
+const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
 </script>
 
 <template>
-    <Head title="Security settings" />
+    <div class="contents">
+        <Head :title="t('setting.security.title')" />
 
-    <h1 class="sr-only">Security settings</h1>
-
-    <div class="space-y-6">
-        <Heading
-            variant="small"
-            title="Update password"
-            description="Ensure your account is using a long, random password to stay secure"
-        />
-
-        <Form
-            v-bind="SecurityController.update.form()"
-            :options="{
-                preserveScroll: true,
-            }"
-            reset-on-success
-            :reset-on-error="[
-                'password',
-                'password_confirmation',
-                'current_password',
-            ]"
-            class="space-y-6"
-            v-slot="{ errors, processing }"
+        <PageWrapper
+            :title="t('setting.security.title')"
+            :description="t('setting.security.description')"
         >
-            <div class="grid gap-2">
-                <Label for="current_password">Current password</Label>
-                <PasswordInput
-                    id="current_password"
-                    name="current_password"
-                    class="mt-1 block w-full"
-                    autocomplete="current-password"
-                    placeholder="Current password"
-                />
-                <InputError :message="errors.current_password" />
-            </div>
+            <Form
+                v-bind="SecuritySettingsController.update.form()"
+                :options="{ preserveScroll: true }"
+                class="space-y-6"
+                v-slot="{ errors, processing, validate, validating }"
+            >
+                <div class="grid gap-2">
+                    <Label for="maxFailedLoginAttempts">
+                        {{
+                            t(
+                                'setting.security.label.max_failed_login_attempts',
+                            )
+                        }}
+                    </Label>
+                    <Input
+                        id="maxFailedLoginAttempts"
+                        type="text"
+                        inputmode="numeric"
+                        name="maxFailedLoginAttempts"
+                        :default-value="settings.maxFailedLoginAttempts"
+                        :aria-invalid="Boolean(errors.maxFailedLoginAttempts)"
+                        @change="validate('maxFailedLoginAttempts')"
+                    />
+                    <InputError :message="errors.maxFailedLoginAttempts" />
+                </div>
 
-            <div class="grid gap-2">
-                <Label for="password">New password</Label>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                    placeholder="New password"
-                    :passwordrules="props.passwordRules"
-                />
-                <InputError :message="errors.password" />
-            </div>
+                <div class="grid gap-2">
+                    <Label for="suspensionDurationMinutes">
+                        {{
+                            t(
+                                'setting.security.label.suspension_duration_minutes',
+                            )
+                        }}
+                    </Label>
+                    <Input
+                        id="suspensionDurationMinutes"
+                        type="text"
+                        inputmode="numeric"
+                        name="suspensionDurationMinutes"
+                        :default-value="settings.suspensionDurationMinutes"
+                        :aria-invalid="
+                            Boolean(errors.suspensionDurationMinutes)
+                        "
+                        @change="validate('suspensionDurationMinutes')"
+                    />
+                    <InputError :message="errors.suspensionDurationMinutes" />
+                </div>
 
-            <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
-                <PasswordInput
-                    id="password_confirmation"
-                    name="password_confirmation"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                    placeholder="Confirm password"
-                    :passwordrules="props.passwordRules"
-                />
-                <InputError :message="errors.password_confirmation" />
-            </div>
+                <div class="grid gap-2">
+                    <input
+                        type="hidden"
+                        name="maintenanceEnabled"
+                        :value="maintenanceEnabled ? '1' : '0'"
+                    />
+                    <div class="flex items-center justify-between gap-4">
+                        <Label for="maintenanceEnabled">
+                            {{
+                                t('setting.security.label.maintenance_enabled')
+                            }}
+                        </Label>
+                        <Switch
+                            id="maintenanceEnabled"
+                            v-model="maintenanceEnabled"
+                            :aria-invalid="Boolean(errors.maintenanceEnabled)"
+                            class="aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
+                            @update:model-value="validate('maintenanceEnabled')"
+                        />
+                    </div>
+                    <InputError :message="errors.maintenanceEnabled" />
+                </div>
 
-            <div class="flex items-center gap-4">
-                <Button
-                    :disabled="processing"
-                    data-test="update-password-button"
-                >
-                    Save
-                </Button>
-            </div>
-        </Form>
+                <Alert>
+                    <TriangleAlert class="size-4" />
+                    <AlertTitle>
+                        {{ t('setting.security.alert.maintenance_title') }}
+                    </AlertTitle>
+                    <AlertDescription>
+                        {{ t('setting.security.alert.maintenance') }}
+                    </AlertDescription>
+                </Alert>
+
+                <div class="flex items-center gap-4">
+                    <Button
+                        :disabled="processing || validating"
+                        data-test="update-security-settings-button"
+                    >
+                        {{ t('setting.security.button.save') }}
+                    </Button>
+                </div>
+            </Form>
+        </PageWrapper>
     </div>
 </template>

@@ -2,16 +2,16 @@
 
 @import 'tw-animate-css';
 
+@import 'shadcn-vue/tailwind.css';
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+    --font-sans: var(--app-font-body);
+    --font-heading: var(--app-font-heading);
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -77,16 +77,59 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    [data-slot='alert-dialog-title'],
+    [data-slot='dialog-title'],
+    [data-slot='sheet-title'] {
+        font-family: var(--app-font-heading);
+    }
 }
 
-@layer utilities {
-    body,
-    html {
-        --font-sans:
-            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-            'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-            'Noto Color Emoji';
-    }
+/*
+  Font pairs. The active heading and body stacks are selected by the
+  `data-font-pair` attribute the server renders on <html>.
+*/
+:root {
+    --app-font-sans-fallback:
+        ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --app-font-serif-fallback:
+        ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+}
+
+:root,
+[data-font-pair='instrument-sans'] {
+    --app-font-heading:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --app-font-body: var(--app-font-heading);
+}
+
+[data-font-pair='space-grotesk-inter'] {
+    --app-font-heading: 'Space Grotesk', var(--app-font-sans-fallback);
+    --app-font-body: 'Inter', var(--app-font-sans-fallback);
+}
+
+[data-font-pair='poppins-inter'] {
+    --app-font-heading: 'Poppins', var(--app-font-sans-fallback);
+    --app-font-body: 'Inter', var(--app-font-sans-fallback);
+}
+
+[data-font-pair='montserrat-open-sans'] {
+    --app-font-heading: 'Montserrat', var(--app-font-sans-fallback);
+    --app-font-body: 'Open Sans', var(--app-font-sans-fallback);
+}
+
+[data-font-pair='playfair-display-source-sans'] {
+    --app-font-heading: 'Playfair Display', var(--app-font-serif-fallback);
+    --app-font-body: 'Source Sans 3', var(--app-font-sans-fallback);
 }
 
 :root {
@@ -160,6 +203,180 @@
     --sidebar-border: hsl(0 0% 15.9%);
     --sidebar-ring: hsl(217.2 91.2% 59.8%);
     --sidebar: hsl(240 5.9% 10%);
+}
+
+/*
+  Every preset aliases one complete Tailwind ramp. Only brand accents are
+  remapped; application surfaces stay neutral in both the global interface and
+  locally scoped previews.
+*/
+
+[data-color-theme='neutral'] {
+    --theme-50: var(--color-neutral-50);
+    --theme-100: var(--color-neutral-100);
+    --theme-200: var(--color-neutral-200);
+    --theme-300: var(--color-neutral-300);
+    --theme-400: var(--color-neutral-400);
+    --theme-500: var(--color-neutral-500);
+    --theme-600: var(--color-neutral-600);
+    --theme-700: var(--color-neutral-700);
+    --theme-800: var(--color-neutral-800);
+    --theme-900: var(--color-neutral-900);
+    --theme-950: var(--color-neutral-950);
+}
+
+[data-color-theme='blue'] {
+    --theme-50: var(--color-blue-50);
+    --theme-100: var(--color-blue-100);
+    --theme-200: var(--color-blue-200);
+    --theme-300: var(--color-blue-300);
+    --theme-400: var(--color-blue-400);
+    --theme-500: var(--color-blue-500);
+    --theme-600: var(--color-blue-600);
+    --theme-700: var(--color-blue-700);
+    --theme-800: var(--color-blue-800);
+    --theme-900: var(--color-blue-900);
+    --theme-950: var(--color-blue-950);
+}
+
+[data-color-theme='emerald'] {
+    --theme-50: var(--color-emerald-50);
+    --theme-100: var(--color-emerald-100);
+    --theme-200: var(--color-emerald-200);
+    --theme-300: var(--color-emerald-300);
+    --theme-400: var(--color-emerald-400);
+    --theme-500: var(--color-emerald-500);
+    --theme-600: var(--color-emerald-600);
+    --theme-700: var(--color-emerald-700);
+    --theme-800: var(--color-emerald-800);
+    --theme-900: var(--color-emerald-900);
+    --theme-950: var(--color-emerald-950);
+}
+
+[data-color-theme='violet'] {
+    --theme-50: var(--color-violet-50);
+    --theme-100: var(--color-violet-100);
+    --theme-200: var(--color-violet-200);
+    --theme-300: var(--color-violet-300);
+    --theme-400: var(--color-violet-400);
+    --theme-500: var(--color-violet-500);
+    --theme-600: var(--color-violet-600);
+    --theme-700: var(--color-violet-700);
+    --theme-800: var(--color-violet-800);
+    --theme-900: var(--color-violet-900);
+    --theme-950: var(--color-violet-950);
+}
+
+[data-color-theme='rose'] {
+    --theme-50: var(--color-rose-50);
+    --theme-100: var(--color-rose-100);
+    --theme-200: var(--color-rose-200);
+    --theme-300: var(--color-rose-300);
+    --theme-400: var(--color-rose-400);
+    --theme-500: var(--color-rose-500);
+    --theme-600: var(--color-rose-600);
+    --theme-700: var(--color-rose-700);
+    --theme-800: var(--color-rose-800);
+    --theme-900: var(--color-rose-900);
+    --theme-950: var(--color-rose-950);
+}
+
+[data-color-theme='amber'] {
+    --theme-50: var(--color-amber-50);
+    --theme-100: var(--color-amber-100);
+    --theme-200: var(--color-amber-200);
+    --theme-300: var(--color-amber-300);
+    --theme-400: var(--color-amber-400);
+    --theme-500: var(--color-amber-500);
+    --theme-600: var(--color-amber-600);
+    --theme-700: var(--color-amber-700);
+    --theme-800: var(--color-amber-800);
+    --theme-900: var(--color-amber-900);
+    --theme-950: var(--color-amber-950);
+}
+
+[data-color-theme='teal'] {
+    --theme-50: var(--color-teal-50);
+    --theme-100: var(--color-teal-100);
+    --theme-200: var(--color-teal-200);
+    --theme-300: var(--color-teal-300);
+    --theme-400: var(--color-teal-400);
+    --theme-500: var(--color-teal-500);
+    --theme-600: var(--color-teal-600);
+    --theme-700: var(--color-teal-700);
+    --theme-800: var(--color-teal-800);
+    --theme-900: var(--color-teal-900);
+    --theme-950: var(--color-teal-950);
+}
+
+[data-color-theme='cyan'] {
+    --theme-50: var(--color-cyan-50);
+    --theme-100: var(--color-cyan-100);
+    --theme-200: var(--color-cyan-200);
+    --theme-300: var(--color-cyan-300);
+    --theme-400: var(--color-cyan-400);
+    --theme-500: var(--color-cyan-500);
+    --theme-600: var(--color-cyan-600);
+    --theme-700: var(--color-cyan-700);
+    --theme-800: var(--color-cyan-800);
+    --theme-900: var(--color-cyan-900);
+    --theme-950: var(--color-cyan-950);
+}
+
+[data-color-theme='indigo'] {
+    --theme-50: var(--color-indigo-50);
+    --theme-100: var(--color-indigo-100);
+    --theme-200: var(--color-indigo-200);
+    --theme-300: var(--color-indigo-300);
+    --theme-400: var(--color-indigo-400);
+    --theme-500: var(--color-indigo-500);
+    --theme-600: var(--color-indigo-600);
+    --theme-700: var(--color-indigo-700);
+    --theme-800: var(--color-indigo-800);
+    --theme-900: var(--color-indigo-900);
+    --theme-950: var(--color-indigo-950);
+}
+
+[data-color-theme='orange'] {
+    --theme-50: var(--color-orange-50);
+    --theme-100: var(--color-orange-100);
+    --theme-200: var(--color-orange-200);
+    --theme-300: var(--color-orange-300);
+    --theme-400: var(--color-orange-400);
+    --theme-500: var(--color-orange-500);
+    --theme-600: var(--color-orange-600);
+    --theme-700: var(--color-orange-700);
+    --theme-800: var(--color-orange-800);
+    --theme-900: var(--color-orange-900);
+    --theme-950: var(--color-orange-950);
+}
+
+[data-color-theme] {
+    --primary: var(--theme-700);
+    --primary-foreground: var(--theme-50);
+    --ring: var(--theme-600);
+    --chart-1: var(--theme-700);
+    --chart-2: var(--theme-600);
+    --chart-3: var(--theme-500);
+    --chart-4: var(--theme-400);
+    --chart-5: var(--theme-300);
+    --sidebar-primary: var(--theme-700);
+    --sidebar-primary-foreground: var(--theme-50);
+    --sidebar-ring: var(--theme-600);
+}
+
+:is(.dark[data-color-theme], .dark [data-color-theme]) {
+    --primary: var(--theme-400);
+    --primary-foreground: var(--theme-950);
+    --ring: var(--theme-400);
+    --chart-1: var(--theme-400);
+    --chart-2: var(--theme-500);
+    --chart-3: var(--theme-300);
+    --chart-4: var(--theme-600);
+    --chart-5: var(--theme-200);
+    --sidebar-primary: var(--theme-400);
+    --sidebar-primary-foreground: var(--theme-950);
+    --sidebar-ring: var(--theme-400);
 }
 
 @layer base {

@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Description
+    |--------------------------------------------------------------------------
+    |
+    | A short summary of what this application is for. The general settings
+    | overwrite this value at runtime, and the interface may display it
+    | alongside the application name.
+    |
+    */
+
+    'description' => env('APP_DESCRIPTION'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

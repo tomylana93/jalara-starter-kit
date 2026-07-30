@@ -2,16 +2,17 @@
 import { AlertCircle } from '@lucide/vue';
 import { computed } from 'vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useTranslations } from '@/composables/useTranslations';
 
 type Props = {
     errors: string[];
     title?: string;
 };
 
-const props = withDefaults(defineProps<Props>(), {
-    title: 'Something went wrong.',
-});
+const props = defineProps<Props>();
 
+const { t } = useTranslations();
+const title = computed(() => props.title ?? t('common.error.title'));
 const uniqueErrors = computed(() => Array.from(new Set(props.errors)));
 </script>
 

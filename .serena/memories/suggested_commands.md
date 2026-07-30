@@ -1,20 +1,11 @@
 # Suggested Commands
 
-- First-time setup: `composer run setup` (Composer install, .env/key, forced migrations, pnpm install, production build).
-- Full local development stack: `composer run dev` (delegates to `php artisan dev`).
-- Frontend-only dev server: `pnpm run dev`.
-- Production frontend build: `pnpm run build`; SSR build: `pnpm run build:ssr`.
-- Targeted tests: `php artisan test --compact tests/Feature/Path/SomeTest.php` or `php artisan test --compact --filter=testName`.
-- Full backend gate: `composer test` (config clear, Pint check, Larastan, Laravel tests).
-- PHP formatting: `vendor/bin/pint --dirty --format agent` after modifying PHP.
-- Frontend autofix: `pnpm run lint`; frontend lint check: `pnpm run lint:check`.
-- Frontend formatting: `pnpm run format`; check only: `pnpm run format:check`.
-- Frontend types: `pnpm run types:check`.
-- PHP static analysis: `composer run types:check`.
-- Aggregate CI checks: `composer run ci:check`.
-- Publish custom guidelines and skills: `php artisan boost:update --no-interaction`.
-- Check Serena memory references: `serena memories check`; deeper maintenance audit: `serena memories check --include-unmarked --fuzzy-matching`.
-- Route inspection: `php artisan route:list --except-vendor` with `--method`, `--name`, or `--path` filters.
-- Configuration inspection: `php artisan config:show key.path`.
-- Artisan generators must include `--no-interaction`; Pest tests: `php artisan make:test --pest Name --no-interaction`.
-- If a frontend edit is not visible, run `pnpm run dev`, `pnpm run build`, or the full `composer run dev`.
+- Local setup: `composer run setup`; GitHub CI dependency/environment setup without an early build: `composer run ci:setup`; development: `composer run dev`; frontend dev: `pnpm run dev`.
+- Vitest: `pnpm test:unit`; watch: `pnpm test:unit:watch`.
+- Pest focused: `php artisan test --compact <file>` or `--filter=<name>`; full backend: `composer test`.
+- Pest TIA (requires PCOV/Xdebug): `composer run test:tia`; rebuild baseline: `composer run test:tia:fresh`.
+- Playwright E2E: `pnpm test:e2e`; focused: `pnpm exec playwright test <spec> --grep '<name>'`.
+- Frontend auto-fix order: `pnpm run lint`, then `pnpm run format`; checks: `pnpm run lint:check`, `pnpm run format:check`, `pnpm run types:check`, `pnpm run test:unit`. Use `pnpm run test:e2e` for the production build plus Playwright.
+- PHP auto-fix order: `composer run rector`, then `composer run format:agent`; repository-wide formatting: `composer run lint`. Checks run Rector before Pint: `composer run rector:check`, then `composer run lint:check` and `composer run types:check`. Rector apply/check output JSON without a progress bar.
+- Mandatory final gate: `composer run ci:check` orders frontend lint, format, types, Vitest; PHP Rector, Pint, Larastan, Pest; then the build-backed Playwright suite.
+- Publish agent context: `composer run agents:update`; memory checks remain Serena-native: `serena memories check` and `serena memories check --include-unmarked --fuzzy-matching`.

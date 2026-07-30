@@ -8,19 +8,26 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
+import { useTranslations } from '@/composables/useTranslations';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
+import { edit } from '@/routes/account/profile';
 import type { User } from '@/types';
 
 type Props = {
     user: User;
 };
 
+const emit = defineEmits<{
+    navigate: [];
+}>();
+
 const handleLogout = () => {
     router.flushAll();
+    emit('navigate');
 };
 
 defineProps<Props>();
+const { t } = useTranslations();
 </script>
 
 <template>
@@ -32,9 +39,14 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
+            <Link
+                class="block w-full cursor-pointer"
+                :href="edit()"
+                prefetch
+                @click="emit('navigate')"
+            >
                 <Settings class="mr-2 h-4 w-4" />
-                Settings
+                {{ t('account.layout.title') }}
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
@@ -48,7 +60,7 @@ defineProps<Props>();
             data-test="logout-button"
         >
             <LogOut class="mr-2 h-4 w-4" />
-            Log out
+            {{ t('auth.session.button.logout') }}
         </Link>
     </DropdownMenuItem>
 </template>

@@ -1,28 +1,37 @@
 import { createInertiaApp } from '@inertiajs/vue3';
+import { Primitive } from 'reka-ui';
 import { initializeTheme } from '@/composables/useAppearance';
+import AccountLayout from '@/layouts/account/Layout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { applicationTitle, fallbackApplicationName } from '@/lib/branding';
 import { initializeFlashToast } from '@/lib/flashToast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const fallbackName = import.meta.env.VITE_APP_NAME || fallbackApplicationName;
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title, page) =>
+        applicationTitle(title, page.props.name ?? fallbackName),
     layout: (name) => {
         switch (true) {
-            case name === 'Welcome':
-                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
-            case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+            case name.startsWith('account/'):
+                return [AppLayout, AccountLayout];
             default:
                 return AppLayout;
         }
     },
     progress: {
-        color: '#4B5563',
+        color: 'var(--primary)',
+    },
+    withApp(app) {
+        /*
+         * AttachmentTrigger from the current shadcn-vue registry references
+         * Primitive as a global component. Registering it here keeps registry
+         * files update-safe while providing the missing runtime dependency.
+         */
+        app.component('Primitive', Primitive);
     },
 });
 

@@ -1,11 +1,10 @@
 # Task Completion
 
-- Every source change must have programmatic coverage: add/update a Pest test, then run the smallest relevant test command, normally `php artisan test --compact <test-file>` or a focused `--filter`.
-- PHP touched: run `vendor/bin/pint --dirty --format agent`; run focused Pest tests; add `composer run types:check` when type-sensitive/backend scope warrants it.
-- Vue/TypeScript/CSS touched: run `pnpm run format`, `pnpm run lint:check`, `pnpm run types:check`, plus relevant backend feature tests for the end-to-end behavior.
-- Route/controller contract changed: regenerate/use Wayfinder through the configured Vite integration and verify frontend type checks; no hardcoded route fallback.
-- Agent context touched: validate custom skill structure, run `php artisan boost:update --no-interaction` twice to verify publication is idempotent, and run Serena reference checks when memories changed.
-- Broad or cross-cutting change: run `composer run ci:check` or the equivalent full backend/frontend gates after focused checks pass.
-- Frontend build-affecting change: run `pnpm run build` when proportionate; Vite manifest errors specifically require `pnpm run build` or an active dev server.
-- Before handoff, inspect `git diff`/status, preserve unrelated user changes, and report the exact checks run and their outcomes.
-- Do not create ad-hoc verification scripts when the test suite can demonstrate the behavior.
+- Every source change needs programmatic coverage in its owning runner: Pest for Laravel Unit/Feature, Vitest for Vue/TypeScript units/components, Playwright only for critical cross-stack journeys.
+- Run the smallest affected tests first, then the full runner for each changed surface.
+- PHP touched: run `composer run rector` before `composer run format:agent`, then focused Pest and applicable checks; reserve `composer run lint` for explicitly requested repository-wide formatting. If `composer run rector:check` reports transformable code, auto-fix with `composer run rector` first and never reproduce Rector's changes manually; then format and recheck.
+- Vue/TypeScript/CSS touched: auto-fix with `pnpm run lint` before `pnpm run format`, then run lint/format checks, type-check, Vitest, and the build-backed E2E gate. A lint or format CI blocker requires its matching pnpm auto-fix before manual edits; manually fix only remaining issues. Type, test, build, and E2E blockers require focused diagnosis because they have no general auto-fixer.
+- E2E/setup touched: run Playwright on fresh isolated SQLite twice and confirm no run-server remains; exercise failure/signal cleanup when process lifecycle changes.
+- Agent context touched: run Boost publication twice for idempotence and both Serena memory reference checks.
+- Before handoff, run mandatory `composer run ci:check`; do not replace it with an equivalent subset. Any failure becomes required follow-up even outside the original scope: isolate the cause, make the smallest safe fix while preserving unrelated user changes, rerun the focused check, and continue until the full gate passes. Stop only when resolution requires user approval, destructive action, external coordination, or unavailable authority.
+- Review status and complete diff, preserve unrelated changes, run `git diff --check`, and report exact validation outcomes.

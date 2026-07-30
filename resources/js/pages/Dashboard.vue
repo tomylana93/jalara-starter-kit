@@ -1,22 +1,40 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import { translate, useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
 
+type LayoutProps = {
+    locale: string;
+    fallbackLocale: string;
+};
+
 defineOptions({
-    layout: {
+    /*
+     * Inertia hands every shared prop to the page component, and these pages
+     * render a fragment, so undeclared props would otherwise leak onto the DOM
+     * as extraneous attributes.
+     */
+    inheritAttrs: false,
+    layout: (props: LayoutProps) => ({
         breadcrumbs: [
             {
-                title: 'Dashboard',
+                title: translate(
+                    'dashboard.page.title',
+                    props.locale,
+                    props.fallbackLocale,
+                ),
                 href: dashboard(),
             },
         ],
-    },
+    }),
 });
+
+const { t } = useTranslations();
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head :title="t('dashboard.page.title')" />
 
     <div
         class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"

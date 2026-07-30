@@ -3,6 +3,11 @@ export type ResolvedAppearance = 'light' | 'dark';
 
 export type AppVariant = 'header' | 'sidebar';
 
+export type SelectOption = {
+    label: string;
+    value: string;
+};
+
 export type FlashToast = {
     type: 'success' | 'info' | 'warning' | 'error';
     message: string;
