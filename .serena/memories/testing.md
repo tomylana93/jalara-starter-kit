@@ -5,7 +5,7 @@
 - Playwright Test owns only critical cross-stack Chromium flows. E2E proves wiring and representative user journeys; authorization, persistence edge cases, validation detail, and permission matrices stay in Pest Feature tests.
 - Keep one canonical test per behavior and do not duplicate backend contracts across Pest and Playwright.
 - GitHub CI loads PCOV and enforces at least 80% application coverage via `composer run coverage:check`; dependency advisories are part of `composer run ci:check`.
-- Organize Pest feature tests by observable domain under `tests/Feature/{Domain}`; do not mirror implementation-layer folders.
+- Organize Pest feature tests by observable domain under `tests/Feature/{Domain}`; do not mirror implementation-layer folders (e.g. `tests/Feature/Documentation/ReadmeTest.php` checks README/LICENSE presence and content rules).
 - Put database-free object contracts in `tests/Unit`; bind `Tests\TestCase` only when the service container is needed.
 - Prefer stable public outcomes over collaborator wiring, internal call sequences, or class-shape assertions.
 - `resources/views/app.blade.php` passes the page component to `@vite`, so a Pest feature test hitting a *new* Inertia page fails with "Unable to locate file in Vite manifest" until `pnpm run build` runs. Build after adding a page, before running feature tests.
