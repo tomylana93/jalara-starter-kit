@@ -258,6 +258,39 @@ test('ships heading and body stacks for every font pair preset', async () => {
     }
 });
 
+test('colors every lucide icon from the active theme tokens', async () => {
+    const css = await readSource('resources/css/app.css');
+
+    assert.match(css, /:where\(svg\.lucide\)\s*\{\s*color:\s*var\(--primary\)/);
+    assert.match(
+        css,
+        /:where\(\[data-slot='sidebar'\]\)\s*:where\(svg\.lucide\)\s*\{\s*color:\s*var\(--sidebar-primary\)/,
+    );
+});
+
+test('lets controls and semantic surfaces keep their own icon color', async () => {
+    const css = await readSource('resources/css/app.css');
+
+    /* Zero-specificity rules lose to any explicit color utility on the icon. */
+    assert.doesNotMatch(css, /^\s*svg\.lucide\s*\{/m);
+    assert.match(css, /\[class~='text-primary-foreground'\]/);
+    assert.match(css, /\[class~='text-white'\]/);
+    assert.match(
+        css,
+        /\[data-slot='button'\]:not\(\s*\[data-variant='ghost'\]/,
+    );
+
+    /* Solid buttons and destructive alerts must not opt into the brand color. */
+    assert.doesNotMatch(
+        await readSource('resources/js/pages/master-data/users/Index.vue'),
+        /<Plus[^>]*text-primary/,
+    );
+    assert.doesNotMatch(
+        await readSource('resources/js/components/AlertError.vue'),
+        /<AlertCircle[^>]*text-primary/,
+    );
+});
+
 test('no longer references the removed primary color setting', async () => {
     for (const file of [
         'resources/css/app.css',
