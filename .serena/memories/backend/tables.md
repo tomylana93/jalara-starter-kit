@@ -18,6 +18,11 @@
   window (page/perPage/perPageOptions/total/lastPage/from/to); the client renders
   from those rather than from its own optimism. A secondary order by the
   tie-breaker column keeps paging stable across equal sort values.
+- `paginate()` clamps the page itself: Laravel's paginator accepts any positive
+  page and would answer past the end with an empty window, so the total is
+  counted first, the page is capped to the resulting last page, and that count is
+  passed back as `paginate(total:)` so clamping costs no extra query. An empty
+  result set resolves to page 1 with `from`/`to` null.
 - A row never carries a server-formatted timestamp. Send the instant as UTC ISO
   8601 (`->toISOString()`) and let the browser format it — see the timezone rule
   in `mem:backend/settings`. The controller passes `GeneralSettings::$dateFormat`

@@ -45,13 +45,26 @@ abstract class AbstractTable
             $query->whereAny($this->searchable(), 'like', '%'.$resolved->search.'%');
         }
 
-        $paginator = $query
+        $query
             ->orderBy($sortable[(string) $resolved->sort], $resolved->direction)
             /* A secondary key keeps paging stable when the sorted values tie. */
-            ->orderBy($this->tieBreaker(), $resolved->direction)
-            ->paginate(perPage: $resolved->perPage, page: $resolved->page);
+            ->orderBy($this->tieBreaker(), $resolved->direction);
 
-        $total = $paginator->total();
+        /*
+         * Laravel accepts any positive page, so a page past the end would answer
+         * with an empty window instead of rows. Counting first lets the request
+         * settle on the last page that exists; the count is handed to the
+         * paginator so normalizing costs no extra query.
+         */
+        $total = $query->toBase()->getCountForPagination();
+        $lastPage = max(1, (int) ceil($total / $resolved->perPage));
+
+        $paginator = $query->paginate(
+            perPage: $resolved->perPage,
+            page: min($resolved->page, $lastPage),
+            total: $total,
+        );
+
         $page = $paginator->currentPage();
         $perPage = $paginator->perPage();
         $count = count($paginator->items());

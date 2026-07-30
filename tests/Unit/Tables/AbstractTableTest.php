@@ -102,6 +102,29 @@ it('reports the row window alongside the page of data', function () {
         ->and($result['meta']['perPageOptions'])->toBe(TableQuery::PER_PAGE_OPTIONS);
 });
 
+it('settles on the last page when the requested page is past the end', function () {
+    User::factory()->count(12)->create();
+
+    $result = usersTable()->paginate(new TableQuery(page: 999, perPage: 10));
+
+    expect($result['data'])->toHaveCount(3)
+        ->and($result['meta']['page'])->toBe(2)
+        ->and($result['meta']['lastPage'])->toBe(2)
+        ->and($result['meta']['total'])->toBe(13)
+        ->and($result['meta']['from'])->toBe(11)
+        ->and($result['meta']['to'])->toBe(13);
+});
+
+it('settles on the first page when nothing matches at all', function () {
+    $result = usersTable()->paginate(new TableQuery(search: 'no-such-user', page: 999));
+
+    expect($result['data'])->toBe([])
+        ->and($result['meta']['page'])->toBe(1)
+        ->and($result['meta']['lastPage'])->toBe(1)
+        ->and($result['meta']['from'])->toBeNull()
+        ->and($result['meta']['to'])->toBeNull();
+});
+
 it('reports an empty window when no row matches', function () {
     $result = usersTable()->paginate(new TableQuery(search: 'no-such-user'));
 

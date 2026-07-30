@@ -159,6 +159,22 @@ it('paginates with the requested page size', function () {
         );
 });
 
+it('resolves a page past the end to the last page that exists', function () {
+    $manager = userManager();
+    User::factory()->count(12)->create();
+
+    actingAs($manager)
+        ->get(route('master-data.users.index', ['perPage' => 10, 'page' => 999]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 3)
+            ->where('users.meta.page', 2)
+            ->where('users.meta.lastPage', 2)
+            ->where('users.meta.total', 13)
+            ->where('users.meta.from', 11)
+            ->where('users.meta.to', 13),
+        );
+});
+
 it('rejects an invalid table query', function (array $query) {
     actingAs(userManager())
         ->get(route('master-data.users.index', $query))
