@@ -15,7 +15,7 @@ export const inertiaPageProps = {
     branding: {},
     name: undefined as string | undefined,
     description: null as string | null,
-    can: { manageSettings: true },
+    can: { manageSettings: true, viewUsers: true },
     locale: 'en',
     fallbackLocale: 'en',
 };
@@ -78,10 +78,15 @@ vi.mock('@/composables/useTranslations', () => ({
 }));
 
 config.global.stubs = {
-    PageWrapper: { template: '<main><slot /></main>' },
+    PageWrapper: {
+        template: '<main><slot name="actions" /><slot /></main>',
+    },
     Input: {
         inheritAttrs: false,
-        template: '<input v-bind="$attrs" />',
+        props: ['modelValue'],
+        emits: ['update:modelValue'],
+        template:
+            '<input v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     },
     Textarea: {
         inheritAttrs: false,
@@ -108,6 +113,13 @@ config.global.stubs = {
     SelectValue: { template: '<span><slot /></span>' },
     SelectContent: { template: '<div><slot /></div>' },
     SelectItem: { template: '<button type="button"><slot /></button>' },
+    Checkbox: {
+        props: ['modelValue'],
+        emits: ['update:modelValue'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="checkbox" :aria-checked="modelValue === \'indeterminate\' ? \'mixed\' : String(Boolean(modelValue))" v-bind="$attrs" @click="$emit(\'update:modelValue\', modelValue !== true)" />',
+    },
     Switch: {
         props: ['modelValue'],
         emits: ['update:modelValue'],
@@ -134,6 +146,13 @@ config.global.stubs = {
     DropdownMenuItem: {
         inheritAttrs: false,
         template: '<div role="menuitem" v-bind="$attrs"><slot /></div>',
+    },
+    DropdownMenuCheckboxItem: {
+        props: ['modelValue'],
+        emits: ['update:modelValue'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="menuitemcheckbox" :aria-checked="String(Boolean(modelValue))" v-bind="$attrs" @click="$emit(\'update:modelValue\', !modelValue)"><slot /></button>',
     },
     DropdownMenuRadioGroup: {
         name: 'DropdownMenuRadioGroup',

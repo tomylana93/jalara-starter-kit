@@ -24,6 +24,28 @@ final class AuthorizationCatalog
         ];
     }
 
+    /**
+     * Roles that user management may assign.
+     *
+     * Super Admin is granted by the authorization bootstrap alone, so CRUD can
+     * never hand it out.
+     *
+     * @return list<Role>
+     */
+    public function assignableRoles(): array
+    {
+        return [Role::Admin, Role::User];
+    }
+
+    /** @return list<string> */
+    public function assignableRoleValues(): array
+    {
+        return array_map(
+            fn (Role $role): string => $role->value,
+            $this->assignableRoles(),
+        );
+    }
+
     /** @return list<Permission> */
     public function permissionsFor(Role $role): array
     {

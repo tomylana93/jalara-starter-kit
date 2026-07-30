@@ -18,6 +18,11 @@ export default defineConfig({
         setupFiles: ['./resources/js/test/setup.ts'],
         include: ['resources/js/**/*.test.ts', 'vite/**/*.test.ts'],
         exclude: ['e2e/**'],
+        /*
+         * A fixed non-UTC, DST-free zone so browser-timezone formatting is
+         * observably different from the UTC instants the server sends.
+         */
+        env: { TZ: 'Asia/Jakarta' },
     },
     plugins: [
         laravelLang(),

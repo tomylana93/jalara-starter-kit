@@ -8,4 +8,6 @@
 - Organize Pest feature tests by observable domain under `tests/Feature/{Domain}`; do not mirror implementation-layer folders.
 - Put database-free object contracts in `tests/Unit`; bind `Tests\TestCase` only when the service container is needed.
 - Prefer stable public outcomes over collaborator wiring, internal call sequences, or class-shape assertions.
+- `resources/views/app.blade.php` passes the page component to `@vite`, so a Pest feature test hitting a *new* Inertia page fails with "Unable to locate file in Vite manifest" until `pnpm run build` runs. Build after adding a page, before running feature tests.
+- Shared Vitest stubs in `resources/js/test/setup.ts` must stay faithful to the real primitive: `Input` emits `update:modelValue` (needed for `v-model`) and `PageWrapper` renders both the `actions` and default slots. `inertiaPageProps` is a plain object, so a `computed` over it does not re-evaluate — set permissions before the first read instead of mutating mid-test.
 - E2E isolation and focused commands: `mem:testing/browser`.

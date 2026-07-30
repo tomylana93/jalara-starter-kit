@@ -7,6 +7,7 @@ import { useAppNavigation } from './useAppNavigation';
 describe('useAppNavigation', () => {
     beforeEach(() => {
         inertiaPageProps.can.manageSettings = true;
+        inertiaPageProps.can.viewUsers = true;
     });
 
     it('provides translated main navigation using Wayfinder routes', () => {
@@ -23,16 +24,21 @@ describe('useAppNavigation', () => {
                 href: '/dashboard',
             },
             {
+                title: 'navigation.main.master_data',
+                href: '/master-data',
+            },
+            {
                 title: 'navigation.main.settings',
                 href: '/settings',
             },
         ]);
     });
 
-    it('reactively filters settings by permission', () => {
-        const { mainGroups, mainItems } = useAppNavigation();
-
+    it('drops the admin group when no admin permission is held', () => {
         inertiaPageProps.can.manageSettings = false;
+        inertiaPageProps.can.viewUsers = false;
+
+        const { mainGroups, mainItems } = useAppNavigation();
 
         expect(mainItems.value.map((item) => item.title)).toEqual([
             'navigation.main.dashboard',
@@ -42,7 +48,18 @@ describe('useAppNavigation', () => {
         ]);
     });
 
-    it('places settings in its own admin group', () => {
+    it('shows only settings to a user who cannot view users', () => {
+        inertiaPageProps.can.viewUsers = false;
+
+        const { mainItems } = useAppNavigation();
+
+        expect(mainItems.value.map((item) => item.title)).toEqual([
+            'navigation.main.dashboard',
+            'navigation.main.settings',
+        ]);
+    });
+
+    it('places master data alongside settings in the admin group', () => {
         const { mainGroups } = useAppNavigation();
 
         expect(
@@ -57,8 +74,24 @@ describe('useAppNavigation', () => {
             },
             {
                 title: 'navigation.group.admin',
-                items: ['navigation.main.settings'],
+                items: [
+                    'navigation.main.master_data',
+                    'navigation.main.settings',
+                ],
             },
+        ]);
+    });
+
+    it('shows only master data to a user who cannot manage settings', () => {
+        inertiaPageProps.can.manageSettings = false;
+
+        const { mainGroups } = useAppNavigation();
+
+        expect(
+            mainGroups.value.map((group) => group.items.map((i) => i.title)),
+        ).toEqual([
+            ['navigation.main.dashboard'],
+            ['navigation.main.master_data'],
         ]);
     });
 

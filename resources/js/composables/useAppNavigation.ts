@@ -1,8 +1,15 @@
 import { usePage } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid, Settings } from '@lucide/vue';
+import {
+    BookOpen,
+    Database,
+    FolderGit2,
+    LayoutGrid,
+    Settings,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
+import { index as masterDataIndex } from '@/routes/master-data';
 import { index as settingsIndex } from '@/routes/settings';
 import type { NavItem } from '@/types';
 
@@ -23,17 +30,27 @@ export function useAppNavigation() {
         },
     ]);
 
-    const adminItems = computed<NavItem[]>(() =>
-        page.props.can?.manageSettings
-            ? [
-                  {
-                      title: t('navigation.main.settings'),
-                      href: settingsIndex(),
-                      icon: Settings,
-                  },
-              ]
-            : [],
-    );
+    const adminItems = computed<NavItem[]>(() => {
+        const items: NavItem[] = [];
+
+        if (page.props.can?.viewUsers) {
+            items.push({
+                title: t('navigation.main.master_data'),
+                href: masterDataIndex(),
+                icon: Database,
+            });
+        }
+
+        if (page.props.can?.manageSettings) {
+            items.push({
+                title: t('navigation.main.settings'),
+                href: settingsIndex(),
+                icon: Settings,
+            });
+        }
+
+        return items;
+    });
 
     const mainItems = computed<NavItem[]>(() => [
         ...mainMenuItems.value,

@@ -13,6 +13,33 @@ return [
         ],
     ],
 
+    'table' => [
+        'search' => 'Search…',
+        'per_page' => 'Rows per page',
+        'summary' => 'Showing :from to :to of :total',
+        'empty' => 'No data found.',
+        'selected' => ':count of :total rows on this page selected',
+        'columns' => [
+            'label' => 'Columns',
+            'description' => 'Toggle columns',
+        ],
+        'select' => [
+            'all' => 'Select every row on this page',
+            'row' => 'Select row',
+        ],
+        'sort' => [
+            'ascending' => 'Sort ascending',
+            'descending' => 'Sort descending',
+        ],
+        'pagination' => [
+            'label' => 'Pagination',
+            'first' => 'First page',
+            'previous' => 'Previous page',
+            'next' => 'Next page',
+            'last' => 'Last page',
+        ],
+    ],
+
     'upload' => [
         'empty' => 'No image',
         'status' => [

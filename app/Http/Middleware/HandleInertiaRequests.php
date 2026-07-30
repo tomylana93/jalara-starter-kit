@@ -32,6 +32,8 @@ class HandleInertiaRequests extends Middleware
         'dashboard',
         'account',
         'account/*',
+        'master-data',
+        'master-data/*',
         'settings',
         'settings/*',
     ];
@@ -67,6 +69,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'can' => [
                 'manageSettings' => $request->user()?->can(Permission::ManageSettings->value) ?? false,
+                'viewUsers' => $request->user()?->can(Permission::ViewUsers->value) ?? false,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

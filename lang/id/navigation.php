@@ -9,6 +9,7 @@ return [
 
     'main' => [
         'dashboard' => 'Dashboard',
+        'master_data' => 'Master data',
         'settings' => 'Pengaturan',
     ],
 

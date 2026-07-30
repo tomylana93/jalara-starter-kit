@@ -21,11 +21,12 @@ vi.mock('@/components/ui/sidebar', async (importOriginal) => ({
 beforeEach(() => {
     inertiaPageProps.auth = { user: { name: 'Ada Lovelace' } };
     inertiaPageProps.can.manageSettings = true;
+    inertiaPageProps.can.viewUsers = true;
     sidebarState.isMobile = false;
     setOpenMobile.mockReset();
 });
 
-it('includes settings navigation when the user has permission', () => {
+it('includes admin navigation when the user has permission', () => {
     const wrapper = mount(AppSidebar);
     const groups = wrapper.findAllComponents({ name: 'NavMain' });
 
@@ -43,13 +44,14 @@ it('includes settings navigation when the user has permission', () => {
         },
         {
             title: 'navigation.group.admin',
-            items: ['navigation.main.settings'],
+            items: ['navigation.main.master_data', 'navigation.main.settings'],
         },
     ]);
 });
 
-it('hides settings navigation when the user lacks permission', () => {
+it('hides admin navigation when the user lacks permission', () => {
     inertiaPageProps.can.manageSettings = false;
+    inertiaPageProps.can.viewUsers = false;
 
     const wrapper = mount(AppSidebar);
     const groups = wrapper.findAllComponents({ name: 'NavMain' });
