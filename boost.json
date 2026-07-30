@@ -23,7 +23,6 @@
         "tailwindcss-development",
         "laravel-permission-development",
         "debug-using-debugbar",
-        "grill-handoff",
         "maintaining-agent-context"
     ]
 }

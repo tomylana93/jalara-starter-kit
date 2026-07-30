@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Me"
+  short_description: "Interview me on this plan, then emit the developer handoff"
+  default_prompt: "Use $grill-me to interview me on this plan one question at a time, then produce the handoff."
+policy:
+  allow_implicit_invocation: false
