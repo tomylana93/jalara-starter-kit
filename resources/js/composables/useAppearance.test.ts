@@ -130,6 +130,26 @@ it('updates the system theme when the preferred color scheme changes', async () 
     expect(document.documentElement.classList.contains('dark')).toBe(true);
 });
 
+it('resolves to light before mount so hydration matches the server', async () => {
+    const media = createMatchMedia(true);
+    vi.stubGlobal('matchMedia', media.matchMedia);
+    localStorage.setItem('appearance', 'system');
+    const { useAppearance } = await import('./useAppearance');
+    let resolvedBeforeMount: string | undefined;
+
+    mount(
+        defineComponent({
+            setup() {
+                resolvedBeforeMount = useAppearance().resolvedAppearance.value;
+
+                return () => null;
+            },
+        }),
+    );
+
+    expect(resolvedBeforeMount).toBe('light');
+});
+
 it('restores the stored appearance when mounted', async () => {
     const media = createMatchMedia();
     vi.stubGlobal('matchMedia', media.matchMedia);

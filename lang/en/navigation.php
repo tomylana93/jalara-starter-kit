@@ -19,6 +19,7 @@ return [
 
     'menu' => [
         'navigation' => 'Navigation menu',
+        'description' => 'Links to the main pages of the application.',
     ],
 
 ];

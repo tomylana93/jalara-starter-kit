@@ -19,6 +19,7 @@ return [
 
     'menu' => [
         'navigation' => 'Menu navigasi',
+        'description' => 'Tautan ke halaman utama aplikasi.',
     ],
 
 ];

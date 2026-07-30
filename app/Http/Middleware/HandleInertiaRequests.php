@@ -19,6 +19,24 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
+     * The routes that must not be server rendered.
+     *
+     * Pages behind authentication render the sidebar shell, whose registry
+     * components branch on viewport and colour-scheme media queries. The
+     * server cannot know either, so server rendering them always produces
+     * hydration mismatches. Guest pages use the auth layout and stay on SSR.
+     *
+     * @var array<int, string>
+     */
+    protected $withoutSsr = [
+        'dashboard',
+        'account',
+        'account/*',
+        'settings',
+        'settings/*',
+    ];
+
+    /**
      * Determines the current asset version.
      *
      * @see https://inertiajs.com/asset-versioning

@@ -22,6 +22,7 @@ import {
 import {
     Sheet,
     SheetContent,
+    SheetDescription,
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
@@ -81,6 +82,9 @@ const activeItemStyles = 'bg-accent text-accent-foreground';
                             <SheetTitle class="sr-only">
                                 {{ t('navigation.menu.navigation') }}
                             </SheetTitle>
+                            <SheetDescription class="sr-only">
+                                {{ t('navigation.menu.description') }}
+                            </SheetDescription>
                             <AppMobileNavigation
                                 @close="mobileNavigationOpen = false"
                             />

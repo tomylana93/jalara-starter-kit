@@ -18,6 +18,17 @@ it('renders header actions and the shared mobile navigation', () => {
     expect(wrapper.text()).toContain('navigation.main.settings');
 });
 
+it('gives the mobile navigation sheet an accessible name and description', () => {
+    const wrapper = mount(AppHeader);
+
+    expect(wrapper.find('h2.sr-only').text()).toBe(
+        'navigation.menu.navigation',
+    );
+    expect(wrapper.find('p.sr-only').text()).toBe(
+        'navigation.menu.description',
+    );
+});
+
 it('hides the header avatar action on mobile', () => {
     const wrapper = mount(AppHeader);
 

@@ -171,6 +171,7 @@ config.global.stubs = {
     SheetContent: { template: '<div><slot /></div>' },
     SheetHeader: { template: '<header><slot /></header>' },
     SheetTitle: { template: '<h2><slot /></h2>' },
+    SheetDescription: { template: '<p><slot /></p>' },
     SheetTrigger: { template: '<div><slot /></div>' },
     NavMain: {
         name: 'NavMain',

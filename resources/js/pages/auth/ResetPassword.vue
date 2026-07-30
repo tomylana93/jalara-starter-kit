@@ -16,6 +16,12 @@ type LayoutProps = {
 };
 
 defineOptions({
+    /*
+     * Inertia hands every shared prop to the page component, and these pages
+     * render a fragment, so undeclared props would otherwise leak onto the DOM
+     * as extraneous attributes.
+     */
+    inheritAttrs: false,
     layout: (props: LayoutProps) => ({
         title: translate(
             'auth.reset_password.title',
