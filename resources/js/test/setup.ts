@@ -20,6 +20,10 @@ export const inertiaPageProps = {
     fallbackLocale: 'en',
 };
 
+export const inertiaPageUrl = {
+    value: '/',
+};
+
 export const resetFormState = (): void => {
     formState.errors = {};
     formState.processing = false;
@@ -61,7 +65,9 @@ vi.mock('@inertiajs/vue3', async (importOriginal) => {
         }),
         usePage: () => ({
             props: inertiaPageProps,
-            url: '/',
+            get url() {
+                return inertiaPageUrl.value;
+            },
         }),
     };
 });
@@ -161,9 +167,14 @@ config.global.stubs = {
     SidebarMenuItem: { template: '<div><slot /></div>' },
     SidebarMenuButton: { template: '<div><slot /></div>' },
     SidebarTrigger: { template: '<button type="button" />' },
+    Sheet: { template: '<div><slot /></div>' },
+    SheetContent: { template: '<div><slot /></div>' },
+    SheetHeader: { template: '<header><slot /></header>' },
+    SheetTitle: { template: '<h2><slot /></h2>' },
+    SheetTrigger: { template: '<div><slot /></div>' },
     NavMain: {
         name: 'NavMain',
-        props: ['items'],
+        props: ['group', 'items'],
         template: '<nav />',
     },
     NavFooter: true,

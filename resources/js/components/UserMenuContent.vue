@@ -17,8 +17,13 @@ type Props = {
     user: User;
 };
 
+const emit = defineEmits<{
+    navigate: [];
+}>();
+
 const handleLogout = () => {
     router.flushAll();
+    emit('navigate');
 };
 
 defineProps<Props>();
@@ -34,7 +39,12 @@ const { t } = useTranslations();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
+            <Link
+                class="block w-full cursor-pointer"
+                :href="edit()"
+                prefetch
+                @click="emit('navigate')"
+            >
                 <Settings class="mr-2 h-4 w-4" />
                 {{ t('account.layout.title') }}
             </Link>

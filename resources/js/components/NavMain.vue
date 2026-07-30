@@ -6,23 +6,24 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { useTranslations } from '@/composables/useTranslations';
 import type { NavItem } from '@/types';
 
 defineProps<{
+    group: string;
     items: NavItem[];
 }>();
 
 const { isCurrentUrl } = useCurrentUrl();
-const { t } = useTranslations();
+const { state } = useSidebar();
 </script>
 
 <template>
     <SidebarGroup class="px-2 py-0">
-        <SidebarGroupLabel>
-            {{ t('navigation.group.platform') }}
+        <SidebarGroupLabel v-if="state !== 'collapsed'">
+            {{ group }}
         </SidebarGroupLabel>
         <SidebarMenu>
             <SidebarMenuItem v-for="item in items" :key="item.title">

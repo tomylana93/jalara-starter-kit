@@ -3,7 +3,8 @@
 return [
 
     'group' => [
-        'platform' => 'Platform',
+        'main_menu' => 'Menu utama',
+        'admin' => 'Admin',
     ],
 
     'main' => [

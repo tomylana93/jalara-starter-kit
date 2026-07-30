@@ -1,17 +1,10 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import {
-    BookOpen,
-    Folder,
-    LayoutGrid,
-    Menu,
-    Search,
-    Settings,
-} from '@lucide/vue';
-import { computed } from 'vue';
+import { Menu, Search } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
-import BrandIdentity from '@/components/BrandIdentity.vue';
+import AppMobileNavigation from '@/components/AppMobileNavigation.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -29,7 +22,6 @@ import {
 import {
     Sheet,
     SheetContent,
-    SheetHeader,
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
@@ -40,13 +32,13 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import { useAppNavigation } from '@/composables/useAppNavigation';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { useTranslations } from '@/composables/useTranslations';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import { index as settingsIndex } from '@/routes/settings';
-import type { BreadcrumbItem, NavItem } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
@@ -58,40 +50,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 const page = usePage();
 const auth = computed(() => page.props.auth);
+const mobileNavigationOpen = ref(false);
+const { mainItems, externalItems } = useAppNavigation();
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 const { t } = useTranslations();
 
 const activeItemStyles = 'bg-accent text-accent-foreground';
-
-const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: t('navigation.main.dashboard'),
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    ...(page.props.can?.manageSettings
-        ? [
-              {
-                  title: t('navigation.main.settings'),
-                  href: settingsIndex(),
-                  icon: Settings,
-              },
-          ]
-        : []),
-]);
-
-const rightNavItems = computed<NavItem[]>(() => [
-    {
-        title: t('navigation.external.repository'),
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: t('navigation.external.documentation'),
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-]);
 </script>
 
 <template>
@@ -100,7 +64,7 @@ const rightNavItems = computed<NavItem[]>(() => [
             <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                 <!-- Mobile Menu -->
                 <div class="lg:hidden">
-                    <Sheet>
+                    <Sheet v-model:open="mobileNavigationOpen">
                         <SheetTrigger :as-child="true">
                             <Button
                                 variant="ghost"
@@ -110,55 +74,16 @@ const rightNavItems = computed<NavItem[]>(() => [
                                 <Menu class="h-5 w-5" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" class="w-[300px] p-6">
+                        <SheetContent
+                            side="left"
+                            class="w-[18rem] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+                        >
                             <SheetTitle class="sr-only">
                                 {{ t('navigation.menu.navigation') }}
                             </SheetTitle>
-                            <SheetHeader class="flex justify-start text-left">
-                                <BrandIdentity />
-                            </SheetHeader>
-                            <div
-                                class="flex h-full flex-1 flex-col justify-between space-y-4 py-6"
-                            >
-                                <nav class="-mx-3 space-y-1">
-                                    <Link
-                                        v-for="item in mainNavItems"
-                                        :key="item.title"
-                                        :href="item.href"
-                                        class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
-                                        :class="
-                                            whenCurrentUrl(
-                                                item.href,
-                                                activeItemStyles,
-                                            )
-                                        "
-                                    >
-                                        <component
-                                            v-if="item.icon"
-                                            :is="item.icon"
-                                            class="h-5 w-5"
-                                        />
-                                        {{ item.title }}
-                                    </Link>
-                                </nav>
-                                <div class="flex flex-col space-y-4">
-                                    <a
-                                        v-for="item in rightNavItems"
-                                        :key="item.title"
-                                        :href="toUrl(item.href)"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="flex items-center space-x-2 text-sm font-medium"
-                                    >
-                                        <component
-                                            v-if="item.icon"
-                                            :is="item.icon"
-                                            class="h-5 w-5"
-                                        />
-                                        <span>{{ item.title }}</span>
-                                    </a>
-                                </div>
-                            </div>
+                            <AppMobileNavigation
+                                @close="mobileNavigationOpen = false"
+                            />
                         </SheetContent>
                     </Sheet>
                 </div>
@@ -174,7 +99,7 @@ const rightNavItems = computed<NavItem[]>(() => [
                             class="flex h-full items-stretch space-x-2"
                         >
                             <NavigationMenuItem
-                                v-for="(item, index) in mainNavItems"
+                                v-for="(item, index) in mainItems"
                                 :key="index"
                                 class="relative flex h-full items-center"
                             >
@@ -219,7 +144,7 @@ const rightNavItems = computed<NavItem[]>(() => [
 
                         <div class="hidden space-x-1 lg:flex">
                             <template
-                                v-for="item in rightNavItems"
+                                v-for="item in externalItems"
                                 :key="item.title"
                             >
                                 <TooltipProvider :delay-duration="0">
@@ -257,33 +182,35 @@ const rightNavItems = computed<NavItem[]>(() => [
 
                     <AppearanceToggle />
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger :as-child="true">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
-                            >
-                                <Avatar
-                                    class="size-8 overflow-hidden rounded-full"
+                    <div class="hidden lg:block">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger :as-child="true">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
                                 >
-                                    <AvatarImage
-                                        v-if="auth.user.avatar"
-                                        :src="auth.user.avatar"
-                                        :alt="auth.user.name"
-                                    />
-                                    <AvatarFallback
-                                        class="rounded-lg bg-primary/10 font-semibold text-primary dark:bg-primary/15"
+                                    <Avatar
+                                        class="size-8 overflow-hidden rounded-full"
                                     >
-                                        {{ getInitials(auth.user?.name) }}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" class="w-56">
-                            <UserMenuContent :user="auth.user" />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                        <AvatarImage
+                                            v-if="auth.user.avatar"
+                                            :src="auth.user.avatar"
+                                            :alt="auth.user.name"
+                                        />
+                                        <AvatarFallback
+                                            class="rounded-lg bg-primary/10 font-semibold text-primary dark:bg-primary/15"
+                                        >
+                                            {{ getInitials(auth.user?.name) }}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-56">
+                                <UserMenuContent :user="auth.user" />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
         </div>
