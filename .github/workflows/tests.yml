@@ -12,6 +12,8 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
 
     steps:
       - name: Checkout code
