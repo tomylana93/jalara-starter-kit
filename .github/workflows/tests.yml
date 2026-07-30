@@ -42,6 +42,9 @@ jobs:
       - name: Setup Application
         run: composer run ci:setup
 
+      - name: Generate Wayfinder routes
+        run: php artisan wayfinder:generate --with-form --no-interaction
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
