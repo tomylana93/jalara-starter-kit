@@ -1,15 +1,15 @@
 ---
-name: grill-me
-description: Critique and harden a draft plan before emitting a developer handoff. Use only on explicit `$grill-me` invocation when the user asks to grill, stress-test, poke holes in, pressure-test, or challenge a plan, design, or approach before implementation, or asks for a handoff that survives scrutiny. Audits evidence, acceptance criteria, scope, unknowns, tests, verification gate, freshness, and implementor routing, then assembles the handoff.
+name: grill-handoff
+description: Critique and harden a draft plan before emitting a developer handoff. Use only on explicit `$grill-handoff` invocation when the user asks to grill, stress-test, poke holes in, pressure-test, or challenge a plan, design, or approach before implementation, or asks for a handoff that survives scrutiny. Audits evidence, acceptance criteria, scope, unknowns, tests, verification gate, freshness, and implementor routing, then assembles the handoff.
 ---
 
-# Grill Me
+# Grill Handoff
 
 Interrogate the plan, not the developer. This skill is plan-only: it never edits
 the repository, never writes Serena memory, and never treats the resulting
 handoff as authorization to implement.
 
-Activate only when invoked explicitly as `$grill-me`. Ordinary planning must not
+Activate only when invoked explicitly as `$grill-handoff`. Ordinary planning must not
 pull this skill in.
 
 ## Ground First

@@ -5,9 +5,9 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * @return array{frontmatter: array<string, mixed>, body: string}
  */
-function readGrillMeSkill(): array
+function readGrillHandoffSkill(): array
 {
-    $contents = (string) file_get_contents(base_path('.ai/skills/grill-me/SKILL.md'));
+    $contents = (string) file_get_contents(base_path('.ai/skills/grill-handoff/SKILL.md'));
 
     expect($contents)->toStartWith("---\n");
 
@@ -20,30 +20,30 @@ function readGrillMeSkill(): array
 }
 
 it('declares only a name and a trigger-rich description', function () {
-    $skill = readGrillMeSkill();
+    $skill = readGrillHandoffSkill();
 
     expect(array_keys($skill['frontmatter']))->toBe(['name', 'description'])
-        ->and($skill['frontmatter']['name'])->toBe('grill-me')
-        ->and($skill['frontmatter']['description'])->toContain('$grill-me')
+        ->and($skill['frontmatter']['name'])->toBe('grill-handoff')
+        ->and($skill['frontmatter']['description'])->toContain('$grill-handoff')
         ->and($skill['frontmatter']['description'])->toContain('handoff');
 });
 
 it('is registered as a published Boost skill', function () {
     $boost = (array) json_decode((string) file_get_contents(base_path('boost.json')), true);
 
-    expect($boost['skills'])->toContain('grill-me');
+    expect($boost['skills'])->toContain('grill-handoff');
 });
 
 it('restricts invocation to the explicit skill call', function () {
-    $agent = (array) Yaml::parseFile(base_path('.ai/skills/grill-me/agents/openai.yaml'));
+    $agent = (array) Yaml::parseFile(base_path('.ai/skills/grill-handoff/agents/openai.yaml'));
 
     expect($agent['policy']['allow_implicit_invocation'])->toBeFalse()
-        ->and($agent['interface']['default_prompt'])->toContain('$grill-me')
+        ->and($agent['interface']['default_prompt'])->toContain('$grill-handoff')
         ->and($agent['interface'])->toHaveKeys(['display_name', 'short_description', 'default_prompt']);
 });
 
 it('guards against implementing, growing scope, or assuming material decisions', function () {
-    $body = readGrillMeSkill()['body'];
+    $body = readGrillHandoffSkill()['body'];
 
     expect($body)->toContain('plan-only')
         ->and($body)->toContain('never edits')
@@ -54,7 +54,7 @@ it('guards against implementing, growing scope, or assuming material decisions',
 });
 
 it('keeps every mandatory handoff section in contract order', function () {
-    $template = (string) file_get_contents(base_path('.ai/skills/grill-me/assets/handoff-template.md'));
+    $template = (string) file_get_contents(base_path('.ai/skills/grill-handoff/assets/handoff-template.md'));
 
     $sections = [
         '## HANDOFF',
@@ -84,7 +84,7 @@ it('keeps every mandatory handoff section in contract order', function () {
 });
 
 it('keeps the handoff metadata, verification gate, and completion checkboxes', function () {
-    $template = (string) file_get_contents(base_path('.ai/skills/grill-me/assets/handoff-template.md'));
+    $template = (string) file_get_contents(base_path('.ai/skills/grill-handoff/assets/handoff-template.md'));
 
     expect($template)->toContain('**Base commit:**')
         ->and($template)->toContain('**Working tree at analysis:**')
