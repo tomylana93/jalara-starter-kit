@@ -8,6 +8,7 @@ import {
     authLayoutPresets,
     colorThemePresets,
     defaultBranding,
+    fallbackApplicationName,
     fontPairPresets,
     resolvePreset,
     syncBrandingAttributes,
@@ -134,7 +135,41 @@ test('builds the document title from the application identity', () => {
     assert.equal(applicationTitle('', 'Jalara App'), 'Jalara App');
     assert.equal(applicationTitle(null, 'Jalara App'), 'Jalara App');
     assert.equal(applicationTitle(undefined, 'Jalara App'), 'Jalara App');
-    assert.equal(applicationTitle('Dashboard', '  '), 'Dashboard - Laravel');
+    assert.equal(applicationTitle('Dashboard', '  '), 'Dashboard - Jalara');
+});
+
+test('falls back to the Jalara identity, never the framework name', () => {
+    assert.equal(fallbackApplicationName, 'Jalara');
+    assert.equal(defaultBranding.companyName, 'Jalara');
+    assert.equal(defaultBranding.footerText, '© Jalara. All rights reserved.');
+    assert.equal(applicationTitle(null, ''), 'Jalara');
+
+    // Uploaded assets stay opt-in so the public fallback files are used.
+    for (const url of [
+        defaultBranding.logoUrl,
+        defaultBranding.logoDarkUrl,
+        defaultBranding.iconUrl,
+        defaultBranding.iconDarkUrl,
+        defaultBranding.authBackgroundUrl,
+    ]) {
+        assert.equal(url, null);
+    }
+});
+
+test('resolves the favicon from the bundled Jalara assets when none is uploaded', async () => {
+    const blade = await readSource('resources/views/app.blade.php');
+
+    for (const asset of [
+        '/assets/images/branding/favicon.ico',
+        '/assets/images/branding/icon.png',
+        '/assets/images/branding/icon-dark.png',
+    ]) {
+        assert.match(blade, new RegExp(asset.replace(/[./-]/g, '\\$&')));
+    }
+
+    // The retired Laravel artefacts at the public root must not come back.
+    assert.doesNotMatch(blade, /href="\/favicon\.(ico|svg)"/);
+    assert.doesNotMatch(blade, /href="\/apple-touch-icon\.png"/);
 });
 
 test('drives the visible identity from the application name', async () => {
@@ -256,6 +291,39 @@ test('ships heading and body stacks for every font pair preset', async () => {
         assert.match(block, /--app-font-heading:\s*\S/);
         assert.match(block, /--app-font-body:\s*\S/);
     }
+});
+
+test('colors every lucide icon from the active theme tokens', async () => {
+    const css = await readSource('resources/css/app.css');
+
+    assert.match(css, /:where\(svg\.lucide\)\s*\{\s*color:\s*var\(--primary\)/);
+    assert.match(
+        css,
+        /:where\(\[data-slot='sidebar'\]\)\s*:where\(svg\.lucide\)\s*\{\s*color:\s*var\(--sidebar-primary\)/,
+    );
+});
+
+test('lets controls and semantic surfaces keep their own icon color', async () => {
+    const css = await readSource('resources/css/app.css');
+
+    /* Zero-specificity rules lose to any explicit color utility on the icon. */
+    assert.doesNotMatch(css, /^\s*svg\.lucide\s*\{/m);
+    assert.match(css, /\[class~='text-primary-foreground'\]/);
+    assert.match(css, /\[class~='text-white'\]/);
+    assert.match(
+        css,
+        /\[data-slot='button'\]:not\(\s*\[data-variant='ghost'\]/,
+    );
+
+    /* Solid buttons and destructive alerts must not opt into the brand color. */
+    assert.doesNotMatch(
+        await readSource('resources/js/pages/master-data/users/Index.vue'),
+        /<Plus[^>]*text-primary/,
+    );
+    assert.doesNotMatch(
+        await readSource('resources/js/components/AlertError.vue'),
+        /<AlertCircle[^>]*text-primary/,
+    );
 });
 
 test('no longer references the removed primary color setting', async () => {

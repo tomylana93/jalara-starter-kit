@@ -4,6 +4,7 @@ use App\Actions\Settings\UpdateBrandingSettings;
 use App\Actions\Settings\UpdateGeneralSettings;
 use App\Enums\ColorThemePreset;
 use App\Enums\FontPairPreset;
+use App\Http\Presenters\BrandingPresenter;
 use App\Settings\BrandingSettings;
 use App\Settings\GeneralSettings;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -22,6 +23,28 @@ function updateBranding(array $overrides = []): void
         'fontPair' => 'instrument-sans',
     ], $overrides));
 }
+
+it('falls back to the Jalara identity before the branding settings resolve', function () {
+    $defaults = BrandingPresenter::defaults();
+
+    expect($defaults['companyName'])->toBe('Jalara')
+        ->and($defaults['footerText'])->toBe('© Jalara. All rights reserved.')
+        ->and($defaults['logoUrl'])->toBeNull()
+        ->and($defaults['logoDarkUrl'])->toBeNull()
+        ->and($defaults['iconUrl'])->toBeNull()
+        ->and($defaults['iconDarkUrl'])->toBeNull()
+        ->and($defaults['authBackgroundUrl'])->toBeNull();
+});
+
+it('lets stored branding override the fallback identity', function () {
+    updateBranding(['companyName' => 'Jalara Group', 'footerText' => 'Copyright Jalara Group.']);
+
+    $branding = get(route('login'))->viewData('page')['props']['branding'];
+
+    expect($branding['companyName'])->toBe('Jalara Group')
+        ->and($branding['footerText'])->toBe('Copyright Jalara Group.')
+        ->and($branding)->not->toBe(BrandingPresenter::defaults());
+});
 
 it('exposes all supported color theme presets', function () {
     expect(array_column(ColorThemePreset::options(), 'value'))->toBe([

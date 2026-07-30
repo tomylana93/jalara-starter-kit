@@ -73,12 +73,12 @@ export function useAppNavigation() {
     const externalItems = computed<NavItem[]>(() => [
         {
             title: t('navigation.external.repository'),
-            href: 'https://github.com/laravel/vue-starter-kit',
+            href: 'https://github.com/tomylana93/jalara-starter-kit',
             icon: FolderGit2,
         },
         {
             title: t('navigation.external.documentation'),
-            href: 'https://laravel.com/docs/starter-kits#vue',
+            href: 'https://jalara.dev',
             icon: BookOpen,
         },
     ]);

@@ -387,3 +387,44 @@
         @apply bg-background text-foreground;
     }
 }
+
+/*
+  Lucide icons follow the active color theme by default, so a newly added icon
+  picks up the brand without needing a per-icon utility.
+
+  Every rule below is wrapped in `:where()` and therefore carries zero
+  specificity. An explicit color utility on the icon (`text-destructive`,
+  `text-muted-foreground`, ...) and the icon rules the shadcn primitives already
+  ship (alerts, dropdown items) keep winning, which is what keeps semantic
+  icons semantic.
+*/
+@layer base {
+    :where(svg.lucide) {
+        color: var(--primary);
+    }
+
+    /* Inside the sidebar the brand is expressed by the sidebar token. */
+    :where([data-slot='sidebar']) :where(svg.lucide) {
+        color: var(--sidebar-primary);
+    }
+
+    /*
+      Surfaces that paint their own foreground keep it, so an icon on a solid
+      button or badge stays readable instead of rendering brand on brand.
+    */
+    :where(
+            [class~='text-primary-foreground'],
+            [class~='text-secondary-foreground'],
+            [class~='text-destructive-foreground'],
+            [class~='text-sidebar-primary-foreground'],
+            [class~='text-white'],
+            [data-slot='button']:not(
+                [data-variant='ghost'],
+                [data-variant='outline'],
+                [data-variant='link']
+            )
+        )
+        :where(svg.lucide) {
+        color: inherit;
+    }
+}

@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Jalara'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'description' => env('APP_DESCRIPTION'),
+    'description' => env('APP_DESCRIPTION', 'Jalara Starter Kit'),
 
     /*
     |--------------------------------------------------------------------------

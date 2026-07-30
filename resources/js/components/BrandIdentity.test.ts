@@ -102,6 +102,16 @@ describe('brand identity', () => {
         expect(images[0].attributes('src')).toBe('/storage/icon.png');
     });
 
+    it('names the application Jalara when the server sends none', () => {
+        withBranding({ iconUrl: '/storage/icon.png' });
+        inertiaPageProps.name = undefined;
+
+        const wrapper = mount(BrandIdentity);
+
+        expect(wrapper.text()).toContain('Jalara');
+        expect(wrapper.text()).not.toContain('Laravel');
+    });
+
     it('shows the mark alone when compact', () => {
         withBranding({ iconUrl: '/storage/icon.png' });
 

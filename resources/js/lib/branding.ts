@@ -47,11 +47,11 @@ export const brandingIdentityModes: readonly BrandingIdentityMode[] = [
 /**
  * Used whenever the server sends no application name.
  */
-export const fallbackApplicationName = 'Laravel';
+export const fallbackApplicationName = 'Jalara';
 
 export const defaultBranding: Branding = {
-    companyName: 'Laravel',
-    footerText: null,
+    companyName: fallbackApplicationName,
+    footerText: `© ${fallbackApplicationName}. All rights reserved.`,
     identityMode: 'icon-text',
     logoUrl: null,
     logoDarkUrl: null,

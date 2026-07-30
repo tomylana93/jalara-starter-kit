@@ -79,9 +79,11 @@ final class BrandingPresenter
      */
     public static function defaults(): array
     {
+        $companyName = (string) config('app.name', 'Jalara');
+
         return [
-            'companyName' => (string) config('app.name', 'Laravel'),
-            'footerText' => null,
+            'companyName' => $companyName,
+            'footerText' => self::defaultFooterText($companyName),
             'identityMode' => BrandingIdentityMode::IconText->value,
             'logoUrl' => null,
             'logoDarkUrl' => null,
@@ -93,6 +95,17 @@ final class BrandingPresenter
             'colorTheme' => ColorThemePreset::Neutral->value,
             'fontPair' => FontPairPreset::InstrumentSans->value,
         ];
+    }
+
+    /**
+     * The copyright line used until an administrator writes their own.
+     *
+     * Shared with the settings migration so a fresh install and the deployment
+     * window render the same footer.
+     */
+    public static function defaultFooterText(string $companyName): string
+    {
+        return sprintf('© %s. All rights reserved.', $companyName);
     }
 
     /**
