@@ -106,11 +106,11 @@ describe('useAppNavigation', () => {
         ).toEqual([
             {
                 title: 'navigation.external.repository',
-                href: 'https://github.com/laravel/vue-starter-kit',
+                href: 'https://github.com/tomylana93/jalara-starter-kit',
             },
             {
                 title: 'navigation.external.documentation',
-                href: 'https://laravel.com/docs/starter-kits#vue',
+                href: 'https://jalara.dev',
             },
         ]);
         expect(externalItems.value[0]?.icon).toBe(FolderGit2);
