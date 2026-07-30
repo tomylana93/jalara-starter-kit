@@ -4,8 +4,6 @@ namespace App\Actions\Fortify;
 
 use App\Enums\UserStatus;
 use App\Models\User;
-use App\Settings\SecuritySettings;
-use App\Settings\SettingsResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -25,10 +23,6 @@ class AuthenticateUser
         $user = User::query()->where('email', $request->string('email')->toString())->first();
 
         if (! $user instanceof User || ! Hash::check($request->string('password')->toString(), $user->password)) {
-            if ($user instanceof User) {
-                $this->recordFailedAttempt($user);
-            }
-
             $request->attributes->set(self::REQUEST_ATTRIBUTE, false);
 
             return null;
@@ -53,29 +47,6 @@ class AuthenticateUser
         $request->attributes->set(self::REQUEST_ATTRIBUTE, $user);
 
         return $user;
-    }
-
-    private function recordFailedAttempt(User $user): void
-    {
-        if ($user->status !== UserStatus::Active) {
-            return;
-        }
-
-        $security = SettingsResolver::tryResolve(SecuritySettings::class);
-        $maxFailedLoginAttempts = $security->maxFailedLoginAttempts ?? 5;
-        $suspensionDurationMinutes = $security->suspensionDurationMinutes ?? 15;
-
-        $failedLoginAttempts = $user->failed_login_attempts + 1;
-        $attributes = ['failed_login_attempts' => $failedLoginAttempts];
-
-        if ($failedLoginAttempts >= $maxFailedLoginAttempts) {
-            $attributes += [
-                'status' => UserStatus::Suspended,
-                'suspended_until' => now()->addMinutes($suspensionDurationMinutes),
-            ];
-        }
-
-        $user->forceFill($attributes)->save();
     }
 
     private function reactivateExpiredSuspension(User $user): void

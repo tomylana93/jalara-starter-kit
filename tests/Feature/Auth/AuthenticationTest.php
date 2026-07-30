@@ -99,7 +99,8 @@ it('does not authenticate users with an invalid password', function () {
 
     assertGuest();
 
-    expect($user->refresh()->failed_login_attempts)->toBe(1);
+    expect($user->refresh()->failed_login_attempts)->toBe(0)
+        ->and($user->status)->toBe(UserStatus::Active);
 });
 
 it('uses a generic message for unknown accounts and invalid passwords', function (array $credentials) {
@@ -120,7 +121,7 @@ it('uses a generic message for unknown accounts and invalid passwords', function
     ]],
 ]);
 
-it('suspends an account for fifteen minutes on the fifth failed login', function () {
+it('throttles an email and IP without suspending the account', function () {
     $this->freezeTime();
 
     $user = User::factory()->create();
@@ -129,13 +130,26 @@ it('suspends an account for fifteen minutes on the fifth failed login', function
         post(route('login.store'), [
             'email' => $user->email,
             'password' => 'wrong-password',
-        ]);
+        ])->assertSessionHasErrors('email');
     }
 
-    expect($user->refresh()->failed_login_attempts)->toBe(5)
-        ->and($user->status)->toBe(UserStatus::Suspended)
-        ->and($user->suspended_until?->format('Y-m-d H:i:s'))
-        ->toBe(now()->addMinutes(15)->format('Y-m-d H:i:s'));
+    post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ])->assertTooManyRequests();
+
+    expect($user->refresh()->failed_login_attempts)->toBe(0)
+        ->and($user->status)->toBe(UserStatus::Active)
+        ->and($user->suspended_until)->toBeNull();
+
+    $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10'])
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    assertAuthenticated();
 });
 
 it('reveals a disabled status only after the password is validated', function () {
@@ -198,7 +212,7 @@ it('memoizes authentication resolution on the request', function () {
 
     expect($authenticate->handle($request))->toBeNull()
         ->and($authenticate->handle($request))->toBeNull()
-        ->and($user->refresh()->failed_login_attempts)->toBe(1);
+        ->and($user->refresh()->failed_login_attempts)->toBe(0);
 });
 
 it('logs out users', function () {

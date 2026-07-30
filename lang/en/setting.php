@@ -217,12 +217,12 @@ return [
         'description' => 'Failed login handling and maintenance mode',
         'label' => [
             'max_failed_login_attempts' => 'Maximum failed login attempts',
-            'suspension_duration_minutes' => 'Suspension duration (minutes)',
+            'suspension_duration_minutes' => 'Login throttle window (minutes)',
             'maintenance_enabled' => 'Maintenance mode',
         ],
         'help' => [
-            'max_failed_login_attempts' => 'An account is suspended after this many consecutive failed attempts.',
-            'suspension_duration_minutes' => 'How long a suspended account has to wait before signing in again.',
+            'max_failed_login_attempts' => 'Maximum failed attempts allowed for one email and IP address.',
+            'suspension_duration_minutes' => 'How long that email and IP address must wait before trying again.',
             'maintenance_enabled' => 'While enabled, the application answers with a maintenance notice.',
         ],
         'alert' => [

@@ -126,7 +126,7 @@ it('requires email verification only while the setting is enabled', function () 
     actingAs($user)->get(route('dashboard'))->assertRedirect(route('verification.notice'));
 });
 
-it('suspends accounts using the configured failure limit and duration', function () {
+it('applies the configured login throttle without changing account status', function () {
     $settings = app(SecuritySettings::class);
     $settings->maxFailedLoginAttempts = 2;
     $settings->suspensionDurationMinutes = 90;
@@ -135,14 +135,20 @@ it('suspends accounts using the configured failure limit and duration', function
     $user = User::factory()->create();
 
     foreach (range(1, 2) as $ignored) {
-        post(route('login.store'), ['email' => $user->email, 'password' => 'wrong-password']);
+        post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertSessionHasErrors('email');
     }
 
-    $user->refresh();
+    post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'wrong-password',
+    ])->assertTooManyRequests();
 
-    expect($user->status)->toBe(UserStatus::Suspended)
-        ->and($user->failed_login_attempts)->toBe(2)
-        ->and($user->suspended_until?->diffInMinutes(now()->addMinutes(90), true))->toBeLessThan(1);
+    expect($user->refresh()->status)->toBe(UserStatus::Active)
+        ->and($user->failed_login_attempts)->toBe(0)
+        ->and($user->suspended_until)->toBeNull();
 });
 
 it('blocks the application while maintenance is enabled', function () {

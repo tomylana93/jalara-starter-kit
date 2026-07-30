@@ -217,12 +217,12 @@ return [
         'description' => 'Penanganan login gagal dan mode pemeliharaan',
         'label' => [
             'max_failed_login_attempts' => 'Maksimum percobaan login gagal',
-            'suspension_duration_minutes' => 'Durasi penangguhan (menit)',
+            'suspension_duration_minutes' => 'Jendela pembatasan login (menit)',
             'maintenance_enabled' => 'Mode pemeliharaan',
         ],
         'help' => [
-            'max_failed_login_attempts' => 'Akun ditangguhkan setelah sejumlah percobaan gagal berturut-turut ini.',
-            'suspension_duration_minutes' => 'Lama akun yang ditangguhkan harus menunggu sebelum dapat login kembali.',
+            'max_failed_login_attempts' => 'Maksimum percobaan gagal untuk satu kombinasi email dan alamat IP.',
+            'suspension_duration_minutes' => 'Lama kombinasi email dan alamat IP tersebut harus menunggu sebelum mencoba lagi.',
             'maintenance_enabled' => 'Saat aktif, aplikasi menampilkan pemberitahuan pemeliharaan.',
         ],
         'alert' => [

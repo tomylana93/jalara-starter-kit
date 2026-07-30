@@ -5,6 +5,7 @@
 - Business mutations (profile update, password update, account deletion) live in concrete `App\Actions\{Domain}\*` classes with a single `handle()` method, no interface/base class. Controllers inject the Action via method injection and stay thin: validation/authorization stays in Form Requests, HTTP concerns (redirect, flash, session lifecycle) stay in the controller, only the mutation itself goes in the Action.
 - Inertia pages are returned with `Inertia::render('Path/Component', props)`; mutations conventionally redirect with `to_route()` and may publish toast data via `Inertia::flash('toast', ...)`.
 - Fortify owns authentication backend behavior; custom actions live in `app/Actions/Fortify`, reusable auth validation rules in `app/Concerns`, and configuration/bootstrap in `app/Providers/FortifyServiceProvider.php`.
+- Failed logins are throttled by the configured security limits per normalized email + IP; they never mutate or suspend the user account. `UserStatus::Suspended` remains an explicit account state, with optional expiry handling.
 - Authorization/validation belongs in policies or Form Requests, not ad-hoc controller logic.
 - Reference/bootstrap data command ownership, dry-run, and secret-handling invariants: `mem:backend/data_initialization`.
 - Typed application settings (persistence, runtime application, maintenance/verification middleware, settings endpoints): `mem:backend/settings`.

@@ -6,6 +6,7 @@
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",
+        "audit:check": "pnpm audit --registry=https://registry.npmjs.org --audit-level=high",
         "format": "prettier --write resources/ vite/",
         "format:check": "prettier --check resources/ vite/",
         "lint": "eslint . --fix",

@@ -47,6 +47,7 @@ it('reports a general validation error on the submitted field', function () {
 
 it('updates the authentication settings', function () {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->put(route('settings.authentication.update'), [
             'requireEmailVerification' => '0',
             'passwordPolicy' => PasswordPolicy::Standard->value,
@@ -69,6 +70,7 @@ it('rejects a policy the stored default password would not satisfy', function ()
     $settings->save();
 
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->put(route('settings.authentication.update'), [
             'requireEmailVerification' => '1',
             'passwordPolicy' => PasswordPolicy::Strict->value,
@@ -119,6 +121,7 @@ it('sends the test message to the signed-in manager', function () {
 
 it('updates the security settings', function () {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->put(route('settings.security.update'), [
             'maxFailedLoginAttempts' => 3,
             'suspensionDurationMinutes' => 30,
@@ -139,6 +142,7 @@ it('persists a disabled maintenance mode', function () {
     $settings->save();
 
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->put(route('settings.security.update'), [
             'maxFailedLoginAttempts' => 5,
             'suspensionDurationMinutes' => 15,
@@ -189,6 +193,7 @@ it('rejects an unknown branding preset', function () {
 
 it('updates the default password', function () {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->put(route('settings.user-provisioning.update'), [
             'defaultPassword' => 'Jalara-Def4ult!',
             'defaultPassword_confirmation' => 'Jalara-Def4ult!',
@@ -200,6 +205,7 @@ it('updates the default password', function () {
 
 it('requires a confirmed default password', function () {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->put(route('settings.user-provisioning.update'), [
             'defaultPassword' => 'Jalara-Def4ult!',
             'defaultPassword_confirmation' => 'Other-P4ssword!',
@@ -213,6 +219,7 @@ it('removes the default password only through the explicit request', function ()
     app(UpdateDefaultPassword::class)->handle(app(UserProvisioningSettings::class), 'Jalara-Def4ult!');
 
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->delete(route('settings.user-provisioning.destroy'))
         ->assertRedirectToRoute('settings.user-provisioning.edit');
 

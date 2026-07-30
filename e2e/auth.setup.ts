@@ -13,6 +13,14 @@ setup('logs in as the superadmin', async ({ page }) => {
         page.getByText('Dashboard', { exact: true }).first(),
     ).toBeVisible();
 
+    await page.goto('/settings/authentication');
+    await expect(page).toHaveURL(/\/confirm-password$/);
+    await page
+        .getByLabel('Password', { exact: true })
+        .fill('Playwright-Test-Password-123!');
+    await page.locator('[data-test="confirm-password-button"]').click();
+    await expect(page).toHaveURL(/\/settings\/authentication$/);
+
     await page.context().storageState({
         path: 'e2e/.auth/superadmin.json',
     });

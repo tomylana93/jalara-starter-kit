@@ -40,9 +40,31 @@ it('forbids a user without the settings permission', function (string $route) {
 
 it('shows every settings screen to a settings manager', function (string $route) {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route($route))
         ->assertOk();
 })->with(settingsRouteNames());
+
+it('requires recent password confirmation for sensitive settings screens', function (string $route) {
+    actingAs(settingsManager())
+        ->get(route($route))
+        ->assertRedirectToRoute('password.confirm');
+})->with([
+    'authentication' => 'settings.authentication.edit',
+    'user provisioning' => 'settings.user-provisioning.edit',
+    'security' => 'settings.security.edit',
+]);
+
+it('requires recent password confirmation for sensitive settings mutations', function (string $method, string $route) {
+    actingAs(settingsManager())
+        ->{$method}(route($route))
+        ->assertRedirectToRoute('password.confirm');
+})->with([
+    'authentication' => ['put', 'settings.authentication.update'],
+    'user provisioning update' => ['put', 'settings.user-provisioning.update'],
+    'user provisioning deletion' => ['delete', 'settings.user-provisioning.destroy'],
+    'security' => ['put', 'settings.security.update'],
+]);
 
 it('renders the settings index for a settings manager', function () {
     actingAs(settingsManager())
@@ -69,6 +91,7 @@ it('sends the general settings and localized options as scalars', function () {
 
 it('sends the localized password policy options', function () {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('settings.authentication.edit'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/Authentication')
@@ -83,6 +106,7 @@ it('sends localized options in the active locale', function () {
     app()->setLocale(Locale::Indonesian->value);
 
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('settings.authentication.edit'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('passwordPolicyOptions.0.label', __('setting.password_policy.basic', locale: 'id')),
@@ -92,7 +116,9 @@ it('sends localized options in the active locale', function () {
 it('never sends the default password to the client', function () {
     app(UpdateDefaultPassword::class)->handle(app(UserProvisioningSettings::class), 'Jalara-Def4ult!');
 
-    $response = actingAs(settingsManager())->get(route('settings.user-provisioning.edit'));
+    $response = actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('settings.user-provisioning.edit'));
 
     $response->assertInertia(fn (Assert $page) => $page
         ->component('settings/UserProvisioning')
@@ -106,6 +132,7 @@ it('never sends the default password to the client', function () {
 
 it('reports a missing default password', function () {
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('settings.user-provisioning.edit'))
         ->assertInertia(fn (Assert $page) => $page->where('hasDefaultPassword', false));
 });
@@ -126,6 +153,7 @@ it('keeps the settings screens reachable during maintenance', function () {
     $settings->save();
 
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('settings.security.edit'))
         ->assertOk();
 

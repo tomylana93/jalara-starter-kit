@@ -11,6 +11,7 @@ it('precognizes valid settings without persisting them', function (string $route
         ->all();
 
     actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
         ->withPrecognition()
         ->putJson(route($routeName), $payload)
         ->assertSuccessfulPrecognition();

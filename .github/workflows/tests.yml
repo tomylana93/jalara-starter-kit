@@ -24,7 +24,7 @@ jobs:
         with:
           php-version: '8.5'
           tools: composer:v2
-          coverage: none
+          coverage: pcov
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -34,7 +34,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
         with:
-          version: '10'
+          version: '11'
 
       - name: Setup Application
         run: composer run ci:setup
@@ -44,3 +44,6 @@ jobs:
 
       - name: Run CI Checks
         run: composer run ci:check
+
+      - name: Enforce coverage threshold
+        run: composer run coverage:check

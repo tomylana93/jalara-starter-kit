@@ -80,8 +80,16 @@
         "rector:check": [
             "rector process --dry-run --no-progress-bar --output-format=json"
         ],
+        "audit:check": [
+            "composer audit --locked --no-interaction",
+            "pnpm run audit:check"
+        ],
+        "coverage:check": [
+            "pest --coverage --min=80 --only-summary-for-coverage-text"
+        ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
+            "@audit:check",
             "pnpm run lint:check",
             "pnpm run format:check",
             "pnpm run types:check",
