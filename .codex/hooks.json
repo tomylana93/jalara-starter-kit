@@ -20,15 +20,6 @@
             "command": "serena-hooks remind --client=codex"
           }
         ]
-      },
-      {
-        "matcher": "^mcp__serena__.*$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c '.codex/hooks/enforce-serena-read-only.sh; rc=$?; [ $rc -eq 0 ] || exit 2'"
-          }
-        ]
       }
     ],
     "Stop": [

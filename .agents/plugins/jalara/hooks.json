@@ -1,0 +1,11 @@
+{
+  "jalara-bootstrap": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "./hooks/bootstrap.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}

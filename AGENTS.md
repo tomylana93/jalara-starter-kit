@@ -13,6 +13,19 @@
   focused memory reference from `mem:core` before deeper exploration.
 - Inspect the working tree before editing and preserve unrelated user changes.
 
+## Implementor Routing
+
+- Codex plans first and closes every analysis with a `## HANDOFF` block, then
+
+  asks the developer which implementor takes it.
+- Claude Code is the default implementor and runs `/apply-plan`. agy is the
+  light implementor for small, well-specified changes and applies a handoff
+  through its `apply-plan` skill. Codex implements its own plan only as the
+  fallback when Claude is rate-limited and the change exceeds agy's scope.
+- Implementing a handoff authorizes its stated scope and nothing else. Adding a
+  dependency, touching a security surface, running a destructive operation, or
+  growing the plan goes back to the developer first.
+
 ## Tool Routing
 
 - Use Serena for project navigation, symbol discovery, reference analysis,
