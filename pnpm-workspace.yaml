@@ -11,10 +11,7 @@ auditConfig:
   ignoreGhsas:
     - GHSA-mh99-v99m-4gvg
 
-# Temporary: 2.8.1 is the first release carrying the official shimmer utility
-# and was published 2026-07-29. Remove this entry once it clears the age cutoff.
 minimumReleaseAgeExclude:
-  - shadcn-vue@2.8.1
   - brace-expansion@1.1.17
 
 overrides:
