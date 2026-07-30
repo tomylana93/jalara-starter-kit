@@ -8,6 +8,7 @@ import {
     authLayoutPresets,
     colorThemePresets,
     defaultBranding,
+    fallbackApplicationName,
     fontPairPresets,
     resolvePreset,
     syncBrandingAttributes,
@@ -134,7 +135,41 @@ test('builds the document title from the application identity', () => {
     assert.equal(applicationTitle('', 'Jalara App'), 'Jalara App');
     assert.equal(applicationTitle(null, 'Jalara App'), 'Jalara App');
     assert.equal(applicationTitle(undefined, 'Jalara App'), 'Jalara App');
-    assert.equal(applicationTitle('Dashboard', '  '), 'Dashboard - Laravel');
+    assert.equal(applicationTitle('Dashboard', '  '), 'Dashboard - Jalara');
+});
+
+test('falls back to the Jalara identity, never the framework name', () => {
+    assert.equal(fallbackApplicationName, 'Jalara');
+    assert.equal(defaultBranding.companyName, 'Jalara');
+    assert.equal(defaultBranding.footerText, '© Jalara. All rights reserved.');
+    assert.equal(applicationTitle(null, ''), 'Jalara');
+
+    // Uploaded assets stay opt-in so the public fallback files are used.
+    for (const url of [
+        defaultBranding.logoUrl,
+        defaultBranding.logoDarkUrl,
+        defaultBranding.iconUrl,
+        defaultBranding.iconDarkUrl,
+        defaultBranding.authBackgroundUrl,
+    ]) {
+        assert.equal(url, null);
+    }
+});
+
+test('resolves the favicon from the bundled Jalara assets when none is uploaded', async () => {
+    const blade = await readSource('resources/views/app.blade.php');
+
+    for (const asset of [
+        '/assets/images/branding/favicon.ico',
+        '/assets/images/branding/icon.png',
+        '/assets/images/branding/icon-dark.png',
+    ]) {
+        assert.match(blade, new RegExp(asset.replace(/[./-]/g, '\\$&')));
+    }
+
+    // The retired Laravel artefacts at the public root must not come back.
+    assert.doesNotMatch(blade, /href="\/favicon\.(ico|svg)"/);
+    assert.doesNotMatch(blade, /href="\/apple-touch-icon\.png"/);
 });
 
 test('drives the visible identity from the application name', async () => {

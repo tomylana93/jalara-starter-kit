@@ -8,16 +8,17 @@ use App\Enums\DateFormat;
 use App\Enums\FontPairPreset;
 use App\Enums\Locale;
 use App\Enums\PasswordPolicy;
+use App\Http\Presenters\BrandingPresenter;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
 return new class extends SettingsMigration
 {
     public function up(): void
     {
-        $applicationName = (string) config('app.name', 'Laravel');
+        $applicationName = (string) config('app.name', 'Jalara');
 
         $this->migrator->add('general.applicationName', $applicationName);
-        $this->migrator->add('general.description', null);
+        $this->migrator->add('general.description', (string) config('app.description', $applicationName));
         $this->migrator->add('general.defaultLocale', $this->supportedLocale());
         $this->migrator->add('general.dateFormat', DateFormat::DayShortMonthYear->value);
 
@@ -26,7 +27,7 @@ return new class extends SettingsMigration
         $this->migrator->add('authentication.sessionLifetimeMinutes', 120);
 
         $this->migrator->add('mail.fromName', (string) config('mail.from.name', $applicationName));
-        $this->migrator->add('mail.fromAddress', (string) config('mail.from.address', 'hello@example.com'));
+        $this->migrator->add('mail.fromAddress', (string) config('mail.from.address', 'hello@jalara.dev'));
 
         /*
          * Configured by an administrator through the settings screen, never
@@ -39,7 +40,7 @@ return new class extends SettingsMigration
         $this->migrator->add('security.maintenanceEnabled', false);
 
         $this->migrator->add('branding.companyName', $applicationName);
-        $this->migrator->add('branding.footerText', null);
+        $this->migrator->add('branding.footerText', BrandingPresenter::defaultFooterText($applicationName));
         $this->migrator->add('branding.authLayout', AuthLayoutPreset::Simple->value);
         $this->migrator->add('branding.appLayout', AppLayoutPreset::Sidebar->value);
         $this->migrator->add('branding.colorTheme', ColorThemePreset::Neutral->value);

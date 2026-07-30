@@ -34,7 +34,7 @@ it('registers every settings class explicitly', function () {
 
 it('resolves every settings class with its initial values', function () {
     expect(app(GeneralSettings::class)->applicationName)->toBe(config('app.name'))
-        ->and(app(GeneralSettings::class)->description)->toBeNull()
+        ->and(app(GeneralSettings::class)->description)->toBe(config('app.description'))
         ->and(app(GeneralSettings::class)->defaultLocale)->toBe(Locale::English)
         ->and(app(GeneralSettings::class)->dateFormat)->toBe(DateFormat::DayShortMonthYear)
         ->and(app(AuthenticationSettings::class)->requireEmailVerification)->toBeTrue()
@@ -48,7 +48,37 @@ it('resolves every settings class with its initial values', function () {
         ->and(app(BrandingSettings::class)->appLayout)->toBe(AppLayoutPreset::Sidebar)
         ->and(app(BrandingSettings::class)->colorTheme)->toBe(ColorThemePreset::Neutral)
         ->and(app(BrandingSettings::class)->fontPair)->toBe(FontPairPreset::InstrumentSans)
-        ->and(app(BrandingSettings::class)->footerText)->toBeNull();
+        ->and(app(BrandingSettings::class)->footerText)->toBe('© Jalara. All rights reserved.');
+});
+
+it('seeds a complete Jalara identity rather than a framework placeholder', function () {
+    $general = app(GeneralSettings::class);
+    $branding = app(BrandingSettings::class);
+    $mail = app(MailSettings::class);
+
+    expect($general->applicationName)->toBe('Jalara')
+        ->and($general->description)->toBe('Jalara Starter Kit')
+        ->and($branding->companyName)->toBe('Jalara')
+        ->and($branding->footerText)->toBe('© Jalara. All rights reserved.')
+        ->and($mail->fromName)->toBe('Jalara')
+        ->and($mail->fromAddress)->toBe('hello@jalara.dev');
+
+    foreach ([$general->applicationName, $general->description, $branding->companyName, $branding->footerText, $mail->fromName, $mail->fromAddress] as $value) {
+        expect($value)->not->toBeEmpty()
+            ->and($value)->not->toContain('Laravel')
+            ->and($value)->not->toContain('example.com');
+    }
+});
+
+it('leaves the provisioning secret and every uploaded asset path unseeded', function () {
+    $branding = app(BrandingSettings::class);
+
+    expect(app(UserProvisioningSettings::class)->defaultPassword)->toBeNull()
+        ->and($branding->logoPath)->toBeNull()
+        ->and($branding->logoDarkPath)->toBeNull()
+        ->and($branding->iconPath)->toBeNull()
+        ->and($branding->iconDarkPath)->toBeNull()
+        ->and($branding->authBackgroundPath)->toBeNull();
 });
 
 it('defaults the password policy to the strict preset', function () {
