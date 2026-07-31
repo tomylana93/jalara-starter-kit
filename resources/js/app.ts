@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/vue3';
+import { configureEcho } from '@laravel/echo-vue';
 import { Primitive } from 'reka-ui';
 import { initializeTheme } from '@/composables/useAppearance';
 import AccountLayout from '@/layouts/account/Layout.vue';
@@ -8,6 +9,16 @@ import { applicationTitle, fallbackApplicationName } from '@/lib/branding';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const fallbackName = import.meta.env.VITE_APP_NAME || fallbackApplicationName;
+
+/*
+ * Configured before any component mounts, because the notification composables
+ * resolve this singleton during setup. Connection options are read from the
+ * VITE_REVERB_* environment. Guarded because the SSR bundle has no window and
+ * must not open a socket.
+ */
+if (typeof window !== 'undefined') {
+    configureEcho({ broadcaster: 'reverb' });
+}
 
 createInertiaApp({
     title: (title, page) =>

@@ -1,5 +1,6 @@
 export type User = {
-    id: number;
+    /* UUIDv7, like every application model's primary key. */
+    id: string;
     name: string;
     email: string;
     avatar: string | null;

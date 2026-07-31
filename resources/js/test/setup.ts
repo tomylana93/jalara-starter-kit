@@ -2,6 +2,7 @@ import type * as Inertia from '@inertiajs/vue3';
 import { config } from '@vue/test-utils';
 import { vi } from 'vitest';
 import { defineComponent, h } from 'vue';
+import type { NotificationItem } from '@/types/notifications';
 
 export const formState = {
     errors: {} as Record<string, string>,
@@ -11,13 +12,33 @@ export const formState = {
 };
 
 export const inertiaPageProps = {
-    auth: { user: null as { name: string; avatar?: string } | null },
+    auth: {
+        user: null as { id?: string; name: string; avatar?: string } | null,
+    },
     branding: {},
     name: undefined as string | undefined,
     description: null as string | null,
     can: { manageSettings: true, viewUsers: true },
     locale: 'en',
     fallbackLocale: 'en',
+    notificationBell: {
+        items: [] as NotificationItem[],
+        unreadCount: 0,
+    },
+};
+
+/**
+ * Captures what the Echo notification composable was asked to subscribe to, so
+ * a test can assert the channel and drive a broadcast through the real callback.
+ */
+export const echoState = {
+    channel: null as string | null,
+    callback: null as ((notification: NotificationItem) => void) | null,
+};
+
+export const resetEchoState = (): void => {
+    echoState.channel = null;
+    echoState.callback = null;
 };
 
 export const inertiaPageUrl = {
@@ -60,7 +81,22 @@ vi.mock('@inertiajs/vue3', async (importOriginal) => {
         Link: defineComponent({
             inheritAttrs: false,
             setup(_, { attrs, slots }) {
-                return () => h('a', attrs, slots.default?.());
+                return () => {
+                    /*
+                     * The real Link accepts a Wayfinder route definition as well
+                     * as a string, so the object is resolved to its url here
+                     * instead of stringifying to "[object Object]".
+                     */
+                    const { href, ...rest } = attrs;
+                    const url =
+                        typeof href === 'object' &&
+                        href !== null &&
+                        'url' in href
+                            ? (href as { url: string }).url
+                            : href;
+
+                    return h('a', { ...rest, href: url }, slots.default?.());
+                };
             },
         }),
         usePage: () => ({
@@ -71,6 +107,31 @@ vi.mock('@inertiajs/vue3', async (importOriginal) => {
         }),
     };
 });
+
+/*
+ * jsdom has no WebSocket transport, so Echo is replaced by a mock that keeps the
+ * real composable's return shape and hands the callback to `echoState`.
+ */
+vi.mock('@laravel/echo-vue', () => ({
+    configureEcho: vi.fn(),
+    echo: vi.fn(),
+    echoIsConfigured: () => true,
+    useEchoNotification: (
+        channel: string,
+        callback: (notification: NotificationItem) => void,
+    ) => {
+        echoState.channel = channel;
+        echoState.callback = callback;
+
+        return {
+            listen: vi.fn(),
+            stopListening: vi.fn(),
+            leaveChannel: vi.fn(),
+            leave: vi.fn(),
+            channel: vi.fn(),
+        };
+    },
+}));
 
 vi.mock('@/composables/useTranslations', () => ({
     translate: (key: string) => key,
@@ -144,8 +205,11 @@ config.global.stubs = {
     DropdownMenuLabel: { template: '<div><slot /></div>' },
     DropdownMenuSeparator: { template: '<hr />' },
     DropdownMenuItem: {
+        /* The real primitive emits `select` when the item is activated. */
+        emits: ['select'],
         inheritAttrs: false,
-        template: '<div role="menuitem" v-bind="$attrs"><slot /></div>',
+        template:
+            '<div role="menuitem" v-bind="$attrs" @click="$emit(\'select\')"><slot /></div>',
     },
     DropdownMenuCheckboxItem: {
         props: ['modelValue'],

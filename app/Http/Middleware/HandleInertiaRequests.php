@@ -4,11 +4,18 @@ namespace App\Http\Middleware;
 
 use App\Enums\Permission;
 use App\Http\Presenters\BrandingPresenter;
+use App\Http\Presenters\NotificationPresenter;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    /**
+     * How many of the newest notifications the bell dropdown receives.
+     */
+    private const int BELL_LIMIT = 5;
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -34,6 +41,7 @@ class HandleInertiaRequests extends Middleware
         'account/*',
         'master-data',
         'master-data/*',
+        'notifications',
         'settings',
         'settings/*',
     ];
@@ -71,7 +79,53 @@ class HandleInertiaRequests extends Middleware
                 'manageSettings' => $request->user()?->can(Permission::ManageSettings->value) ?? false,
                 'viewUsers' => $request->user()?->can(Permission::ViewUsers->value) ?? false,
             ],
+            /*
+             * Deliberately not named "notifications": the notification page
+             * sends its own paginated prop under that key, which would override
+             * this shared one and leave the bell without its state.
+             */
+            'notificationBell' => $this->notificationBell($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * Build the bell's initial state.
+     *
+     * Guests never reach the notification relation, so no query runs for them,
+     * and only the newest few rows cross the boundary rather than the history.
+     *
+     * @return array{
+     *     items: list<array{
+     *         id: string,
+     *         type: string,
+     *         title: string,
+     *         message: string,
+     *         url: string|null,
+     *         read_at: string|null,
+     *         created_at: string|null,
+     *     }>,
+     *     unreadCount: int,
+     * }
+     */
+    private function notificationBell(Request $request): array
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return ['items' => [], 'unreadCount' => 0];
+        }
+
+        return [
+            'items' => NotificationPresenter::presentMany(
+                /*
+                 * The relation sorts by created_at, which ties when several
+                 * notifications land in the same second; the id keeps the order
+                 * deterministic so the bell and the page agree.
+                 */
+                $user->notifications()->orderBy('id', 'desc')->limit(self::BELL_LIMIT)->get(),
+            ),
+            'unreadCount' => $user->unreadNotifications()->count(),
         ];
     }
 }

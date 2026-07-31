@@ -6,6 +6,7 @@ import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppMobileNavigation from '@/components/AppMobileNavigation.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import NotificationBell from '@/components/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -183,6 +184,8 @@ const activeItemStyles = 'bg-accent text-accent-foreground';
                             </template>
                         </div>
                     </div>
+
+                    <NotificationBell />
 
                     <AppearanceToggle />
 
