@@ -123,22 +123,25 @@ describe('useAppNavigation', () => {
         );
     });
 
-    it('provides the canonical external navigation', () => {
-        const { externalItems } = useAppNavigation();
+    it('provides internal documentation and the external repository in the footer', () => {
+        const { footerItems, externalItems } = useAppNavigation();
 
         expect(
-            externalItems.value.map((item) => ({
+            footerItems.value.map((item) => ({
                 title: item.title,
                 href: toUrl(item.href),
+                external: Boolean(item.external),
             })),
         ).toEqual([
             {
-                title: 'navigation.external.repository',
-                href: 'https://github.com/tomylana93/jalara-starter-kit',
+                title: 'navigation.main.documentation',
+                href: '/documentation',
+                external: false,
             },
             {
-                title: 'navigation.external.documentation',
-                href: 'https://jalara.dev',
+                title: 'navigation.external.repository',
+                href: 'https://github.com/tomylana93/jalara-starter-kit',
+                external: true,
             },
         ]);
         expect(externalItems.value[0]?.icon).toBe(FolderGit2);

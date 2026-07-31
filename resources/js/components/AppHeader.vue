@@ -58,6 +58,9 @@ const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 const { t } = useTranslations();
 
 const activeItemStyles = 'bg-accent text-accent-foreground';
+const openGlobalSearch = (): void => {
+    window.dispatchEvent(new CustomEvent('open-global-search'));
+};
 </script>
 
 <template>
@@ -141,6 +144,9 @@ const activeItemStyles = 'bg-accent text-accent-foreground';
                             variant="ghost"
                             size="icon"
                             class="group h-9 w-9 cursor-pointer"
+                            :aria-label="t('navigation.menu.search')"
+                            data-test="global-search-trigger"
+                            @click="openGlobalSearch"
                         >
                             <Search
                                 class="size-5 opacity-80 group-hover:opacity-100"

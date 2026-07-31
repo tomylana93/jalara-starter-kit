@@ -13,6 +13,7 @@ import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
 import { index as chatIndex } from '@/routes/chat';
 import { index as chatAuditIndex } from '@/routes/chat/audit';
+import { index as documentationIndex } from '@/routes/documentation';
 import { index as masterDataIndex } from '@/routes/master-data';
 import { index as settingsIndex } from '@/routes/settings';
 import type { NavItem } from '@/types';
@@ -95,22 +96,32 @@ export function useAppNavigation() {
         ].filter((group) => group.items.length > 0),
     );
 
-    const externalItems = computed<NavItem[]>(() => [
+    const footerItems = computed<NavItem[]>(() => [
+        {
+            title: t('navigation.main.documentation'),
+            href: documentationIndex(),
+            icon: BookOpen,
+        },
         {
             title: t('navigation.external.repository'),
             href: 'https://github.com/tomylana93/jalara-starter-kit',
             icon: FolderGit2,
+            external: true,
         },
-        {
-            title: t('navigation.external.documentation'),
-            href: 'https://jalara.dev',
-            icon: BookOpen,
-        },
+    ]);
+    const externalItems = computed<NavItem[]>(() =>
+        footerItems.value.filter((item) => item.external),
+    );
+    const commandItems = computed<NavItem[]>(() => [
+        ...mainItems.value,
+        ...footerItems.value.filter((item) => !item.external),
     ]);
 
     return {
         mainItems,
         mainGroups,
+        footerItems,
         externalItems,
+        commandItems,
     };
 }

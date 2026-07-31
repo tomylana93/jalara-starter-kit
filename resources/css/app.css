@@ -9,6 +9,52 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer components {
+    .documentation-content {
+        @apply flex flex-col gap-4 text-sm leading-7 text-foreground;
+    }
+    .documentation-content h1 {
+        @apply text-3xl font-semibold tracking-tight;
+    }
+    .documentation-content h2 {
+        @apply text-2xl font-semibold tracking-tight;
+    }
+    .documentation-content h3 {
+        @apply text-xl font-semibold;
+    }
+    .documentation-content ul {
+        @apply list-disc pl-6;
+    }
+    .documentation-content ol {
+        @apply list-decimal pl-6;
+    }
+    .documentation-content blockquote {
+        @apply border-l-4 border-border pl-4 text-muted-foreground;
+    }
+    .documentation-content code {
+        @apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
+    }
+    .documentation-content pre {
+        @apply overflow-x-auto rounded-lg bg-muted p-4;
+    }
+    .documentation-content table {
+        @apply w-full border-collapse overflow-hidden rounded-lg border;
+    }
+    .documentation-content th {
+        @apply border bg-muted p-2 text-left font-medium;
+    }
+    .documentation-content td {
+        @apply border p-2 align-top;
+    }
+    .documentation-content a {
+        @apply text-primary underline underline-offset-4;
+    }
+    .documentation-content .is-editor-empty:first-child::before {
+        @apply pointer-events-none float-left h-0 text-muted-foreground;
+        content: attr(data-placeholder);
+    }
+}
+
 @theme inline {
     --font-sans: var(--app-font-body);
     --font-heading: var(--app-font-heading);

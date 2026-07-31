@@ -1,7 +1,7 @@
 import type * as Inertia from '@inertiajs/vue3';
 import { config } from '@vue/test-utils';
 import { vi } from 'vitest';
-import { defineComponent, h } from 'vue';
+import { defineComponent, h, reactive } from 'vue';
 import type { NotificationItem } from '@/types/notifications';
 
 export const formState = {
@@ -11,14 +11,36 @@ export const formState = {
     validate: vi.fn(),
 };
 
+/**
+ * Records what the standalone `useHttp` helper was asked to send, so a test can
+ * assert the request and drive the success path without a real XHR transport.
+ */
+export const httpState = {
+    submissions: [] as { href: unknown; data: Record<string, unknown> }[],
+    cancelled: 0,
+    response: { data: [] } as unknown,
+};
+
+export const resetHttpState = (): void => {
+    httpState.submissions = [];
+    httpState.cancelled = 0;
+    httpState.response = { data: [] };
+};
+
 export const inertiaPageProps = {
     auth: {
         user: null as { id?: string; name: string; avatar?: string } | null,
     },
     branding: {},
+    errors: {} as Record<string, string>,
     name: undefined as string | undefined,
     description: null as string | null,
-    can: { manageSettings: true, viewUsers: true, auditChat: true },
+    can: {
+        manageSettings: true,
+        viewUsers: true,
+        auditChat: true,
+        manageDocumentation: true,
+    },
     locale: 'en',
     fallbackLocale: 'en',
     notificationBell: {
@@ -126,6 +148,40 @@ vi.mock('@inertiajs/vue3', async (importOriginal) => {
                 };
             },
         }),
+        /*
+         * The real helper drives Inertia's XHR client, which jsdom has no
+         * transport for. The stub keeps the reactive data bag, the url/method
+         * pair passed to submit, and the cancel call that drops a superseded
+         * request.
+         */
+        useHttp: (initial: Record<string, unknown> = {}) => {
+            const keys = Object.keys(initial);
+            const http: Record<string, unknown> = reactive({
+                ...initial,
+                processing: false,
+                response: null,
+            });
+
+            http.submit = (
+                href: unknown,
+                options: { onSuccess?: (response: unknown) => void } = {},
+            ) => {
+                httpState.submissions.push({
+                    href,
+                    data: Object.fromEntries(
+                        keys.map((key) => [key, http[key]]),
+                    ),
+                });
+                options.onSuccess?.(httpState.response);
+
+                return Promise.resolve(httpState.response);
+            };
+            http.cancel = () => {
+                httpState.cancelled += 1;
+            };
+
+            return http;
+        },
         usePage: () => ({
             props: inertiaPageProps,
             get url() {

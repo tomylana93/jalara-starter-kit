@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
-const { mainItems, externalItems } = useAppNavigation();
+const { mainItems, footerItems } = useAppNavigation();
 const { isCurrentUrl } = useCurrentUrl();
 const { t } = useTranslations();
 </script>
@@ -76,22 +76,36 @@ const { t } = useTranslations();
             </nav>
 
             <div class="mt-auto flex flex-col gap-1 pt-6">
-                <a
-                    v-for="item in externalItems"
-                    :key="item.title"
-                    :href="toUrl(item.href)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    @click="emit('close')"
-                >
-                    <component
-                        v-if="item.icon"
-                        :is="item.icon"
-                        class="size-4"
-                    />
-                    <span>{{ item.title }}</span>
-                </a>
+                <template v-for="item in footerItems" :key="item.title">
+                    <a
+                        v-if="item.external"
+                        :href="toUrl(item.href)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        @click="emit('close')"
+                    >
+                        <component
+                            v-if="item.icon"
+                            :is="item.icon"
+                            class="size-4"
+                        />
+                        <span>{{ item.title }}</span>
+                    </a>
+                    <Link
+                        v-else
+                        :href="item.href"
+                        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        @click="emit('close')"
+                    >
+                        <component
+                            v-if="item.icon"
+                            :is="item.icon"
+                            class="size-4"
+                        />
+                        <span>{{ item.title }}</span>
+                    </Link>
+                </template>
             </div>
         </div>
 
