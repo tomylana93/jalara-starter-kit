@@ -6,6 +6,9 @@ use App\Models\Documentation;
 use App\Models\DocumentationCategory;
 use App\Models\User;
 
+/**
+ * @return array<string, mixed>
+ */
 function documentationContent(string $text = 'Reset kata sandi'): array
 {
     return ['type' => 'doc', 'content' => [['type' => 'heading', 'attrs' => ['level' => 2], 'content' => [['type' => 'text', 'text' => $text]]]]];

@@ -65,9 +65,9 @@ test('opening a conversation records permanent access metadata', function (): vo
 
     $log = AuditLog::query()->firstOrFail();
 
-    expect($log->conversation_id)->toBe($conversation->id);
-    expect($log->viewer_id)->toBe($auditor->id);
-    expect($log->viewed_at)->not->toBeNull();
+    expect($log->conversation_id)->toBe($conversation->id)
+        ->and($log->viewer_id)->toBe($auditor->id)
+        ->and($log->viewed_at)->not->toBeNull();
 
     /* Metadata only: no copy of any message body is stored. */
     expect(array_keys($log->getAttributes()))->not->toContain('body');
@@ -99,8 +99,8 @@ test('an audit never touches the participants receipts or notifications', functi
         ->where('conversation_id', $conversation->id)
         ->pluck('last_read_at', 'user_id');
 
-    expect($after->toArray())->toBe($before->toArray());
-    expect($second->fresh()->notifications()->count())->toBe(0);
+    expect($after->toArray())->toBe($before->toArray())
+        ->and($second->fresh()->notifications()->count())->toBe(0);
 });
 
 test('a Super Admin can find a conversation by participant name', function (): void {
@@ -157,8 +157,8 @@ test('a Super Admin can page past the first window of a long transcript', functi
 
     $window = $firstPage->viewData('page')['props']['messages']['data'];
 
-    expect($window[0]['body'])->toBe('Message 1');
-    expect($firstPage->viewData('page')['props']['conversation']['message_count'])->toBe(220);
+    expect($window[0]['body'])->toBe('Message 1')
+        ->and($firstPage->viewData('page')['props']['conversation']['message_count'])->toBe(220);
 
     /* The message that used to fall outside the fixed 200-row window. */
     $lastPage = actingAs($auditor)
@@ -168,10 +168,10 @@ test('a Super Admin can page past the first window of a long transcript', functi
         ]))
         ->assertOk();
 
-    $bodies = collect($lastPage->viewData('page')['props']['messages']['data'])->pluck('body');
+    $bodies = collect(inertiaRows($lastPage->viewData('page')['props']['messages']['data']))->pluck('body');
 
-    expect($bodies)->toContain('Message 201');
-    expect($bodies)->toContain('Message 220');
+    expect($bodies)->toContain('Message 201')
+        ->toContain('Message 220');
 });
 
 test('the access log is paged rather than truncated', function (): void {

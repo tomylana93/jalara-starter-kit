@@ -48,8 +48,8 @@ it('stays a hand-maintained Codex workspace skill outside Boost publication', fu
     expect($boost['skills'])->not->toContain('grill-me')
         ->and($boost['skills'])->not->toContain('grill-handoff')
         ->and(is_link(base_path('.agents/skills/grill-me')))->toBeFalse()
-        ->and(is_dir(base_path('.ai/skills/grill-me')))->toBeFalse()
-        ->and(is_dir(base_path('.ai/skills/grill-handoff')))->toBeFalse();
+        ->and(base_path('.ai/skills/grill-me'))->not->toBeDirectory()
+        ->and(base_path('.ai/skills/grill-handoff'))->not->toBeDirectory();
 });
 
 it('is not exposed to Claude Code or any other agent skill path', function () {

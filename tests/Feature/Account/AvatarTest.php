@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -14,7 +15,7 @@ beforeEach(function () {
 /**
  * A valid square avatar upload.
  */
-function avatarImage(): UploadedFile
+function avatarImage(): File
 {
     return UploadedFile::fake()->image('avatar.png', 512, 512);
 }

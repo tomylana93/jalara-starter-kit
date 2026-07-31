@@ -9,6 +9,7 @@ use App\Models\Chat\Participant;
 use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
@@ -46,6 +47,8 @@ function deliverChatMessage(Message $message): void
 
 /**
  * Report one Chat page instance as open, the way that page does.
+ *
+ * @return TestResponse<JsonResponse>
  */
 function openChatPage(User $user, string $contextId): TestResponse
 {
@@ -54,6 +57,9 @@ function openChatPage(User $user, string $contextId): TestResponse
         ->assertOk();
 }
 
+/**
+ * @return TestResponse<JsonResponse>
+ */
 function closeChatPage(User $user, string $contextId): TestResponse
 {
     return actingAs($user)
@@ -71,11 +77,9 @@ test('a waiting message creates one notification that carries no preview', funct
     deliverChatMessage($message);
 
     $notification = $recipient->fresh()->notifications()->firstOrFail();
-
-    expect($notification->data['type'])->toBe(ChatMessageNotification::TYPE);
-    expect($notification->data['title'])->toBe('Nadia Pratama');
-    expect($notification->data['message'])->not->toContain('A private secret');
-    expect($notification->data['url'])->toContain($conversation->id);
+    expect($notification->data)->toMatchArray(['type' => ChatMessageNotification::TYPE, 'title' => 'Nadia Pratama'])
+        ->and($notification->data['message'])->not->toContain('A private secret')
+        ->and($notification->data['url'])->toContain($conversation->id);
 });
 
 test('one active notification per conversation is kept and updated', function (): void {
@@ -233,8 +237,8 @@ test('a user cannot close or refresh another users Chat context', function (): v
     deliverChatMessage(chatMessageFrom($conversation, $sender));
 
     Notification::assertNothingSent();
-    expect(app(TrackChatPageContext::class)->isOpen($recipient))->toBeTrue();
-    expect(app(TrackChatPageContext::class)->isOpen($stranger))->toBeFalse();
+    expect(app(TrackChatPageContext::class)->isOpen($recipient))->toBeTrue()
+        ->and(app(TrackChatPageContext::class)->isOpen($stranger))->toBeFalse();
 });
 
 test('a Chat context identifier has to look like one', function (): void {
@@ -269,8 +273,8 @@ test('the widget only silences the direct message it is showing', function (): v
 
     $unread = $recipient->fresh()->unreadNotifications()->get();
 
-    expect($unread)->toHaveCount(1);
-    expect($unread->first()->data['conversation_id'])->toBe($background->id);
+    expect($unread)->toHaveCount(1)
+        ->and($unread->first()->data['conversation_id'])->toBe($background->id);
 });
 
 test('a guest cannot report a Chat page context', function (): void {

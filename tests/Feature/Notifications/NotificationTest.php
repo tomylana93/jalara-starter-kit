@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\artisan;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
@@ -61,8 +60,8 @@ it('stores the standard payload on the database channel', function () {
         'title' => 'Deploy finished',
         'message' => 'The release is live.',
         'url' => '/dashboard',
-    ]);
-    expect($notification->read_at)->toBeNull();
+    ])
+        ->and($notification->read_at)->toBeNull();
 });
 
 it('keeps a notification without a url safe to store', function () {
@@ -168,8 +167,8 @@ it('filters the page down to unread notifications', function () {
     sendNotification($user, 'Unread one');
     travelBack();
 
-    /* The relation sorts newest first, so the last row is "Read one". */
-    $user->notifications()->get()->last()?->markAsRead();
+    /* Oldest first puts "Read one" at the front. */
+    $user->notifications()->reorder('created_at')->first()?->markAsRead();
 
     actingAs($user)
         ->get(route('notifications.index', ['filter' => 'unread']))
@@ -222,10 +221,10 @@ it('sends a test notification through the command', function () {
 
     $user = User::factory()->create();
 
-    artisan('notification:test', ['email' => $user->email])->assertSuccessful();
+    pendingCommand($this->artisan('notification:test', ['email' => $user->email]))->assertSuccessful();
 
-    expect($user->notifications()->count())->toBe(1);
-    expect($user->notifications()->sole()->data['type'])->toBe('test');
+    expect($user->notifications()->count())->toBe(1)
+        ->and($user->notifications()->sole()->data['type'])->toBe('test');
 
     Event::assertDispatched(BroadcastNotificationCreated::class);
 });
@@ -233,7 +232,7 @@ it('sends a test notification through the command', function () {
 it('fails the command for an unknown email without notifying anyone', function () {
     User::factory()->create();
 
-    artisan('notification:test', ['email' => 'nobody@example.com'])->assertFailed();
+    pendingCommand($this->artisan('notification:test', ['email' => 'nobody@example.com']))->assertFailed();
 
     expect(DB::table('notifications')->count())->toBe(0);
 });

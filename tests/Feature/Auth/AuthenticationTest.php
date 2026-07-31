@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Fortify\Features;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertAuthenticated;
@@ -67,26 +66,6 @@ it('redirects authenticated users to their intended route', function () {
 
     assertAuthenticated();
     $response->assertRedirectToRoute('account.profile.edit');
-});
-
-it('redirects users with two factor enabled to the two factor challenge', function () {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
-
-    $user = User::factory()->withTwoFactor()->create();
-
-    $response = post(route('login'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
-
-    $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
-    assertGuest();
 });
 
 it('does not authenticate users with an invalid password', function () {

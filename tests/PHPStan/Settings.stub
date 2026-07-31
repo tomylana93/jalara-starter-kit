@@ -1,0 +1,18 @@
+<?php
+
+namespace Spatie\LaravelSettings;
+
+abstract class Settings
+{
+    /**
+     * @param  \Illuminate\Support\Collection<string, mixed>|array<string, mixed>  $properties
+     * @return static
+     */
+    public function fill($properties): self {}
+
+    /** @return static */
+    public function save(): self {}
+
+    /** @return static */
+    public function refresh(): self {}
+}

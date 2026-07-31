@@ -6,14 +6,13 @@ use App\Enums\PasswordPolicy;
 use App\Http\Requests\Settings\UpdateAuthenticationSettingsRequest;
 use App\Http\Requests\Settings\UpdateDefaultPasswordRequest;
 use App\Settings\UserProvisioningSettings;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 /**
  * Validate a payload against the rules of a settings Form Request.
  *
- * @param  class-string<FormRequest>  $request
+ * @param  class-string<UpdateAuthenticationSettingsRequest|UpdateDefaultPasswordRequest>  $request
  * @param  array<string, mixed>  $payload
  */
 function defaultPasswordValidator(string $request, array $payload): Illuminate\Contracts\Validation\Validator
@@ -88,7 +87,7 @@ it('requires a confirmed password that satisfies the active policy', function (a
 
     $validator = defaultPasswordValidator(UpdateDefaultPasswordRequest::class, $payload);
 
-    expect($validator->passes())->toBe($passes);
+    expect($validator->fails())->toBe(! $passes);
 })->with([
     'valid' => [['defaultPassword' => 'Jalara-Def4ult!', 'defaultPassword_confirmation' => 'Jalara-Def4ult!'], true],
     'missing' => [['defaultPassword' => '', 'defaultPassword_confirmation' => ''], false],
@@ -134,7 +133,7 @@ it('accepts a policy the stored default password satisfies', function () {
         'passwordPolicy' => PasswordPolicy::Strict->value,
     ]));
 
-    expect($validator->passes())->toBeTrue();
+    expect($validator->fails())->toBeFalse();
 });
 
 it('allows any policy while no default password is configured', function () {
@@ -142,5 +141,5 @@ it('allows any policy while no default password is configured', function () {
         'passwordPolicy' => PasswordPolicy::Strict->value,
     ]));
 
-    expect($validator->passes())->toBeTrue();
+    expect($validator->fails())->toBeFalse();
 });

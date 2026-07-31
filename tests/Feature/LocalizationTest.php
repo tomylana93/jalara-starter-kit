@@ -3,6 +3,9 @@
 use Illuminate\Support\Arr;
 use Inertia\Testing\AssertableInertia as Assert;
 
+/**
+ * @return array<int, string>
+ */
 function translationPlaceholders(mixed $translation): array
 {
     if (is_array($translation)) {

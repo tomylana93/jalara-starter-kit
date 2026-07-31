@@ -37,9 +37,9 @@ it('updates profile information', function () {
 
     $user->refresh();
 
-    expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
+    expect($user->name)->toBe('Test User')
+        ->and($user->email)->toBe('test@example.com')
+        ->and($user->email_verified_at)->toBeNull();
 });
 
 it('localizes the profile update message', function () {
@@ -72,9 +72,9 @@ it('precognizes valid profile information without updating the user', function (
 
     $user->refresh();
 
-    expect($user->name)->not->toBe('Precognitive User');
-    expect($user->email)->not->toBe('precognitive@example.com');
-    expect($user->email_verified_at)->not->toBeNull();
+    expect($user->name)->not->toBe('Precognitive User')
+        ->and($user->email)->not->toBe('precognitive@example.com')
+        ->and($user->email_verified_at)->not->toBeNull();
 });
 
 it('precognizes that another user email is unavailable', function () {

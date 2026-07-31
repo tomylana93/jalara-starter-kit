@@ -21,6 +21,7 @@ use App\Settings\BrandingSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\MailSettings;
 use App\Settings\SecuritySettings;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\Mail;
 
 it('persists the general settings', function () {
@@ -133,7 +134,8 @@ it('sends the test message to the managing user with the configured identity', f
 
         return $mail->hasTo($manager->email)
             && count($mail->to) === 1
-            && $from?->address === 'support@jalara.test'
+            && $from instanceof Address
+            && $from->address === 'support@jalara.test'
             && $from->name === 'Jalara Support';
     });
 });

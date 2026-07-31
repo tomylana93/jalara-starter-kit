@@ -177,8 +177,8 @@ test('history stays readable when the peer is no longer Active', function (): vo
         ->getJson(route('chat.conversations.show', $conversation))
         ->assertOk();
 
-    expect($response->json('messages.0.body'))->toBe('Earlier note');
-    expect($response->json('conversation.participant.available'))->toBeFalse();
+    expect($response->json('messages.0.body'))->toBe('Earlier note')
+        ->and($response->json('conversation.participant.available'))->toBeFalse();
 });
 
 test('every user chat surface is closed while chat is switched off', function (): void {

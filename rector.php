@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use Pest\Rector\Rules\Pest2ToPest3\TapToDeferRector;
+use Pest\Rector\Rules\Pest2ToPest3\ToHaveMethodOnClassRector;
+use Pest\Rector\Rules\Pest2ToPest3\UsesToExtendRector;
+use Pest\Rector\Rules\SimplifyToLiteralBooleanRector;
+use Pest\Rector\Rules\ToBeTrueNotFalseRector;
+use Pest\Rector\Set\PestSetList;
 use Rector\CodingStyle\Rector\ClassMethod\MakeInheritedMethodVisibilitySameAsParentRector;
 use Rector\CodingStyle\Rector\Encapsed\EncapsedStringsToSprintfRector;
 use Rector\CodingStyle\Rector\Use_\SeparateMultiUseImportsRector;
@@ -32,6 +38,7 @@ return RectorConfig::configure()
         LaravelSetList::LARAVEL_FACADE_ALIASES_TO_FULL_NAMES,
         LaravelSetList::LARAVEL_FACTORIES,
         LaravelSetList::LARAVEL_IF_HELPERS,
+        PestSetList::CODING_STYLE,
     ])
     ->withImportNames(
         removeUnusedImports: true,
@@ -59,6 +66,14 @@ return RectorConfig::configure()
         ClosureReturnTypeRector::class,
         AddArrowFunctionReturnTypeRector::class,
         AddFunctionVoidReturnTypeWhereNoReturnRector::class,
+        /* The suite is already on Pest 5, so the Pest 2 to 3 migration rules only churn it. */
+        TapToDeferRector::class,
+        ToHaveMethodOnClassRector::class,
+        UsesToExtendRector::class,
+        /* Rewrites `not->toBeFalse()` on `int|false` values into an assertion that cannot hold. */
+        ToBeTrueNotFalseRector::class,
+        /* Relaxes an exact `toBe([])` into `toBeEmpty()`, which also accepts null and ''. */
+        SimplifyToLiteralBooleanRector::class,
     ])
     ->withPreparedSets(
         deadCode: true,

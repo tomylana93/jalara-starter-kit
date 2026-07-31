@@ -11,6 +11,9 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\get;
 
+/**
+ * @param  array<string, mixed>  $overrides
+ */
 function updateBranding(array $overrides = []): void
 {
     app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), array_merge([
