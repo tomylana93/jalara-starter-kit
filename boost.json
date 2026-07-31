@@ -21,9 +21,10 @@
         "pest-testing",
         "inertia-vue-development",
         "tailwindcss-development",
+        "echo-vue-development",
+        "echo-development",
         "laravel-permission-development",
         "debug-using-debugbar",
-        "grill-handoff",
         "maintaining-agent-context"
     ]
 }

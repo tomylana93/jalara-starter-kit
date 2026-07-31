@@ -4,7 +4,11 @@
       "serverUrl": "http://localhost:9121/mcp"
     },
     "laravel-boost": {
-      "serverUrl": "http://localhost:8000/mcp/laravel-boost"
-    }
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ]
+        }
   }
 }

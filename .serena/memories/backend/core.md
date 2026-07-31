@@ -8,6 +8,9 @@
 - Failed logins are throttled by the configured security limits per normalized email + IP; they never mutate or suspend the user account. `UserStatus::Suspended` remains an explicit account state, with optional expiry handling.
 - A past `suspended_until` auto-reactivates the account (`EnforceUserAccess`, `AuthenticateUser`). Any code setting a status must therefore null `suspended_until`, or a stale expiry silently lifts the new suspension.
 - Reusable search/sort/pagination contract for list screens: `mem:backend/tables`.
+- Notification payload contract, UUIDv4 notification ids and their ordering
+  tie-breaker, broadcast channel authorization pitfalls, and the shared bell prop
+  name: `mem:backend/notifications`.
 - Authorization/validation belongs in policies or Form Requests, not ad-hoc controller logic.
 - Reference/bootstrap data command ownership, dry-run, and secret-handling invariants: `mem:backend/data_initialization`.
 - Typed application settings (persistence, runtime application, maintenance/verification middleware, settings endpoints): `mem:backend/settings`.

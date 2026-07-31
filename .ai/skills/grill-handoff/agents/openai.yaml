@@ -1,6 +1,0 @@
-interface:
-  display_name: "Grill Handoff"
-  short_description: "Grill a plan, then emit the developer handoff"
-  default_prompt: "Use $grill-handoff to grill this plan and produce the handoff."
-policy:
-  allow_implicit_invocation: false
