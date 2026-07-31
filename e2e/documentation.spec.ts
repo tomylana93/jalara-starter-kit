@@ -26,9 +26,31 @@ test('creates, publishes, reads, and finds internal documentation', async ({
         .click();
     await page.locator('[data-test="documentation-status-trigger"]').click();
     await page.locator('[data-test="documentation-status-published"]').click();
-    await page
-        .locator('[data-test="documentation-editor"] [contenteditable="true"]')
-        .fill('Dokumen ini dapat ditemukan melalui pencarian global.');
+    const editor = page.locator('[data-test="rich-text-editor"] [contenteditable="true"]');
+    await editor.fill('Dokumen ini dapat ditemukan melalui pencarian global.');
+    await editor.focus();
+
+    // Select all text to format it
+    await page.keyboard.press('Control+A');
+
+    const boldButton = page.locator('[data-test="rich-text-toggle-bold"]');
+    await boldButton.click();
+
+    // Positive case: Assert Bold button has data-state="on"
+    await expect(boldButton).toHaveAttribute('data-state', 'on');
+
+    // Toggle Bold off
+    await boldButton.click();
+    await expect(boldButton).toHaveAttribute('data-state', 'off');
+
+    // Negative case: Toggle Code Block on and assert Bold button is disabled
+    const codeBlockButton = page.locator('[data-test="rich-text-toggle-codeBlock"]');
+    await codeBlockButton.click();
+    await expect(boldButton).toBeDisabled();
+
+    // Toggle Code Block off
+    await codeBlockButton.click();
+
     await page.locator('[data-test="save-documentation"]').click();
 
     await expect(page).toHaveURL(

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted } from 'vue';
-import DocumentationEditor from '@/components/documentation/DocumentationEditor.vue';
+import RichTextEditor from '@/components/editor/RichTextEditor.vue';
 import InputError from '@/components/InputError.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
@@ -22,8 +22,8 @@ import { edit, store, update } from '@/routes/documentation/manage/documents';
 import type {
     DocumentationCategory,
     DocumentationDetail,
-    TiptapDocument,
 } from '@/types/documentation';
+import type { RichTextDocument } from '@/types/editor';
 
 type LayoutProps = {
     locale: string;
@@ -95,8 +95,8 @@ const form = useForm({
         },
     ),
 });
-const editorContent = computed<TiptapDocument>({
-    get: () => JSON.parse(form.content) as TiptapDocument,
+const editorContent = computed<RichTextDocument>({
+    get: () => JSON.parse(form.content) as RichTextDocument,
     set: (value) => {
         form.content = JSON.stringify(value);
     },
@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
                         <InputError :message="form.errors.status" />
                     </div>
                 </div>
-                <DocumentationEditor v-model="editorContent" />
+                <RichTextEditor v-model="editorContent" />
                 <InputError :message="form.errors.content" />
                 <div class="flex justify-end gap-3">
                     <Button

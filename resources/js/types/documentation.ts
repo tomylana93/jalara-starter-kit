@@ -1,6 +1,4 @@
-import type { JSONContent } from '@tiptap/core';
-
-export type TiptapDocument = JSONContent & { type: 'doc' };
+import type { RichTextDocument } from '@/types/editor';
 
 export type DocumentationSummary = {
     id: string;
@@ -21,7 +19,7 @@ export type DocumentationCategory = {
 
 export type DocumentationDetail = DocumentationSummary & {
     documentation_category_id: string;
-    content: TiptapDocument;
+    content: RichTextDocument;
     published_at: string | null;
     category: DocumentationCategory;
 };

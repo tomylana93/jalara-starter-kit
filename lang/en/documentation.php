@@ -86,35 +86,6 @@ return [
         ],
     ],
 
-    'editor' => [
-        'placeholder' => 'Start writing documentation…',
-
-        'action' => [
-            'heading_1' => 'Heading 1',
-            'heading_2' => 'Heading 2',
-            'heading_3' => 'Heading 3',
-            'bold' => 'Bold',
-            'italic' => 'Italic',
-            'bullet_list' => 'Bullet list',
-            'ordered_list' => 'Numbered list',
-            'quote' => 'Quote',
-            'code' => 'Code',
-            'link' => 'Link',
-            'table' => 'Table',
-            'undo' => 'Undo',
-            'redo' => 'Redo',
-        ],
-
-        'link' => [
-            'title' => 'Link URL',
-            'description' => 'Use an internal path, HTTP, or HTTPS. An empty value removes the link.',
-            'label' => 'URL',
-            'placeholder' => 'https://',
-            'submit' => 'Apply',
-            'cancel' => 'Cancel',
-        ],
-    ],
-
     'search' => [
         'title' => 'Global search',
         'description' => 'Search application navigation and internal documentation.',

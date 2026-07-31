@@ -5,9 +5,9 @@ import { TableKit } from '@tiptap/extension-table';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import { onBeforeUnmount } from 'vue';
-import type { TiptapDocument } from '@/types/documentation';
+import type { RichTextDocument } from '@/types/editor';
 
-const props = defineProps<{ content: TiptapDocument }>();
+const props = defineProps<{ content: RichTextDocument }>();
 const SafeLink = Link.extend({
     renderHTML({ HTMLAttributes }) {
         const external = /^https?:\/\//i.test(
@@ -35,7 +35,7 @@ const editor = useEditor({
         SafeLink,
         TableKit,
     ],
-    editorProps: { attributes: { class: 'documentation-content' } },
+    editorProps: { attributes: { class: 'rich-text-content' } },
 });
 onBeforeUnmount(() => editor.value?.destroy());
 </script>

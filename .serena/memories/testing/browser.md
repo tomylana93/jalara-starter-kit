@@ -7,3 +7,4 @@
 - Iterate with `pnpm exec playwright test <spec> --grep '<name>'`; run the full suite twice when changing database/setup behavior to prove idempotence.
 - CI installs Chromium with `pnpm exec playwright install --with-deps chromium`.
 - After normal, failed, interrupted, or terminated runs, verify no Playwright run-server remains with `pgrep -af '[p]laywright.*run-server'`.
+- The Playwright runner snapshots and restores `public/build` and `public/hot`; therefore a green E2E/CI gate does not make current frontend source visible through Laravel afterward. Preview changes through an active Vite hot marker or run a fresh local build.

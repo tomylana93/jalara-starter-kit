@@ -36,6 +36,8 @@ it('provides complete Indonesian translations with matching placeholders', funct
     'common' => 'common',
     'console' => 'console',
     'dashboard' => 'dashboard',
+    'documentation' => 'documentation',
+    'editor' => 'editor',
     'navigation' => 'navigation',
     'pagination' => 'pagination',
     'password reset' => 'passwords',

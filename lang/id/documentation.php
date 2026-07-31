@@ -86,35 +86,6 @@ return [
         ],
     ],
 
-    'editor' => [
-        'placeholder' => 'Mulai menulis dokumentasi…',
-
-        'action' => [
-            'heading_1' => 'Heading 1',
-            'heading_2' => 'Heading 2',
-            'heading_3' => 'Heading 3',
-            'bold' => 'Tebal',
-            'italic' => 'Miring',
-            'bullet_list' => 'Daftar',
-            'ordered_list' => 'Daftar bernomor',
-            'quote' => 'Kutipan',
-            'code' => 'Kode',
-            'link' => 'Tautan',
-            'table' => 'Tabel',
-            'undo' => 'Urungkan',
-            'redo' => 'Ulangi',
-        ],
-
-        'link' => [
-            'title' => 'URL tautan',
-            'description' => 'Gunakan path internal, HTTP, atau HTTPS. Nilai kosong akan menghapus tautan.',
-            'label' => 'URL',
-            'placeholder' => 'https://',
-            'submit' => 'Terapkan',
-            'cancel' => 'Batal',
-        ],
-    ],
-
     'search' => [
         'title' => 'Pencarian global',
         'description' => 'Cari navigasi aplikasi dan dokumentasi internal.',

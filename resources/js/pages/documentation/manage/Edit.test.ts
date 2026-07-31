@@ -45,13 +45,13 @@ const breadcrumbs = (target: DocumentationDetail | null): Breadcrumb[] =>
     }).breadcrumbs;
 
 const editorStub = {
-    template: '<div data-test="documentation-editor" />',
+    template: '<div data-test="rich-text-editor" />',
 };
 
 function mountEditor(target: DocumentationDetail | null) {
     return mount(Edit, {
         props: { documentation: target, categories, statuses },
-        global: { stubs: { DocumentationEditor: editorStub } },
+        global: { stubs: { RichTextEditor: editorStub } },
     });
 }
 
