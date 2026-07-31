@@ -12,3 +12,4 @@
 - Frontend forms use Laravel/Inertia validation. Avoid native constraint attributes; preserve input type/inputmode semantics and bind errors with `:aria-invalid="Boolean(errors.field)"`.
 - Colocate Vitest component tests with pages/components. Use the shared `resources/js/test/setup.ts` Inertia/translation/browser stubs and assert rendered output or submitted controls rather than internal refs.
 - Media upload field placement, approved registry primitives, no-helper-text convention, required branding assets, and public fallback paths: `mem:frontend/media_uploads`.
+- Chat surfaces: which layer owns paging vs viewport vs realtime, the message registry primitives and their test stubs, and the desktop-only widget: `mem:frontend/chat`.

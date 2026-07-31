@@ -12,6 +12,7 @@ return [
             'mail' => 'Mail',
             'security' => 'Security',
             'branding' => 'Branding',
+            'chat' => 'Chat',
         ],
     ],
 
@@ -267,6 +268,23 @@ return [
             'intro' => 'This message confirms that :company can deliver email with the current mail settings.',
             'sender' => 'Messages are sent as :name (:address).',
             'sent' => 'The test message was sent.',
+        ],
+    ],
+
+    'chat' => [
+        'title' => 'Chat',
+        'description' => 'Availability of direct messages between users',
+        'label' => [
+            'chat_enabled' => 'Enable chat',
+        ],
+        'help' => [
+            'chat_enabled' => 'While disabled, the chat page, the desktop widget, and chat notifications are closed for everyone. Conversations, messages, and audit records are kept.',
+        ],
+        'button' => [
+            'save' => 'Save',
+        ],
+        'message' => [
+            'updated' => 'Chat settings updated.',
         ],
     ],
 

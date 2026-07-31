@@ -1,6 +1,7 @@
 import type { Primitive as PrimitiveComponent } from 'reka-ui';
 import type { Abilities, Auth } from '@/types/auth';
 import type { Branding } from '@/types/branding';
+import type { ChatSharedState } from '@/types/chat';
 import type { NotificationBellState } from '@/types/notifications';
 
 // Extend ImportMeta interface for Vite...
@@ -27,6 +28,7 @@ declare module '@inertiajs/core' {
             can: Abilities;
             branding: Branding;
             notificationBell: NotificationBellState;
+            chat: ChatSharedState;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

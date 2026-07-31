@@ -14,6 +14,7 @@
 - Authorization/validation belongs in policies or Form Requests, not ad-hoc controller logic.
 - Reference/bootstrap data command ownership, dry-run, and secret-handling invariants: `mem:backend/data_initialization`.
 - Typed application settings (persistence, runtime application, maintenance/verification middleware, settings endpoints): `mem:backend/settings`.
+- Direct-message schema, the notification-context rule, the chat feature toggle, the audit surface, and the Larastan paginator constraint: `mem:backend/chat`.
 - Models live in `app/Models`; use factories from `database/factories` in tests.
 - Feature tests live in `tests/Feature`; feature tests automatically extend `Tests\TestCase` and use `RefreshDatabase` via `tests/Pest.php`. Unit tests live in `tests/Unit`.
 - Create framework artifacts with `php artisan make:*` and `--no-interaction`; inspect schema before migrations/models and prefer Eloquent/resources for APIs.

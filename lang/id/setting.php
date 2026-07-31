@@ -12,6 +12,7 @@ return [
             'mail' => 'Email',
             'security' => 'Keamanan',
             'branding' => 'Branding',
+            'chat' => 'Chat',
         ],
     ],
 
@@ -267,6 +268,23 @@ return [
             'intro' => 'Pesan ini memastikan :company dapat mengirim email dengan pengaturan email saat ini.',
             'sender' => 'Pesan dikirim sebagai :name (:address).',
             'sent' => 'Pesan percobaan telah dikirim.',
+        ],
+    ],
+
+    'chat' => [
+        'title' => 'Chat',
+        'description' => 'Ketersediaan pesan langsung antar pengguna',
+        'label' => [
+            'chat_enabled' => 'Aktifkan chat',
+        ],
+        'help' => [
+            'chat_enabled' => 'Saat dinonaktifkan, halaman chat, widget desktop, dan notifikasi chat tertutup untuk semua orang. Percakapan, pesan, dan catatan audit tetap tersimpan.',
+        ],
+        'button' => [
+            'save' => 'Simpan',
+        ],
+        'message' => [
+            'updated' => 'Pengaturan chat diperbarui.',
         ],
     ],
 

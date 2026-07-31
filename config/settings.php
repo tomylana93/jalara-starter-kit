@@ -2,6 +2,7 @@
 
 use App\Settings\AuthenticationSettings;
 use App\Settings\BrandingSettings;
+use App\Settings\ChatSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\MailSettings;
 use App\Settings\SecuritySettings;
@@ -24,6 +25,7 @@ return [
         UserProvisioningSettings::class,
         SecuritySettings::class,
         BrandingSettings::class,
+        ChatSettings::class,
     ],
 
     /*

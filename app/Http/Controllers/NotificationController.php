@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Presenters\NotificationPresenter;
 use App\Http\Requests\Notifications\IndexNotificationRequest;
 use App\Models\User;
+use App\Notifications\ChatMessageNotification;
+use App\Settings\ChatSettings;
+use App\Settings\SettingsResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -116,7 +119,18 @@ class NotificationController extends Controller
             ? $user->unreadNotifications()
             : $user->notifications();
 
-        return $relation->getQuery()->orderBy('id', 'desc');
+        $query = $relation->getQuery()->orderBy('id', 'desc');
+
+        /*
+         * A switched-off chat surface hides its notifications too, so the page
+         * never links into a feature that is closed. Nothing is deleted: the
+         * rows come back with the toggle.
+         */
+        if (SettingsResolver::tryResolve(ChatSettings::class)?->chatEnabled !== true) {
+            ChatMessageNotification::excludeFrom($query);
+        }
+
+        return $query;
     }
 
     private function user(Request $request): User

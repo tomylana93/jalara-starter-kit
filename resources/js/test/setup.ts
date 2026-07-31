@@ -18,11 +18,15 @@ export const inertiaPageProps = {
     branding: {},
     name: undefined as string | undefined,
     description: null as string | null,
-    can: { manageSettings: true, viewUsers: true },
+    can: { manageSettings: true, viewUsers: true, auditChat: true },
     locale: 'en',
     fallbackLocale: 'en',
     notificationBell: {
         items: [] as NotificationItem[],
+        unreadCount: 0,
+    },
+    chat: {
+        enabled: true,
         unreadCount: 0,
     },
 };
@@ -73,6 +77,29 @@ vi.mock('@inertiajs/vue3', async (importOriginal) => {
     return {
         ...original,
         Form: TestForm,
+        /*
+         * The real component drives Inertia partial reloads through intersection
+         * observers, which jsdom has none of. The stub keeps the wrapper element
+         * and the slots so a test can still assert what the merged prop renders.
+         */
+        InfiniteScroll: defineComponent({
+            inheritAttrs: false,
+            props: {
+                data: { type: String, default: '' },
+            },
+            setup(props, { attrs, slots }) {
+                return () =>
+                    h(
+                        'div',
+                        { ...attrs, 'data-infinite-scroll': props.data },
+                        slots.default?.({
+                            loading: false,
+                            loadingPrevious: false,
+                            loadingNext: false,
+                        }),
+                    );
+            },
+        }),
         Head: defineComponent({
             setup(_, { slots }) {
                 return () => h('div', { 'data-head': '' }, slots.default?.());
@@ -151,7 +178,10 @@ config.global.stubs = {
     },
     Textarea: {
         inheritAttrs: false,
-        template: '<textarea v-bind="$attrs"></textarea>',
+        props: ['modelValue'],
+        emits: ['update:modelValue'],
+        template:
+            '<textarea v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)"></textarea>',
     },
     PasswordInput: {
         inheritAttrs: false,
@@ -264,6 +294,52 @@ config.global.stubs = {
     NavFooter: true,
     NavUser: true,
     AppLogo: true,
+    /*
+     * The message-scroller registry primitives measure real layout through
+     * ResizeObserver and MutationObserver, which jsdom does not provide. The
+     * stubs keep their structure and the viewport's scroll event so a test can
+     * still assert what is rendered and how the surface reacts.
+     */
+    MessageScrollerProvider: { template: '<div><slot /></div>' },
+    MessageScroller: {
+        inheritAttrs: false,
+        template: '<div v-bind="$attrs"><slot /></div>',
+    },
+    MessageScrollerViewport: {
+        inheritAttrs: false,
+        template: '<div v-bind="$attrs"><slot /></div>',
+    },
+    MessageScrollerContent: { template: '<div><slot /></div>' },
+    MessageScrollerItem: {
+        props: ['messageId'],
+        inheritAttrs: false,
+        template:
+            '<div v-bind="$attrs" :data-message-id="messageId"><slot /></div>',
+    },
+    MessageScrollerButton: {
+        inheritAttrs: false,
+        template: '<button type="button" v-bind="$attrs"><slot /></button>',
+    },
+    Message: {
+        props: ['align'],
+        template: '<div :data-align="align"><slot /></div>',
+    },
+    MessageContent: { template: '<div><slot /></div>' },
+    MessageHeader: { template: '<div><slot /></div>' },
+    Bubble: {
+        props: ['align', 'variant'],
+        template: '<div :data-variant="variant"><slot /></div>',
+    },
+    BubbleContent: {
+        inheritAttrs: false,
+        template: '<div v-bind="$attrs"><slot /></div>',
+    },
+    Avatar: { template: '<span><slot /></span>' },
+    AvatarImage: {
+        inheritAttrs: false,
+        template: '<img v-bind="$attrs" />',
+    },
+    AvatarFallback: { template: '<span><slot /></span>' },
 };
 
 Object.defineProperty(window, 'matchMedia', {

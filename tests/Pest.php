@@ -2,6 +2,7 @@
 
 use App\Enums\PasswordPolicy;
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Models\User;
 use App\Settings\AuthenticationSettings;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
@@ -78,6 +79,21 @@ expect()->extend('toBeOne', function () {
 function usePasswordPolicy(PasswordPolicy $policy): void
 {
     app(AuthenticationSettings::class)->passwordPolicy = $policy;
+}
+
+/**
+ * Create a user holding the given application role.
+ *
+ * The authorization catalog is synchronized by an Artisan command rather than a
+ * seeder, so the role has to be created for the `web` guard on demand here.
+ */
+function userWithRole(Role $role): User
+{
+    $user = User::factory()->create();
+
+    $user->assignRole(Spatie\Permission\Models\Role::findOrCreate($role->value, 'web'));
+
+    return $user;
 }
 
 /**

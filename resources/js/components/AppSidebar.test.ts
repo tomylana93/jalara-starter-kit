@@ -22,6 +22,8 @@ beforeEach(() => {
     inertiaPageProps.auth = { user: { name: 'Ada Lovelace' } };
     inertiaPageProps.can.manageSettings = true;
     inertiaPageProps.can.viewUsers = true;
+    inertiaPageProps.can.auditChat = false;
+    inertiaPageProps.chat.enabled = true;
     sidebarState.isMobile = false;
     setOpenMobile.mockReset();
 });
@@ -40,7 +42,7 @@ it('includes admin navigation when the user has permission', () => {
     ).toEqual([
         {
             title: 'navigation.group.main_menu',
-            items: ['navigation.main.dashboard'],
+            items: ['navigation.main.dashboard', 'navigation.main.chat'],
         },
         {
             title: 'navigation.group.admin',
