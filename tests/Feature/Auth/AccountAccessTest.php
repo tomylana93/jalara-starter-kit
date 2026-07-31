@@ -57,20 +57,33 @@ it('redirects forced password changes to the security flow', function () {
         ->assertJsonPath('message', __('auth.login.message.must_change_password'));
 });
 
-it('allows password confirmation, security, password update, and logout during a forced change', function () {
+it('reaches the security page during a forced change without confirming the password again', function () {
     $user = User::factory()->mustChangePassword()->create();
 
+    /* No auth.password_confirmed_at: the redirect target must not bounce back to a confirmation screen. */
     actingAs($user)
-        ->get(route('password.confirm'))
-        ->assertOk();
-
-    actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('account.security.edit'))
+        ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('account/Security')
             ->where('mustChangePassword', true),
         );
+});
+
+it('still requires the current password to complete a forced change', function () {
+    $user = User::factory()->mustChangePassword()->create();
+
+    actingAs($user)
+        ->from(route('account.security.edit'))
+        ->put(route('account.password.update'), [
+            'current_password' => 'wrong-password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertSessionHasErrors('current_password');
+
+    expect($user->refresh()->must_change_password)->toBeTrue()
+        ->and(Hash::check('password', $user->password))->toBeTrue();
 
     actingAs($user)
         ->put(route('account.password.update'), [

@@ -181,21 +181,21 @@ it('deletes the newly written file when persistence fails', function () {
         'branding/logos',
         null,
         fn () => throw new RuntimeException('persistence failed'),
-    ))->toThrow(RuntimeException::class);
-
-    expect(Storage::disk('public')->allFiles('branding/logos'))->toBeEmpty();
+    ))->toThrow(RuntimeException::class)
+        ->and(Storage::disk('public')->allFiles('branding/logos'))->toBeEmpty();
 });
 
 it('keeps the previous file when persistence fails during a replacement', function () {
     $previous = Storage::disk('public')->putFile('branding/logos', UploadedFile::fake()->image('old.png', 1200, 400));
+
+    throw_if($previous === false, RuntimeException::class, 'The replacement fixture could not be stored.');
 
     expect(fn () => app(ReplaceStoredImage::class)->handle(
         UploadedFile::fake()->image('new.png', 1200, 400),
         'branding/logos',
         $previous,
         fn () => throw new RuntimeException('persistence failed'),
-    ))->toThrow(RuntimeException::class);
-
-    expect(Storage::disk('public')->exists($previous))->toBeTrue()
+    ))->toThrow(RuntimeException::class)
+        ->and(Storage::disk('public')->exists($previous))->toBeTrue()
         ->and(Storage::disk('public')->allFiles('branding/logos'))->toHaveCount(1);
 });

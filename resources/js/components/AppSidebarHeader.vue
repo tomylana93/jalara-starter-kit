@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { Search } from '@lucide/vue';
 import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import NotificationBell from '@/components/NotificationBell.vue';
+import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useTranslations } from '@/composables/useTranslations';
 import type { BreadcrumbItem } from '@/types';
 
 withDefaults(
@@ -13,6 +16,12 @@ withDefaults(
         breadcrumbs: () => [],
     },
 );
+
+const { t } = useTranslations();
+
+const openGlobalSearch = (): void => {
+    window.dispatchEvent(new CustomEvent('open-global-search'));
+};
 </script>
 
 <template>
@@ -27,6 +36,15 @@ withDefaults(
         </div>
 
         <div class="ml-auto flex items-center gap-2">
+            <Button
+                variant="ghost"
+                size="icon"
+                :aria-label="t('navigation.menu.search')"
+                data-test="global-search-trigger"
+                @click="openGlobalSearch"
+            >
+                <Search />
+            </Button>
             <NotificationBell />
             <AppearanceToggle />
         </div>

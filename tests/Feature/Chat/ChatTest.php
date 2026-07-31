@@ -78,8 +78,8 @@ test('a conversation is created only when the first valid message is sent', func
         ])
         ->assertStatus(201);
 
-    expect(Conversation::query()->count())->toBe(1);
-    expect(Message::query()->value('body'))->toBe("First line\nSecond line");
+    expect(Conversation::query()->count())->toBe(1)
+        ->and(Message::query()->value('body'))->toBe("First line\nSecond line");
 
     $conversationId = $response->json('conversation.id');
 
@@ -102,8 +102,8 @@ test('a second message reuses the pair canonical conversation', function (): voi
         ->postJson(route('chat.messages.store'), ['recipient_id' => $sender->id, 'body' => 'Two'])
         ->assertStatus(201);
 
-    expect(Conversation::query()->count())->toBe(1);
-    expect(Message::query()->count())->toBe(2);
+    expect(Conversation::query()->count())->toBe(1)
+        ->and(Message::query()->count())->toBe(2);
 });
 
 test('a message longer than the maximum is rejected', function (): void {
@@ -157,9 +157,9 @@ test('the recipient directory answers only Active users matched by name', functi
         ->assertOk()
         ->assertJsonCount(1, 'data');
 
-    expect($response->json('data.0.id'))->toBe($match->id);
-    expect($response->json('data.0.role'))->toBe(Role::User->label());
-    expect($response->json('data.0'))->not->toHaveKey('email');
+    expect($response->json('data.0.id'))->toBe($match->id)
+        ->and($response->json('data.0.role'))->toBe(Role::User->label())
+        ->and($response->json('data.0'))->not->toHaveKey('email');
 
     unset($disabled);
 });
@@ -192,9 +192,9 @@ test('the widget message window returns the newest thirty and scrolls into histo
         ->getJson(route('chat.conversations.show', $conversation))
         ->assertOk();
 
-    expect($first->json('messages'))->toHaveCount(Message::WINDOW);
-    expect($first->json('messages.0.body'))->toBe('Message 6');
-    expect($first->json('hasMore'))->toBeTrue();
+    expect($first->json('messages'))->toHaveCount(Message::WINDOW)
+        ->and($first->json('messages.0.body'))->toBe('Message 6')
+        ->and($first->json('hasMore'))->toBeTrue();
 
     $older = actingAs($user)
         ->getJson(route('chat.conversations.show', [
@@ -203,9 +203,9 @@ test('the widget message window returns the newest thirty and scrolls into histo
         ]))
         ->assertOk();
 
-    expect($older->json('messages'))->toHaveCount(5);
-    expect($older->json('messages.0.body'))->toBe('Message 1');
-    expect($older->json('hasMore'))->toBeFalse();
+    expect($older->json('messages'))->toHaveCount(5)
+        ->and($older->json('messages.0.body'))->toBe('Message 1')
+        ->and($older->json('hasMore'))->toBeFalse();
 });
 
 test('the transcript is paged newest first under its own page name', function (): void {
@@ -251,7 +251,7 @@ test('an older transcript page is a distinct window that never replaces the visi
     }
 
     $live = actingAs($user)->get(route('chat.index', ['conversation' => $conversation->id]));
-    $visible = collect($live->viewData('page')['props']['messages']['data'])->pluck('id');
+    $visible = collect(inertiaRows($live->viewData('page')['props']['messages']['data']))->pluck('id');
 
     /*
      * What reverse infinite scroll asks the server for when the reader reaches
@@ -265,7 +265,7 @@ test('an older transcript page is a distinct window that never replaces the visi
         ->assertOk();
 
     $olderPage = $older->viewData('page')['props']['messages']['data'];
-    $prepended = collect($olderPage)->pluck('id');
+    $prepended = collect(inertiaRows($olderPage))->pluck('id');
 
     expect($prepended)->toHaveCount(15);
 

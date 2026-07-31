@@ -69,6 +69,7 @@ const state = ref<UploadState>(props.currentUrl ? 'done' : 'idle');
 const percentage = ref(0);
 const errorMessage = ref<string | undefined>(undefined);
 const previewUrl = ref<string | null>(null);
+const storedUrl = ref(props.currentUrl);
 const pendingFile = ref<File | null>(null);
 const storedFileSize = ref<number | null>(null);
 
@@ -109,7 +110,7 @@ const primaryActionLabel = computed(() =>
 );
 
 /** The preview takes precedence so the new file is visible while it uploads. */
-const displayUrl = computed(() => previewUrl.value ?? props.currentUrl);
+const displayUrl = computed(() => previewUrl.value ?? storedUrl.value);
 
 const hasImage = computed(() => displayUrl.value !== null);
 
@@ -136,6 +137,7 @@ onBeforeUnmount(clearPreview);
 watch(
     () => props.currentUrl,
     async (currentUrl, _, onCleanup) => {
+        storedUrl.value = currentUrl;
         clearPreview();
         pendingFile.value = null;
         storedFileSize.value = null;
@@ -270,6 +272,7 @@ const remove = (): void => {
     router.delete(props.deleteUrl, {
         preserveScroll: true,
         onSuccess: () => {
+            storedUrl.value = null;
             clearPreview();
             pendingFile.value = null;
             state.value = 'idle';

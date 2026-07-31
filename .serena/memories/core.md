@@ -9,6 +9,7 @@
 - Cross-codebase style and architecture constraints: `mem:conventions`.
 - Locale layout and the natural Indonesian translation voice/technical-term policy: `mem:localization`.
 - Stable test boundaries and domain-oriented suite organization: `mem:testing`.
+- Internal documentation data model, authorization, editor, search, and navigation invariants: `mem:documentation`.
 - Required task verification sequence: `mem:task_completion`.
 - Top-level paths: `app/` backend application code; `routes/` web/console routes; `database/` migrations/factories/seeders; `resources/js/` Inertia Vue application; `resources/css/app.css` Tailwind entrypoint; `tests/` Pest suites.
 - Preserve the existing directory structure and reuse existing components/patterns; do not add dependencies or new base folders without user approval.

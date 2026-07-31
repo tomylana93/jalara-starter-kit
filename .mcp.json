@@ -11,6 +11,14 @@
                 "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
             }
         },
+        "shadcn": {
+            "command": "pnpm",
+            "args": [
+                "dlx",
+                "shadcn-vue@latest",
+                "mcp"
+            ]
+        },
         "laravel-boost": {
             "command": "php",
             "args": [

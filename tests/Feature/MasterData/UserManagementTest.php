@@ -580,9 +580,7 @@ it('sizes every exported column to its longest value', function () {
 
         expect($widths)->toHaveCount(5);
         /* The measured value is the longest of heading and data, plus padding. */
-        expect($widths[1])->toBe((float) (mb_strlen($user->name) + 2));
-        expect($widths[2])->toBe((float) (mb_strlen($user->email) + 2));
-        expect($widths[5])->toBe((float) (mb_strlen('2026-07-30 22:30:00') + 2));
+        expect($widths)->toMatchArray([1 => (float) (mb_strlen($user->name) + 2), 2 => (float) (mb_strlen($user->email) + 2), 5 => (float) (mb_strlen('2026-07-30 22:30:00') + 2)]);
 
         $reader->close();
     } finally {

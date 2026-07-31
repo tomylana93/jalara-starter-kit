@@ -363,7 +363,11 @@ describe('image upload field', () => {
             findAction(mountField(), 'common.upload.action.remove'),
         ).toBeUndefined();
 
-        const wrapper = mountField({ currentUrl: '/storage/logo.png' });
+        const wrapper = mountField({
+            currentUrl: '/storage/logo.png',
+            fallbackText: 'PA',
+            shape: 'circle',
+        });
         const button = findAction(wrapper, 'common.upload.action.remove');
 
         await button!.trigger('click');
@@ -372,6 +376,37 @@ describe('image upload field', () => {
             props.deleteUrl,
             expect.objectContaining({ preserveScroll: true }),
         );
+
+        const options = remove.mock.calls[0][1] as {
+            onSuccess?: () => void;
+        };
+
+        options.onSuccess?.();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.find('img').exists()).toBe(false);
+        expect(wrapper.text()).toContain('PA');
+    });
+
+    it('keeps the stored image when removal fails', async () => {
+        const remove = vi
+            .spyOn(router, 'delete')
+            .mockImplementation(() => undefined);
+        const wrapper = mountField({ currentUrl: '/storage/logo.png' });
+
+        await findAction(wrapper, 'common.upload.action.remove')!.trigger(
+            'click',
+        );
+
+        const options = remove.mock.calls[0][1] as {
+            onError?: (errors: Record<string, string>) => void;
+        };
+
+        options.onError?.({ image: 'Unable to remove image.' });
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.find('img').exists()).toBe(true);
+        expect(wrapper.text()).toContain('Unable to remove image.');
     });
 
     it('opens the native picker from the upload button', async () => {

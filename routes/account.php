@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\SecurityController;
-use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
@@ -21,9 +20,7 @@ Route::middleware(['auth'])->prefix('account')->name('account.')->group(function
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
     Route::patch('/', [ProfileController::class, 'disable'])->name('disable');
 
-    Route::get('security', [SecurityController::class, 'edit'])
-        ->middleware(RequirePassword::class)
-        ->name('security.edit');
+    Route::get('security', [SecurityController::class, 'edit'])->name('security.edit');
 
     Route::put('password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')

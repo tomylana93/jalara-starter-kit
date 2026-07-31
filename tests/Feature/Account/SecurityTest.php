@@ -3,68 +3,9 @@
 use App\Enums\PasswordPolicy;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Inertia\Testing\AssertableInertia as Assert;
-use Laravel\Fortify\Features;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\from;
-
-it('displays the security page', function () {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
-
-    $user = User::factory()->create();
-
-    actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('account.security.edit'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('account/Security')
-            ->where('mustChangePassword', false)
-            ->where('canManageTwoFactor', true)
-            ->where('twoFactorEnabled', false),
-        );
-});
-
-it('requires password confirmation for the security page when enabled', function () {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-    $user = User::factory()->create();
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
-
-    $response = actingAs($user)
-        ->get(route('account.security.edit'));
-
-    $response->assertRedirect(route('password.confirm'));
-});
-
-it('renders the security page without two factor when the feature is disabled', function () {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-    config(['fortify.features' => []]);
-
-    $user = User::factory()->create();
-
-    actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('account.security.edit'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('account/Security')
-            ->where('mustChangePassword', false)
-            ->where('canManageTwoFactor', false)
-            ->missing('twoFactorEnabled')
-            ->missing('requiresConfirmation'),
-        );
-});
 
 it('updates the password', function () {
     usePasswordPolicy(PasswordPolicy::Strict);

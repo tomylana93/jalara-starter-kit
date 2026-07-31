@@ -51,6 +51,8 @@ class HandleInertiaRequests extends Middleware
         'chat/*',
         'settings',
         'settings/*',
+        'documentation',
+        'documentation/*',
     ];
 
     /**
@@ -87,6 +89,7 @@ class HandleInertiaRequests extends Middleware
                 'viewUsers' => $request->user()?->can(Permission::ViewUsers->value) ?? false,
                 /* Gates the Super Admin's read-only chat audit entry. */
                 'auditChat' => $request->user()?->hasRole(Role::SuperAdmin->value) ?? false,
+                'manageDocumentation' => $request->user()?->hasRole(Role::SuperAdmin->value) ?? false,
             ],
             /*
              * Deliberately not named "notifications": the notification page

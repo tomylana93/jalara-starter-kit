@@ -27,9 +27,7 @@ it('creates verified users from the configured default password', function () {
         'email' => 'created@example.com',
     ]);
 
-    expect($user)
-        ->toBeInstanceOf(User::class)
-        ->hasVerifiedEmail()->toBeTrue()
+    expect($user->hasVerifiedEmail())->toBeTrue()
         ->and($user->must_change_password)->toBeTrue()
         ->and($user->password)->not->toBe(defaultUserPassword())
         ->and(Hash::check(defaultUserPassword(), $user->password))->toBeTrue();
@@ -50,9 +48,8 @@ it('fails safely when no default password is configured', function () {
     expect(fn () => app(CreateUser::class)->handle([
         'name' => 'Admin Created',
         'email' => 'created@example.com',
-    ]))->toThrow(DefaultUserPasswordNotConfigured::class);
-
-    expect(User::query()->where('email', 'created@example.com')->exists())->toBeFalse();
+    ]))->toThrow(DefaultUserPasswordNotConfigured::class)
+        ->and(User::query()->where('email', 'created@example.com')->exists())->toBeFalse();
 });
 
 it('never reveals the default password through the exception', function () {
@@ -81,12 +78,7 @@ it('localizes the missing default password message', function () {
     app(UserProvisioningSettings::class)->fill(['defaultPassword' => null])->save();
     app()->setLocale('id');
 
-    try {
-        app(CreateUser::class)->handle(['name' => 'Admin Created', 'email' => 'created@example.com']);
-    } catch (DefaultUserPasswordNotConfigured $defaultUserPasswordNotConfigured) {
-        expect($defaultUserPasswordNotConfigured->getMessage())
-            ->toBe(__('setting.user_provisioning.default_password.not_configured', locale: 'id'));
-    }
+    expect(fn () => app(CreateUser::class)->handle(['name' => 'Admin Created', 'email' => 'created@example.com']))->toThrow(DefaultUserPasswordNotConfigured::class, __('setting.user_provisioning.default_password.not_configured', locale: 'id'));
 });
 
 it('returns the existing user when an idempotent create is retried', function () {

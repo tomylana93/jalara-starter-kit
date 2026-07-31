@@ -23,7 +23,7 @@ describe('AppMobileNavigation', () => {
         expect(wrapper.text()).not.toContain('navigation.group.main_menu');
         expect(wrapper.text()).not.toContain('navigation.group.admin');
         expect(wrapper.text()).toContain('navigation.external.repository');
-        expect(wrapper.text()).toContain('navigation.external.documentation');
+        expect(wrapper.text()).toContain('navigation.main.documentation');
         expect(wrapper.text()).toContain('Ada Lovelace');
         expect(wrapper.get('[aria-current="page"]').text()).toContain(
             'navigation.main.dashboard',
@@ -31,7 +31,7 @@ describe('AppMobileNavigation', () => {
 
         const externalLinks = wrapper.findAll('a[target="_blank"]');
 
-        expect(externalLinks).toHaveLength(2);
+        expect(externalLinks).toHaveLength(1);
         externalLinks.forEach((link) => {
             expect(link.attributes('rel')).toBe('noopener noreferrer');
         });

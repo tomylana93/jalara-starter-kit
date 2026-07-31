@@ -13,16 +13,17 @@ return [
         'settings' => 'Pengaturan',
         'chat' => 'Chat',
         'chat_audit' => 'Audit chat',
+        'documentation' => 'Dokumentasi',
     ],
 
     'external' => [
         'repository' => 'Repository',
-        'documentation' => 'Dokumentasi',
     ],
 
     'menu' => [
         'navigation' => 'Menu navigasi',
         'description' => 'Tautan ke halaman utama aplikasi.',
+        'search' => 'Buka pencarian global',
     ],
 
 ];

@@ -5,21 +5,20 @@ use App\Http\Requests\Settings\UpdateBrandingSettingsRequest;
 use App\Http\Requests\Settings\UpdateGeneralSettingsRequest;
 use App\Http\Requests\Settings\UpdateMailSettingsRequest;
 use App\Http\Requests\Settings\UpdateSecuritySettingsRequest;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator;
 
 /**
  * Validate a payload against the rules of a settings Form Request.
  *
- * @param  class-string<FormRequest>  $request
  * @param  array<string, mixed>  $payload
  */
-function settingsValidator(string $request, array $payload): Illuminate\Contracts\Validation\Validator
+function settingsValidator(UpdateAuthenticationSettingsRequest|UpdateBrandingSettingsRequest|UpdateGeneralSettingsRequest|UpdateMailSettingsRequest|UpdateSecuritySettingsRequest $request, array $payload): Illuminate\Contracts\Validation\Validator
 {
-    return Validator::make($payload, (new $request)->rules());
+    return Validator::make($payload, $request->rules());
 }
 
 /**
+ * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
 function generalSettingsPayload(array $overrides = []): array
@@ -33,6 +32,7 @@ function generalSettingsPayload(array $overrides = []): array
 }
 
 /**
+ * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
 function authenticationSettingsPayload(array $overrides = []): array
@@ -45,6 +45,7 @@ function authenticationSettingsPayload(array $overrides = []): array
 }
 
 /**
+ * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
 function mailSettingsPayload(array $overrides = []): array
@@ -56,6 +57,7 @@ function mailSettingsPayload(array $overrides = []): array
 }
 
 /**
+ * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
 function securitySettingsPayload(array $overrides = []): array
@@ -68,6 +70,7 @@ function securitySettingsPayload(array $overrides = []): array
 }
 
 /**
+ * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
 function brandingSettingsPayload(array $overrides = []): array
@@ -83,43 +86,48 @@ function brandingSettingsPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('accepts valid settings payloads', function (string $request, array $payload) {
-    expect(settingsValidator($request, $payload)->passes())->toBeTrue();
-})->with([
-    'general' => [UpdateGeneralSettingsRequest::class, generalSettingsPayload()],
-    'general with description' => [UpdateGeneralSettingsRequest::class, generalSettingsPayload(['description' => 'Starter kit'])],
-    'authentication' => [UpdateAuthenticationSettingsRequest::class, authenticationSettingsPayload()],
-    'authentication minimum lifetime' => [UpdateAuthenticationSettingsRequest::class, authenticationSettingsPayload(['sessionLifetimeMinutes' => 5])],
-    'authentication maximum lifetime' => [UpdateAuthenticationSettingsRequest::class, authenticationSettingsPayload(['sessionLifetimeMinutes' => 10080])],
-    'mail' => [UpdateMailSettingsRequest::class, mailSettingsPayload()],
-    'security' => [UpdateSecuritySettingsRequest::class, securitySettingsPayload()],
-    'security boundaries' => [UpdateSecuritySettingsRequest::class, securitySettingsPayload([
+/**
+ * @param  array<string, mixed>  $payload
+ */
+$acceptsValidSettingsPayload = function (UpdateAuthenticationSettingsRequest|UpdateBrandingSettingsRequest|UpdateGeneralSettingsRequest|UpdateMailSettingsRequest|UpdateSecuritySettingsRequest $request, array $payload): void {
+    expect(settingsValidator($request, $payload)->fails())->toBeFalse();
+};
+
+it('accepts valid settings payloads', $acceptsValidSettingsPayload)->with([
+    'general' => [new UpdateGeneralSettingsRequest, generalSettingsPayload()],
+    'general with description' => [new UpdateGeneralSettingsRequest, generalSettingsPayload(['description' => 'Starter kit'])],
+    'authentication' => [new UpdateAuthenticationSettingsRequest, authenticationSettingsPayload()],
+    'authentication minimum lifetime' => [new UpdateAuthenticationSettingsRequest, authenticationSettingsPayload(['sessionLifetimeMinutes' => 5])],
+    'authentication maximum lifetime' => [new UpdateAuthenticationSettingsRequest, authenticationSettingsPayload(['sessionLifetimeMinutes' => 10080])],
+    'mail' => [new UpdateMailSettingsRequest, mailSettingsPayload()],
+    'security' => [new UpdateSecuritySettingsRequest, securitySettingsPayload()],
+    'security boundaries' => [new UpdateSecuritySettingsRequest, securitySettingsPayload([
         'maxFailedLoginAttempts' => 20,
         'suspensionDurationMinutes' => 1440,
         'maintenanceEnabled' => true,
     ])],
-    'branding' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload()],
-    'branding with footer' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['footerText' => 'All rights reserved.'])],
-    'branding card auth layout' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['authLayout' => 'card'])],
-    'branding split auth layout' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['authLayout' => 'split'])],
-    'branding header app layout' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['appLayout' => 'header'])],
-    'branding blue theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'blue'])],
-    'branding emerald theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'emerald'])],
-    'branding violet theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'violet'])],
-    'branding rose theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'rose'])],
-    'branding amber theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'amber'])],
-    'branding teal theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'teal'])],
-    'branding cyan theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'cyan'])],
-    'branding indigo theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'indigo'])],
-    'branding orange theme' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['colorTheme' => 'orange'])],
-    'branding Space Grotesk and Inter font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'space-grotesk-inter'])],
-    'branding Poppins and Inter font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'poppins-inter'])],
-    'branding Montserrat and Open Sans font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'montserrat-open-sans'])],
-    'branding Playfair Display and Source Sans font pair' => [UpdateBrandingSettingsRequest::class, brandingSettingsPayload(['fontPair' => 'playfair-display-source-sans'])],
+    'branding' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload()],
+    'branding with footer' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['footerText' => 'All rights reserved.'])],
+    'branding card auth layout' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['authLayout' => 'card'])],
+    'branding split auth layout' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['authLayout' => 'split'])],
+    'branding header app layout' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['appLayout' => 'header'])],
+    'branding blue theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'blue'])],
+    'branding emerald theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'emerald'])],
+    'branding violet theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'violet'])],
+    'branding rose theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'rose'])],
+    'branding amber theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'amber'])],
+    'branding teal theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'teal'])],
+    'branding cyan theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'cyan'])],
+    'branding indigo theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'indigo'])],
+    'branding orange theme' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['colorTheme' => 'orange'])],
+    'branding Space Grotesk and Inter font pair' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['fontPair' => 'space-grotesk-inter'])],
+    'branding Poppins and Inter font pair' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['fontPair' => 'poppins-inter'])],
+    'branding Montserrat and Open Sans font pair' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['fontPair' => 'montserrat-open-sans'])],
+    'branding Playfair Display and Source Sans font pair' => [new UpdateBrandingSettingsRequest, brandingSettingsPayload(['fontPair' => 'playfair-display-source-sans'])],
 ]);
 
 it('rejects invalid general settings', function (array $overrides, string $field) {
-    $validator = settingsValidator(UpdateGeneralSettingsRequest::class, generalSettingsPayload($overrides));
+    $validator = settingsValidator(new UpdateGeneralSettingsRequest, generalSettingsPayload($overrides));
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->keys())->toContain($field);
@@ -132,7 +140,7 @@ it('rejects invalid general settings', function (array $overrides, string $field
 ]);
 
 it('rejects invalid authentication settings', function (array $overrides, string $field) {
-    $validator = settingsValidator(UpdateAuthenticationSettingsRequest::class, authenticationSettingsPayload($overrides));
+    $validator = settingsValidator(new UpdateAuthenticationSettingsRequest, authenticationSettingsPayload($overrides));
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->keys())->toContain($field);
@@ -145,7 +153,7 @@ it('rejects invalid authentication settings', function (array $overrides, string
 ]);
 
 it('rejects invalid mail settings', function (array $overrides, string $field) {
-    $validator = settingsValidator(UpdateMailSettingsRequest::class, mailSettingsPayload($overrides));
+    $validator = settingsValidator(new UpdateMailSettingsRequest, mailSettingsPayload($overrides));
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->keys())->toContain($field);
@@ -157,7 +165,7 @@ it('rejects invalid mail settings', function (array $overrides, string $field) {
 ]);
 
 it('rejects invalid security settings', function (array $overrides, string $field) {
-    $validator = settingsValidator(UpdateSecuritySettingsRequest::class, securitySettingsPayload($overrides));
+    $validator = settingsValidator(new UpdateSecuritySettingsRequest, securitySettingsPayload($overrides));
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->keys())->toContain($field);
@@ -170,7 +178,7 @@ it('rejects invalid security settings', function (array $overrides, string $fiel
 ]);
 
 it('rejects invalid branding settings', function (array $overrides, string $field) {
-    $validator = settingsValidator(UpdateBrandingSettingsRequest::class, brandingSettingsPayload($overrides));
+    $validator = settingsValidator(new UpdateBrandingSettingsRequest, brandingSettingsPayload($overrides));
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->keys())->toContain($field);

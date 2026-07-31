@@ -19,13 +19,10 @@ it('satisfies the documentation and licensing contract', function () {
         ->toContain('Vue-3')
         ->toContain('Tailwind_CSS-4')
         ->toContain('Tests-568-blue')
-        ->toContain('[MIT License](LICENSE)');
-
-    expect($license)
-        ->toContain('MIT License')
-        ->toContain('Copyright (c) 2026 Tomy Maulana');
-
-    expect($readme)->not->toMatch('/^#+\s+(installation|install|setup|getting\s+started)/mi');
+        ->toContain('[MIT License](LICENSE)')
+        ->and($license)->toContain('MIT License')
+        ->toContain('Copyright (c) 2026 Tomy Maulana')
+        ->and($readme)->not->toMatch('/^#+\s+(installation|install|setup|getting\s+started)/mi');
 
     $forbiddenCommands = [
         'composer install',

@@ -19,7 +19,7 @@ import { useAppNavigation } from '@/composables/useAppNavigation';
 import { dashboard } from '@/routes';
 
 const { isMobile, setOpenMobile } = useSidebar();
-const { mainGroups, externalItems } = useAppNavigation();
+const { mainGroups, footerItems } = useAppNavigation();
 </script>
 
 <template>
@@ -49,7 +49,7 @@ const { mainGroups, externalItems } = useAppNavigation();
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter :items="externalItems" />
+                <NavFooter :items="footerItems" />
                 <NavUser />
             </SidebarFooter>
         </template>

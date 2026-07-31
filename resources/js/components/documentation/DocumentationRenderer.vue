@@ -1,0 +1,45 @@
+<script setup lang="ts">
+import { mergeAttributes } from '@tiptap/core';
+import Link from '@tiptap/extension-link';
+import { TableKit } from '@tiptap/extension-table';
+import StarterKit from '@tiptap/starter-kit';
+import { EditorContent, useEditor } from '@tiptap/vue-3';
+import { onBeforeUnmount } from 'vue';
+import type { TiptapDocument } from '@/types/documentation';
+
+const props = defineProps<{ content: TiptapDocument }>();
+const SafeLink = Link.extend({
+    renderHTML({ HTMLAttributes }) {
+        const external = /^https?:\/\//i.test(
+            String(HTMLAttributes.href ?? ''),
+        );
+
+        return [
+            'a',
+            mergeAttributes(
+                this.options.HTMLAttributes,
+                HTMLAttributes,
+                external
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : {},
+            ),
+            0,
+        ];
+    },
+});
+const editor = useEditor({
+    content: props.content,
+    editable: false,
+    extensions: [
+        StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
+        SafeLink,
+        TableKit,
+    ],
+    editorProps: { attributes: { class: 'documentation-content' } },
+});
+onBeforeUnmount(() => editor.value?.destroy());
+</script>
+
+<template>
+    <EditorContent v-if="editor" :editor="editor" />
+</template>

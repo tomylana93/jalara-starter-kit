@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Settings\AuthenticationSettings;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
 
 /*
@@ -31,6 +32,9 @@ pest()->extend(TestCase::class)
     ->beforeEach(function (): void {
         app()->instance(UncompromisedVerifier::class, new class implements UncompromisedVerifier
         {
+            /**
+             * @param  array<string, mixed>  $data
+             */
             public function verify($data): bool
             {
                 return true;
@@ -72,6 +76,30 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Materialize an Inertia page prop that arrived as untyped view data.
+ *
+ * @return array<int|string, mixed>
+ */
+function inertiaRows(mixed $rows): array
+{
+    throw_unless(is_array($rows), InvalidArgumentException::class, 'The Inertia page prop did not contain a list of rows.');
+
+    return $rows;
+}
+
+/**
+ * Narrow the Artisan test helper to the pending command its assertions need.
+ *
+ * Laravel returns a plain exit code instead once console output is no longer mocked.
+ */
+function pendingCommand(PendingCommand|int $command): PendingCommand
+{
+    throw_unless($command instanceof PendingCommand, InvalidArgumentException::class, 'The Artisan command ran without a mocked console, so it cannot be asserted on.');
+
+    return $command;
+}
 
 /**
  * Run the current test against a specific password policy preset.
