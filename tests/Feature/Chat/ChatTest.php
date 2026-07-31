@@ -1,0 +1,388 @@
+<?php
+
+use App\Enums\Role;
+use App\Events\Chat\ChatConversationRead;
+use App\Events\Chat\ChatMessageSent;
+use App\Http\Controllers\Chat\ChatController;
+use App\Jobs\Chat\DeliverChatMessageNotification;
+use App\Models\Chat\Conversation;
+use App\Models\Chat\Message;
+use App\Models\Chat\Participant;
+use App\Models\User;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia as Assert;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Laravel\post;
+
+beforeEach(function (): void {
+    Event::fake([ChatMessageSent::class, ChatConversationRead::class]);
+    Queue::fake();
+});
+
+test('the chat page renders the first page of the inbox', function (): void {
+    $user = User::factory()->create();
+    $peer = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+    Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $peer->id,
+        'body' => 'Hello there',
+    ]);
+
+    actingAs($user)
+        ->get(route('chat.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations.data', 1)
+            ->where('conversations.data.0.id', $conversation->id)
+            ->where('conversations.data.0.participant.name', $peer->name)
+            ->where('conversations.data.0.unread_count', 1),
+        );
+});
+
+test('the inbox never exposes a conversation the viewer is not part of', function (): void {
+    $user = User::factory()->create();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    Conversation::factory()->between($first, $second)->create();
+
+    actingAs($user)
+        ->getJson(route('chat.conversations.index'))
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
+});
+
+test('a conversation is created only when the first valid message is sent', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'body' => '   ',
+        ])
+        ->assertStatus(422);
+
+    expect(Conversation::query()->count())->toBe(0);
+
+    $response = actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'body' => "First line\nSecond line",
+        ])
+        ->assertStatus(201);
+
+    expect(Conversation::query()->count())->toBe(1);
+    expect(Message::query()->value('body'))->toBe("First line\nSecond line");
+
+    $conversationId = $response->json('conversation.id');
+
+    expect(Participant::query()->where('conversation_id', $conversationId)->count())->toBe(2);
+
+    Event::assertDispatched(ChatMessageSent::class);
+    Queue::assertPushed(DeliverChatMessageNotification::class);
+});
+
+test('a second message reuses the pair canonical conversation', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), ['recipient_id' => $recipient->id, 'body' => 'One'])
+        ->assertStatus(201);
+
+    /* The other side answering must not open a second direct message. */
+    actingAs($recipient)
+        ->postJson(route('chat.messages.store'), ['recipient_id' => $sender->id, 'body' => 'Two'])
+        ->assertStatus(201);
+
+    expect(Conversation::query()->count())->toBe(1);
+    expect(Message::query()->count())->toBe(2);
+});
+
+test('a message longer than the maximum is rejected', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'body' => str_repeat('a', Message::MAX_LENGTH + 1),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('body');
+
+    expect(Message::query()->count())->toBe(0);
+});
+
+test('a message at the maximum length is accepted', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'body' => str_repeat('a', Message::MAX_LENGTH),
+        ])
+        ->assertStatus(201);
+});
+
+test('the sender cannot open a conversation with themselves', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->postJson(route('chat.messages.store'), ['recipient_id' => $user->id, 'body' => 'Hello'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('recipient_id');
+
+    expect(Conversation::query()->count())->toBe(0);
+});
+
+test('the recipient directory answers only Active users matched by name', function (): void {
+    $user = User::factory()->create();
+    $match = User::factory()->create(['name' => 'Amelia Stone']);
+    $disabled = User::factory()->disabled()->create(['name' => 'Amelia Frost']);
+    User::factory()->create(['name' => 'Bruno Vega']);
+
+    $match->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+
+    $response = actingAs($user)
+        ->getJson(route('chat.recipients.index', ['search' => 'Amelia']))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    expect($response->json('data.0.id'))->toBe($match->id);
+    expect($response->json('data.0.role'))->toBe(Role::User->label());
+    expect($response->json('data.0'))->not->toHaveKey('email');
+
+    unset($disabled);
+});
+
+test('a search term shorter than two characters is rejected', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->getJson(route('chat.recipients.index', ['search' => 'a']))
+        ->assertStatus(422);
+});
+
+test('the widget message window returns the newest thirty and scrolls into history', function (): void {
+    $user = User::factory()->create();
+    $peer = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+
+    /* Distinct timestamps so the window has one unambiguous order. */
+    foreach (range(1, 35) as $index) {
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $peer->id,
+            'body' => 'Message '.$index,
+            'created_at' => now()->addSeconds($index),
+        ]);
+    }
+
+    $first = actingAs($user)
+        ->getJson(route('chat.conversations.show', $conversation))
+        ->assertOk();
+
+    expect($first->json('messages'))->toHaveCount(Message::WINDOW);
+    expect($first->json('messages.0.body'))->toBe('Message 6');
+    expect($first->json('hasMore'))->toBeTrue();
+
+    $older = actingAs($user)
+        ->getJson(route('chat.conversations.show', [
+            'conversation' => $conversation->id,
+            'before' => $first->json('messages.0.id'),
+        ]))
+        ->assertOk();
+
+    expect($older->json('messages'))->toHaveCount(5);
+    expect($older->json('messages.0.body'))->toBe('Message 1');
+    expect($older->json('hasMore'))->toBeFalse();
+});
+
+test('the transcript is paged newest first under its own page name', function (): void {
+    $user = User::factory()->create();
+    $peer = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+
+    foreach (range(1, 45) as $index) {
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $peer->id,
+            'body' => 'Message '.$index,
+            'created_at' => now()->addSeconds($index),
+        ]);
+    }
+
+    $live = actingAs($user)
+        ->get(route('chat.index', ['conversation' => $conversation->id]))
+        ->assertOk();
+
+    $livePage = $live->viewData('page')['props']['messages']['data'];
+
+    expect($livePage)->toHaveCount(Message::WINDOW);
+    /* Newest first: the client reverses the window for display. */
+    expect($livePage[0]['body'])->toBe('Message 45');
+    expect($livePage[29]['body'])->toBe('Message 16');
+});
+
+test('an older transcript page is a distinct window that never replaces the visible one', function (): void {
+    $user = User::factory()->create();
+    $peer = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+
+    foreach (range(1, 45) as $index) {
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $peer->id,
+            'body' => 'Message '.$index,
+            'created_at' => now()->addSeconds($index),
+        ]);
+    }
+
+    $live = actingAs($user)->get(route('chat.index', ['conversation' => $conversation->id]));
+    $visible = collect($live->viewData('page')['props']['messages']['data'])->pluck('id');
+
+    /*
+     * What reverse infinite scroll asks the server for when the reader reaches
+     * the top: the next page under the transcript's own page name.
+     */
+    $older = actingAs($user)
+        ->get(route('chat.index', [
+            'conversation' => $conversation->id,
+            ChatController::MESSAGES_PAGE => 2,
+        ]))
+        ->assertOk();
+
+    $olderPage = $older->viewData('page')['props']['messages']['data'];
+    $prepended = collect($olderPage)->pluck('id');
+
+    expect($prepended)->toHaveCount(15);
+
+    /* Disjoint windows: nothing already on screen is sent again or replaced. */
+    expect($prepended->intersect($visible)->all())->toBe([]);
+
+    /* And it is genuinely older history, ready to be prepended. */
+    expect($olderPage[0]['body'])->toBe('Message 15');
+    expect($olderPage[14]['body'])->toBe('Message 1');
+});
+
+test('the inbox and the transcript page independently', function (): void {
+    $user = User::factory()->create();
+
+    foreach (range(1, 25) as $index) {
+        $peer = User::factory()->create(['name' => 'Peer '.$index]);
+        $conversation = Conversation::factory()->between($user, $peer)->create([
+            'last_message_at' => now()->addSeconds($index),
+        ]);
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $peer->id,
+            'created_at' => now()->addSeconds($index),
+        ]);
+    }
+
+    $first = actingAs($user)->get(route('chat.index'));
+
+    expect($first->viewData('page')['props']['conversations']['data'])
+        ->toHaveCount(Conversation::PER_PAGE);
+
+    $second = actingAs($user)
+        ->get(route('chat.index', [ChatController::CONVERSATIONS_PAGE => 2]));
+
+    expect($second->viewData('page')['props']['conversations']['data'])->toHaveCount(5);
+});
+
+test('reading a conversation moves the receipt and never moves it backwards', function (): void {
+    $user = User::factory()->create();
+    $peer = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+
+    $older = Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $peer->id,
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $newer = Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $peer->id,
+        'created_at' => now(),
+    ]);
+
+    actingAs($user)
+        ->postJson(route('chat.conversations.read', $conversation), ['message_id' => $newer->id])
+        ->assertOk();
+
+    $participant = Participant::query()
+        ->where('conversation_id', $conversation->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($participant->last_read_at->timestamp)->toBe($newer->created_at->timestamp);
+
+    /* Scrolling back through history must not undo the receipt. */
+    actingAs($user)
+        ->postJson(route('chat.conversations.read', $conversation), ['message_id' => $older->id])
+        ->assertOk();
+
+    expect($participant->fresh()->last_read_at->timestamp)->toBe($newer->created_at->timestamp);
+
+    Event::assertDispatchedTimes(ChatConversationRead::class, 1);
+});
+
+test('the inbox orders conversations by the most recent activity', function (): void {
+    $user = User::factory()->create();
+    $quiet = User::factory()->create();
+    $recent = User::factory()->create();
+
+    Conversation::factory()->between($user, $quiet)->create(['last_message_at' => now()->subDay()]);
+    $latest = Conversation::factory()->between($user, $recent)->create(['last_message_at' => now()]);
+
+    $response = actingAs($user)
+        ->getJson(route('chat.conversations.index'))
+        ->assertOk();
+
+    expect($response->json('data.0.id'))->toBe($latest->id);
+});
+
+test('a sender is throttled after thirty messages in a minute', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+
+    foreach (range(1, 30) as $index) {
+        actingAs($sender)
+            ->postJson(route('chat.messages.store'), [
+                'conversation_id' => $conversation->id,
+                'body' => 'Message '.$index,
+            ])
+            ->assertStatus(201);
+    }
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'conversation_id' => $conversation->id,
+            'body' => 'One too many',
+        ])
+        ->assertStatus(429);
+
+    expect(Message::query()->count())->toBe(30);
+});
+
+test('a guest cannot reach any chat surface', function (): void {
+    get(route('chat.index'))->assertRedirect(route('login'));
+    post(route('chat.messages.store'))->assertRedirect(route('login'));
+});

@@ -3,6 +3,7 @@
 use App\Enums\Permission;
 use App\Http\Controllers\Settings\AuthenticationSettingsController;
 use App\Http\Controllers\Settings\BrandingSettingsController;
+use App\Http\Controllers\Settings\ChatSettingsController;
 use App\Http\Controllers\Settings\GeneralSettingsController;
 use App\Http\Controllers\Settings\MailSettingsController;
 use App\Http\Controllers\Settings\SecuritySettingsController;
@@ -38,6 +39,15 @@ Route::middleware(['auth', 'verified', 'permission:'.Permission::ManageSettings-
             Route::put('security', [SecuritySettingsController::class, 'update'])
                 ->middleware(HandlePrecognitiveRequests::class)
                 ->name('security.update');
+
+            /*
+             * Reachable even while chat is switched off: the toggle is what
+             * brings the surface back.
+             */
+            Route::get('chat', [ChatSettingsController::class, 'edit'])->name('chat.edit');
+            Route::put('chat', [ChatSettingsController::class, 'update'])
+                ->middleware(HandlePrecognitiveRequests::class)
+                ->name('chat.update');
         });
 
         Route::get('mail', [MailSettingsController::class, 'edit'])->name('mail.edit');

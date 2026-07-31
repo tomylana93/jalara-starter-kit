@@ -8,6 +8,8 @@ describe('useAppNavigation', () => {
     beforeEach(() => {
         inertiaPageProps.can.manageSettings = true;
         inertiaPageProps.can.viewUsers = true;
+        inertiaPageProps.can.auditChat = false;
+        inertiaPageProps.chat.enabled = true;
     });
 
     it('provides translated main navigation using Wayfinder routes', () => {
@@ -22,6 +24,10 @@ describe('useAppNavigation', () => {
             {
                 title: 'navigation.main.dashboard',
                 href: '/dashboard',
+            },
+            {
+                title: 'navigation.main.chat',
+                href: '/chat',
             },
             {
                 title: 'navigation.main.master_data',
@@ -42,6 +48,7 @@ describe('useAppNavigation', () => {
 
         expect(mainItems.value.map((item) => item.title)).toEqual([
             'navigation.main.dashboard',
+            'navigation.main.chat',
         ]);
         expect(mainGroups.value.map((group) => group.title)).toEqual([
             'navigation.group.main_menu',
@@ -55,6 +62,7 @@ describe('useAppNavigation', () => {
 
         expect(mainItems.value.map((item) => item.title)).toEqual([
             'navigation.main.dashboard',
+            'navigation.main.chat',
             'navigation.main.settings',
         ]);
     });
@@ -70,7 +78,7 @@ describe('useAppNavigation', () => {
         ).toEqual([
             {
                 title: 'navigation.group.main_menu',
-                items: ['navigation.main.dashboard'],
+                items: ['navigation.main.dashboard', 'navigation.main.chat'],
             },
             {
                 title: 'navigation.group.admin',
@@ -90,9 +98,29 @@ describe('useAppNavigation', () => {
         expect(
             mainGroups.value.map((group) => group.items.map((i) => i.title)),
         ).toEqual([
-            ['navigation.main.dashboard'],
+            ['navigation.main.dashboard', 'navigation.main.chat'],
             ['navigation.main.master_data'],
         ]);
+    });
+
+    it('drops the chat entry while chat is switched off', () => {
+        inertiaPageProps.chat.enabled = false;
+
+        const { mainItems } = useAppNavigation();
+
+        expect(mainItems.value.map((item) => item.title)).not.toContain(
+            'navigation.main.chat',
+        );
+    });
+
+    it('offers the chat audit entry only to a Super Admin', () => {
+        inertiaPageProps.can.auditChat = true;
+
+        const { mainItems } = useAppNavigation();
+
+        expect(mainItems.value.map((item) => item.title)).toContain(
+            'navigation.main.chat_audit',
+        );
     });
 
     it('provides the canonical external navigation', () => {

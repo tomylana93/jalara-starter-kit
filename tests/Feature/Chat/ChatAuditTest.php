@@ -1,0 +1,224 @@
+<?php
+
+use App\Enums\Role;
+use App\Http\Controllers\Chat\AuditController;
+use App\Models\Chat\AuditLog;
+use App\Models\Chat\Conversation;
+use App\Models\Chat\Message;
+use App\Models\Chat\Participant;
+use App\Models\User;
+use App\Settings\ChatSettings;
+use Inertia\Testing\AssertableInertia as Assert;
+
+use function Pest\Laravel\actingAs;
+
+/**
+ * Create a Super Admin able to reach the audit surface.
+ */
+function chatAuditor(): User
+{
+    return userWithRole(Role::SuperAdmin);
+}
+
+test('a Super Admin can list every conversation', function (): void {
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    Message::factory()->count(3)->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    actingAs($auditor)
+        ->get(route('chat.audit.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/audit/Index')
+            ->has('conversations.data', 1)
+            ->where('conversations.data.0.message_count', 3)
+            ->has('conversations.data.0.participants', 2),
+        );
+});
+
+test('opening a conversation records permanent access metadata', function (): void {
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+        'body' => 'Audited content',
+    ]);
+
+    actingAs($auditor)
+        ->get(route('chat.audit.show', $conversation))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/audit/Show')
+            ->has('messages.data', 1)
+            ->where('messages.data.0.body', 'Audited content'),
+        );
+
+    $log = AuditLog::query()->firstOrFail();
+
+    expect($log->conversation_id)->toBe($conversation->id);
+    expect($log->viewer_id)->toBe($auditor->id);
+    expect($log->viewed_at)->not->toBeNull();
+
+    /* Metadata only: no copy of any message body is stored. */
+    expect(array_keys($log->getAttributes()))->not->toContain('body');
+
+    /* A second opening is a second permanent record, never an update. */
+    actingAs($auditor)->get(route('chat.audit.show', $conversation))->assertOk();
+
+    expect(AuditLog::query()->count())->toBe(2);
+});
+
+test('an audit never touches the participants receipts or notifications', function (): void {
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    $before = Participant::query()
+        ->where('conversation_id', $conversation->id)
+        ->pluck('last_read_at', 'user_id');
+
+    actingAs($auditor)->get(route('chat.audit.show', $conversation))->assertOk();
+
+    $after = Participant::query()
+        ->where('conversation_id', $conversation->id)
+        ->pluck('last_read_at', 'user_id');
+
+    expect($after->toArray())->toBe($before->toArray());
+    expect($second->fresh()->notifications()->count())->toBe(0);
+});
+
+test('a Super Admin can find a conversation by participant name', function (): void {
+    $auditor = chatAuditor();
+
+    $wanted = User::factory()->create(['name' => 'Amelia Stone']);
+    Conversation::factory()->between($wanted, User::factory()->create())->create();
+    Conversation::factory()
+        ->between(User::factory()->create(['name' => 'Bruno Vega']), User::factory()->create(['name' => 'Cora Diaz']))
+        ->create();
+
+    actingAs($auditor)
+        ->get(route('chat.audit.index', ['search' => 'Amelia']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('search', 'Amelia')
+            ->has('conversations.data', 1)
+            ->where('conversations.data.0.participants.0.name', $wanted->name),
+        );
+
+    /* Message bodies stay outside the searchable surface. */
+    actingAs($auditor)
+        ->get(route('chat.audit.index', ['search' => 'Zeno']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('conversations.data', 0));
+});
+
+test('the audit search does not open the surface to anyone else', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)->get(route('chat.audit.index', ['search' => 'Amelia']))->assertForbidden();
+});
+
+test('a Super Admin can page past the first window of a long transcript', function (): void {
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    /* Distinct timestamps so the oldest-first order is unambiguous. */
+    foreach (range(1, 220) as $index) {
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $first->id,
+            'body' => 'Message '.$index,
+            'created_at' => now()->addSeconds($index),
+        ]);
+    }
+
+    $firstPage = actingAs($auditor)
+        ->get(route('chat.audit.show', $conversation))
+        ->assertOk();
+
+    $window = $firstPage->viewData('page')['props']['messages']['data'];
+
+    expect($window[0]['body'])->toBe('Message 1');
+    expect($firstPage->viewData('page')['props']['conversation']['message_count'])->toBe(220);
+
+    /* The message that used to fall outside the fixed 200-row window. */
+    $lastPage = actingAs($auditor)
+        ->get(route('chat.audit.show', [
+            'conversation' => $conversation->id,
+            AuditController::MESSAGES_PAGE => 5,
+        ]))
+        ->assertOk();
+
+    $bodies = collect($lastPage->viewData('page')['props']['messages']['data'])->pluck('body');
+
+    expect($bodies)->toContain('Message 201');
+    expect($bodies)->toContain('Message 220');
+});
+
+test('the access log is paged rather than truncated', function (): void {
+    $auditor = chatAuditor();
+    $conversation = Conversation::factory()
+        ->between(User::factory()->create(), User::factory()->create())
+        ->create();
+
+    AuditLog::factory()->count(25)->create([
+        'conversation_id' => $conversation->id,
+        'viewer_id' => $auditor->id,
+    ]);
+
+    $response = actingAs($auditor)
+        ->get(route('chat.audit.show', [
+            'conversation' => $conversation->id,
+            AuditController::LOGS_PAGE => 2,
+        ]))
+        ->assertOk();
+
+    /* 25 existing records plus the one this very request wrote. */
+    expect($response->viewData('page')['props']['auditLogs']['data'])->not->toBeEmpty();
+    expect(AuditLog::query()->count())->toBe(26);
+});
+
+test('a user without the Super Admin role cannot audit', function (): void {
+    $user = User::factory()->create();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    actingAs($user)->get(route('chat.audit.index'))->assertForbidden();
+    actingAs($user)->get(route('chat.audit.show', $conversation))->assertForbidden();
+});
+
+test('the audit surface stays open while chat is switched off', function (): void {
+    app(ChatSettings::class)->chatEnabled = false;
+
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    actingAs($auditor)->get(route('chat.audit.index'))->assertOk();
+    actingAs($auditor)->get(route('chat.audit.show', $conversation))->assertOk();
+
+    expect(AuditLog::query()->count())->toBe(1);
+});

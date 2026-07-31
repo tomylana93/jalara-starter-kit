@@ -9,6 +9,7 @@ use App\Enums\Locale;
 use App\Enums\PasswordPolicy;
 use App\Settings\AuthenticationSettings;
 use App\Settings\BrandingSettings;
+use App\Settings\ChatSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\MailSettings;
 use App\Settings\SecuritySettings;
@@ -29,6 +30,7 @@ it('registers every settings class explicitly', function () {
         UserProvisioningSettings::class,
         SecuritySettings::class,
         BrandingSettings::class,
+        ChatSettings::class,
     ])->and(config('settings.auto_discover_settings'))->toBe([]);
 });
 

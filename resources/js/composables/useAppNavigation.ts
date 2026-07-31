@@ -4,11 +4,15 @@ import {
     Database,
     FolderGit2,
     LayoutGrid,
+    MessagesSquare,
     Settings,
+    ShieldCheck,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import { useTranslations } from '@/composables/useTranslations';
 import { dashboard } from '@/routes';
+import { index as chatIndex } from '@/routes/chat';
+import { index as chatAuditIndex } from '@/routes/chat/audit';
 import { index as masterDataIndex } from '@/routes/master-data';
 import { index as settingsIndex } from '@/routes/settings';
 import type { NavItem } from '@/types';
@@ -22,16 +26,37 @@ export function useAppNavigation() {
     const page = usePage();
     const { t } = useTranslations();
 
-    const mainMenuItems = computed<NavItem[]>(() => [
-        {
-            title: t('navigation.main.dashboard'),
-            href: dashboard(),
-            icon: LayoutGrid,
-        },
-    ]);
+    const mainMenuItems = computed<NavItem[]>(() => {
+        const items: NavItem[] = [
+            {
+                title: t('navigation.main.dashboard'),
+                href: dashboard(),
+                icon: LayoutGrid,
+            },
+        ];
+
+        /* The entry disappears entirely while chat is switched off. */
+        if (page.props.chat?.enabled) {
+            items.push({
+                title: t('navigation.main.chat'),
+                href: chatIndex(),
+                icon: MessagesSquare,
+            });
+        }
+
+        return items;
+    });
 
     const adminItems = computed<NavItem[]>(() => {
         const items: NavItem[] = [];
+
+        if (page.props.can?.auditChat) {
+            items.push({
+                title: t('navigation.main.chat_audit'),
+                href: chatAuditIndex(),
+                icon: ShieldCheck,
+            });
+        }
 
         if (page.props.can?.viewUsers) {
             items.push({

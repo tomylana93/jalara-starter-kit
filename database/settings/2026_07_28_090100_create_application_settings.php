@@ -51,6 +51,9 @@ return new class extends SettingsMigration
         $this->migrator->add('branding.iconPath', null);
         $this->migrator->add('branding.iconDarkPath', null);
         $this->migrator->add('branding.authBackgroundPath', null);
+
+        /* Direct messages are part of the product, so the surface starts on. */
+        $this->migrator->add('chat.chatEnabled', true);
     }
 
     public function down(): void
@@ -81,6 +84,7 @@ return new class extends SettingsMigration
             'branding.iconPath',
             'branding.iconDarkPath',
             'branding.authBackgroundPath',
+            'chat.chatEnabled',
         ] as $property) {
             $this->migrator->deleteIfExists($property);
         }

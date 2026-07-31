@@ -1,0 +1,28 @@
+<?php
+
+namespace Database\Factories\Chat;
+
+use App\Models\Chat\Conversation;
+use App\Models\Chat\Message;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Message>
+ */
+class MessageFactory extends Factory
+{
+    protected $model = Message::class;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'conversation_id' => Conversation::factory(),
+            'sender_id' => User::factory(),
+            'body' => fake()->sentence(),
+        ];
+    }
+}

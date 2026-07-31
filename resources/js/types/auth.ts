@@ -17,6 +17,7 @@ export type Auth = {
 export type Abilities = {
     manageSettings: boolean;
     viewUsers: boolean;
+    auditChat: boolean;
 };
 
 /* @chisel-passkeys */

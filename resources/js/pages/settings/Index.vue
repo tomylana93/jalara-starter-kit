@@ -4,6 +4,7 @@ import {
     ArrowRight,
     KeyRound,
     Mail,
+    MessagesSquare,
     Palette,
     Settings2,
     ShieldCheck,
@@ -22,6 +23,7 @@ import { translate, useTranslations } from '@/composables/useTranslations';
 import { index } from '@/routes/settings';
 import { edit as editAuthentication } from '@/routes/settings/authentication';
 import { edit as editBranding } from '@/routes/settings/branding';
+import { edit as editChat } from '@/routes/settings/chat';
 import { edit as editGeneral } from '@/routes/settings/general';
 import { edit as editMail } from '@/routes/settings/mail';
 import { edit as editSecurity } from '@/routes/settings/security';
@@ -99,6 +101,13 @@ const settingsCards = computed<SettingsCard[]>(() => [
         description: t('setting.branding.description'),
         href: editBranding(),
         icon: Palette,
+    },
+    {
+        key: 'chat',
+        title: t('setting.chat.title'),
+        description: t('setting.chat.description'),
+        href: editChat(),
+        icon: MessagesSquare,
     },
 ]);
 </script>

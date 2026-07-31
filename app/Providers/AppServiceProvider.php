@@ -6,8 +6,11 @@ use App\Enums\PasswordPolicy;
 use App\Settings\AuthenticationSettings;
 use App\Settings\SettingsResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use LogicException;
@@ -28,6 +31,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Configure the application's named rate limiters.
+     */
+    protected function configureRateLimiting(): void
+    {
+        /*
+         * Keyed by sender rather than by IP, so one account cannot flood a
+         * conversation from several tabs or devices at once.
+         */
+        RateLimiter::for('chat-messages', fn (Request $request): Limit => Limit::perMinute(30)
+            ->by($request->user()?->getAuthIdentifier() ?? $request->ip()));
     }
 
     /**

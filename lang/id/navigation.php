@@ -11,6 +11,8 @@ return [
         'dashboard' => 'Dashboard',
         'master_data' => 'Master data',
         'settings' => 'Pengaturan',
+        'chat' => 'Chat',
+        'chat_audit' => 'Audit chat',
     ],
 
     'external' => [

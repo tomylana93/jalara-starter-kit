@@ -10,6 +10,7 @@ test('smokes and navigates every settings screen', async ({ page }) => {
         'mail',
         'security',
         'branding',
+        'chat',
     ];
 
     for (const card of cards) {
