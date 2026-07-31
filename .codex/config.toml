@@ -111,6 +111,10 @@ type = "streamableHttp"
 url = "https://mcp.context7.com/mcp"
 env_http_headers = { "CONTEXT7_API_KEY" = "CONTEXT7_API_KEY" }
 
+[mcp_servers.shadcn]
+command = "pnpm"
+args = ["dlx", "shadcn-vue@latest", "mcp"]
+
 [mcp_servers.laravel-boost]
 command = "php"
 args = ["artisan", "boost:mcp"]

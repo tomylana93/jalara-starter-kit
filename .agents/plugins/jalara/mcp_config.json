@@ -3,6 +3,14 @@
     "serena": {
       "serverUrl": "http://localhost:9121/mcp"
     },
+    "shadcn": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "shadcn-vue@latest",
+        "mcp"
+      ]
+    },
     "laravel-boost": {
             "command": "php",
             "args": [
