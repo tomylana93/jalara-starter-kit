@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { expect, test } from '@playwright/test';
+import { expect, test  } from '@playwright/test';
+import type {Page} from '@playwright/test';
 
 /**
  * Send the sample notification through the same environment the server uses, so
@@ -12,6 +13,41 @@ const sendTestNotification = (
     execFileSync('php', ['artisan', 'notification:test', email], {
         env: { ...process.env, ...environment },
         stdio: 'inherit',
+    });
+};
+
+/**
+ * Set up a listener for the user's private notification channel subscription success.
+ * Call this BEFORE page.goto() or page.reload() to register the WebSocket listener early enough,
+ * and await the returned Promise after page.goto()/page.reload() (or before sending the notification).
+ */
+const setupSubscriptionTracker = (page: Page): Promise<void> => {
+    return new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error('Timed out waiting for private channel subscription success'));
+        }, 30_000);
+
+        page.on('websocket', (ws) => {
+            ws.on('framereceived', (event) => {
+                try {
+                    const payloadStr = typeof event.payload === 'string'
+                        ? event.payload
+                        : event.payload.toString('utf-8');
+                    const data = JSON.parse(payloadStr);
+
+                    if (
+                        data.event === 'pusher_internal:subscription_succeeded' &&
+                        typeof data.channel === 'string' &&
+                        data.channel.startsWith('private-App.Models.User.')
+                    ) {
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                } catch {
+                    // Ignore non-JSON or other frames
+                }
+            });
+        });
     });
 };
 
@@ -28,6 +64,8 @@ test('delivers a notification to the bell without a page refresh', async ({
      */
     const socketUrls: string[] = [];
     page.on('websocket', (socket) => socketUrls.push(socket.url()));
+
+    const subscriptionPromise = setupSubscriptionTracker(page);
 
     await page.goto('/dashboard');
 
@@ -46,6 +84,9 @@ test('delivers a notification to the bell without a page refresh', async ({
     await expect(
         page.locator('[data-test="notification-badge"]'),
     ).toHaveCount(0);
+
+    // Wait for the subscription to succeed before sending the notification
+    await subscriptionPromise;
 
     /*
      * Nothing reloads after this point: the badge may only appear because the
@@ -68,7 +109,12 @@ test('lists the notification on its own page and marks it as read', async ({
     const environment = testInfo.config.metadata
         .applicationEnvironment as Record<string, string>;
 
+    const subscriptionPromise = setupSubscriptionTracker(page);
+
     await page.goto('/notifications');
+
+    // Wait for the subscription to succeed before sending the notification
+    await subscriptionPromise;
 
     /*
      * The notification is queued, so the worker — not the command above —
