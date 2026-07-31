@@ -12,8 +12,11 @@
             }
         },
         "laravel-boost": {
-            "type": "http",
-            "url": "http://localhost:8000/mcp/laravel-boost"
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ]
         }
     }
 }
