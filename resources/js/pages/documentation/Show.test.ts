@@ -1,3 +1,4 @@
+import { ArrowLeft } from '@lucide/vue';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type {
@@ -69,5 +70,12 @@ describe('documentation reader', () => {
         );
         expect(wrapper.get('h1').text()).toBe('Reset password');
         expect(wrapper.text()).toContain('Account');
+
+        // Verify the desktop back link
+        const backLink = wrapper.find('a[href="/documentation"]');
+        expect(backLink.exists()).toBe(true);
+        expect(backLink.text()).toContain('documentation.title');
+        expect(backLink.text()).not.toContain('←');
+        expect(backLink.findComponent(ArrowLeft).exists()).toBe(true);
     });
 });
