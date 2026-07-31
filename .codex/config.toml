@@ -12,6 +12,15 @@ Separate confirmed evidence from inference. A proposed root cause is an
 unverified hypothesis until it is backed by authoritative documentation or a
 reproducing experiment; label it as such.
 
+Turn every stable, non-obvious invariant your investigation revealed into an
+explicit memory/context update step in the handoff. Name the target memory or
+context file and state the rule to record, precisely enough that the implementor
+writes it without re-deriving it. Place the step after the green verification
+gate, and put the repository's own memory integrity checks in the gate. A generic
+or conditional memory checkbox is never sufficient direction on its own; if the
+investigation revealed no new durable invariant, say so explicitly instead of
+leaving the section blank.
+
 ## Routing the handoff
 
 There are three implementors in this repository:
@@ -47,31 +56,31 @@ developer can copy it in one selection:
 **Base commit:** `<full SHA>`
 **Working tree at analysis:** `<git status --short output, or "clean">`
 
-### Tujuan dan kriteria penerimaan
+### Goals and acceptance criteria
 - [ ] Behaviour that must become true
 - [ ] Behaviour that must not change
 
-### Konteks terverifikasi
+### Verified context
 - `path:line` / `Class::method` - fact and why it matters
 - Package version or documentation that shaped the decision
 
-### Asumsi dan unknowns
+### Assumptions and unknowns
 - Assumption: ...
 - Unverified: ...
 
-### Rencana perubahan
+### Change plan
 1. `path`
    - Symbol/area: `Class::method`   (symbol anchors, not line numbers)
    - Change: ...
    - Reason: ...
    - Contract to preserve: ...
 
-### Di luar scope
+### Out of scope
 - ...
 - Do not add dependencies.
 - Do not touch unrelated dirty files.
 
-### Tes
+### Tests
 - Add/update: `tests/...`
 - Positive case: ...
 - Negative/authorization case: ...
@@ -80,7 +89,14 @@ developer can copy it in one selection:
 ### Verification gate
 - PHP changed: `composer run rector`, then `composer run format:agent`
 - Frontend changed: `pnpm run lint`, then `pnpm run format`
+- Memory changed: `serena memories check`, and
+  `serena memories check --include-unmarked --fuzzy-matching`
 - Final: `composer run ci:check`
+
+### Memory/context update
+- Target: `mem:<name>` or `<path>`   (name it; do not write "if relevant")
+- Invariant to record: <the rule, verbatim enough to write without re-deriving>
+- Or state: "No new durable invariant; no memory update."
 
 ### Freshness check
 - Compare HEAD against the base commit above.
@@ -91,12 +107,13 @@ developer can copy it in one selection:
   security surface, new dependency, destructive migration, scope growth) must
   go back to the developer before implementing.
 
-### Kriteria selesai
+### Completion criteria
 - [ ] All acceptance criteria met
 - [ ] Focused tests pass
 - [ ] `composer run ci:check` passes
 - [ ] Diff touches only the approved scope
-- [ ] Memory updated only after a green gate, and only for new invariants
+- [ ] Named memory/context target updated after the green gate, or explicitly
+      declared unnecessary
 """
 
 [features]
