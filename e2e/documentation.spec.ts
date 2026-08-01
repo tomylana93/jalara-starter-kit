@@ -53,13 +53,10 @@ test('creates, publishes, reads, and finds internal documentation', async ({
 
     await page.locator('[data-test="save-documentation"]').click();
 
-    await expect(page).toHaveURL(
-        /\/documentation\/manage\/documents\/panduan-playwright\/edit$/,
-    );
-    await expect(page.locator('#title')).toHaveValue(title);
-    await expect(breadcrumb).toContainText('Edit documentation');
+    /* A saved document returns the author to the list it came from. */
+    await expect(page).toHaveURL(/\/documentation\/manage$/);
+    await expect(page.getByText('The documentation has been created.')).toBeVisible();
 
-    await page.goto('/documentation/manage');
     const row = page.locator('[data-test="documentation-row"]', {
         hasText: title,
     });

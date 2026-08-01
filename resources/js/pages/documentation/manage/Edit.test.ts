@@ -1,41 +1,40 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type {
-    DocumentationCategory,
-    DocumentationDetail,
+    DocumentationCategoryOption,
+    DocumentationEditorValue,
+    DocumentationStatus,
 } from '@/types/documentation';
 import Edit from './Edit.vue';
 
 type Breadcrumb = { title: string; href: { url: string } };
 
-const documentation: DocumentationDetail = {
+const documentation: DocumentationEditorValue = {
     id: 'document-1',
     title: 'Reset password',
     slug: 'reset-password',
     status: 'published',
-    position: 1,
     documentation_category_id: 'category-1',
     published_at: '2026-07-31T00:00:00+00:00',
     content: { type: 'doc', content: [] },
-    category: { id: 'category-1', name: 'Account', position: 1 },
 };
 
-const categories: Pick<DocumentationCategory, 'id' | 'name'>[] = [
+const categories: DocumentationCategoryOption[] = [
     { id: 'category-1', name: 'Account' },
 ];
 
-const statuses: { value: 'draft' | 'published'; label: string }[] = [
+const statuses: { value: DocumentationStatus; label: string }[] = [
     { value: 'draft', label: 'Draft' },
     { value: 'published', label: 'Published' },
 ];
 
-const breadcrumbs = (target: DocumentationDetail | null): Breadcrumb[] =>
+const breadcrumbs = (target: DocumentationEditorValue | null): Breadcrumb[] =>
     (
         Edit as unknown as {
             layout: (props: {
                 locale: string;
                 fallbackLocale: string;
-                documentation: DocumentationDetail | null;
+                documentation: DocumentationEditorValue | null;
             }) => { breadcrumbs: Breadcrumb[] };
         }
     ).layout({
@@ -48,7 +47,7 @@ const editorStub = {
     template: '<div data-test="rich-text-editor" />',
 };
 
-function mountEditor(target: DocumentationDetail | null) {
+function mountEditor(target: DocumentationEditorValue | null) {
     return mount(Edit, {
         props: { documentation: target, categories, statuses },
         global: { stubs: { RichTextEditor: editorStub } },

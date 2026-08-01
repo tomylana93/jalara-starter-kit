@@ -24,6 +24,15 @@ return [
         'manage' => 'Belum ada dokumentasi.',
     ],
 
+    'message' => [
+        'created' => 'Dokumentasi berhasil dibuat.',
+        'updated' => 'Dokumentasi berhasil diperbarui.',
+        'deleted' => 'Dokumentasi berhasil dihapus.',
+        'category_created' => 'Kategori berhasil dibuat.',
+        'category_updated' => 'Kategori berhasil diperbarui.',
+        'category_deleted' => 'Kategori berhasil dihapus.',
+    ],
+
     'reader' => [
         'list' => 'Daftar dokumentasi',
         'list_description' => 'Pilih dokumentasi yang ingin dibaca.',

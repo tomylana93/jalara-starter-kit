@@ -14,19 +14,19 @@ import {
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index, show } from '@/routes/documentation';
 import type {
-    DocumentationCategory,
-    DocumentationDetail,
+    DocumentationReaderCategory,
+    DocumentationReaderDetail,
 } from '@/types/documentation';
 
 type LayoutProps = {
     locale: string;
     fallbackLocale: string;
-    documentation: DocumentationDetail;
+    documentation: DocumentationReaderDetail;
 };
 
 defineProps<{
-    documentation: DocumentationDetail;
-    categories: DocumentationCategory[];
+    documentation: DocumentationReaderDetail;
+    categories: DocumentationReaderCategory[];
 }>();
 
 defineOptions({

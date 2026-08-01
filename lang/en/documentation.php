@@ -24,6 +24,15 @@ return [
         'manage' => 'No documentation yet.',
     ],
 
+    'message' => [
+        'created' => 'The documentation has been created.',
+        'updated' => 'The documentation has been updated.',
+        'deleted' => 'The documentation has been deleted.',
+        'category_created' => 'The category has been created.',
+        'category_updated' => 'The category has been updated.',
+        'category_deleted' => 'The category has been deleted.',
+    ],
+
     'reader' => [
         'list' => 'Documentation list',
         'list_description' => 'Pick the documentation to read.',

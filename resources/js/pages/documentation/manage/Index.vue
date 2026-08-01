@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowDown, ArrowUp, Edit, Plus, Trash2 } from '@lucide/vue';
-import { ref } from 'vue';
+import {
+    ArrowDown,
+    ArrowUp,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+    Edit,
+    Plus,
+    Trash2,
+} from '@lucide/vue';
+import { computed, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import {
@@ -28,6 +38,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationFirst,
+    PaginationItem,
+    PaginationLast,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
     Table,
     TableBody,
     TableCell,
@@ -51,8 +71,9 @@ import {
     move as moveDocument,
 } from '@/routes/documentation/manage/documents';
 import type {
-    DocumentationCategory,
-    DocumentationSummary,
+    DocumentationManagementCategory,
+    DocumentationManagementRow,
+    DocumentationTablePayload,
 } from '@/types/documentation';
 
 type LayoutProps = {
@@ -60,9 +81,9 @@ type LayoutProps = {
     fallbackLocale: string;
 };
 
-defineProps<{
-    categories: DocumentationCategory[];
-    documentations: DocumentationSummary[];
+const props = defineProps<{
+    categories: DocumentationManagementCategory[];
+    documentations: DocumentationTablePayload;
 }>();
 
 defineOptions({
@@ -92,9 +113,37 @@ const page = usePage();
 const { t } = useTranslations();
 const categoryForm = useForm({ name: '' });
 const renameForm = useForm({ name: '' });
-const renamingCategory = ref<DocumentationCategory | null>(null);
-const deletingCategory = ref<DocumentationCategory | null>(null);
-const deletingDocument = ref<DocumentationSummary | null>(null);
+const renamingCategory = ref<DocumentationManagementCategory | null>(null);
+const deletingCategory = ref<DocumentationManagementCategory | null>(null);
+const deletingDocument = ref<DocumentationManagementRow | null>(null);
+
+const rows = computed(() => props.documentations.data);
+const meta = computed(() => props.documentations.meta);
+
+const summary = computed(() =>
+    t('common.table.summary', {
+        from: meta.value.from ?? 0,
+        to: meta.value.to ?? 0,
+        total: meta.value.total,
+    }),
+);
+
+/*
+ * Only the page is negotiable: ordering, page size, and the absence of a search
+ * term are fixed by the server, so nothing else has to survive the visit.
+ */
+function goToPage(page: number): void {
+    router.get(
+        manageIndex({ query: page === 1 ? {} : { page } }),
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['documentations'],
+        },
+    );
+}
 
 function addCategory(): void {
     categoryForm.submit(storeCategory(), {
@@ -103,7 +152,7 @@ function addCategory(): void {
     });
 }
 
-function openRename(category: DocumentationCategory): void {
+function openRename(category: DocumentationManagementCategory): void {
     renamingCategory.value = category;
     renameForm.clearErrors();
     renameForm.name = category.name;
@@ -297,7 +346,7 @@ function confirmDocumentDelete(): void {
                             </TableHeader>
                             <TableBody>
                                 <TableRow
-                                    v-for="documentation in documentations"
+                                    v-for="documentation in rows"
                                     :key="documentation.id"
                                     data-test="documentation-row"
                                 >
@@ -305,7 +354,7 @@ function confirmDocumentDelete(): void {
                                         documentation.title
                                     }}</TableCell>
                                     <TableCell class="text-muted-foreground">{{
-                                        documentation.category?.name
+                                        documentation.category.name
                                     }}</TableCell>
                                     <TableCell>
                                         <Badge
@@ -394,13 +443,90 @@ function confirmDocumentDelete(): void {
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                                <TableEmpty
-                                    v-if="!documentations.length"
-                                    :colspan="4"
+                                <TableEmpty v-if="!rows.length" :colspan="4"
                                     >{{ t('documentation.empty.manage') }}
                                 </TableEmpty>
                             </TableBody>
                         </Table>
+                        <div
+                            v-if="meta.total > 0"
+                            class="mt-4 flex flex-col items-center justify-between gap-4 sm:flex-row sm:gap-2"
+                        >
+                            <p
+                                class="text-sm text-muted-foreground"
+                                data-test="documentation-summary"
+                            >
+                                {{ summary }}
+                            </p>
+                            <Pagination
+                                v-if="meta.lastPage > 1"
+                                :page="meta.page"
+                                :items-per-page="meta.perPage"
+                                :total="meta.total"
+                                :sibling-count="1"
+                                show-edges
+                                :aria-label="t('common.table.pagination.label')"
+                                class="mx-0 w-auto justify-end"
+                                @update:page="goToPage"
+                            >
+                                <PaginationContent v-slot="{ items: pages }">
+                                    <PaginationFirst
+                                        :aria-label="
+                                            t('common.table.pagination.first')
+                                        "
+                                        data-test="documentation-first-page"
+                                    >
+                                        <ChevronsLeft />
+                                    </PaginationFirst>
+                                    <PaginationPrevious
+                                        :aria-label="
+                                            t(
+                                                'common.table.pagination.previous',
+                                            )
+                                        "
+                                        data-test="documentation-previous-page"
+                                    >
+                                        <ChevronLeft />
+                                    </PaginationPrevious>
+
+                                    <template v-for="(item, at) in pages">
+                                        <PaginationItem
+                                            v-if="item.type === 'page'"
+                                            :key="`page-${item.value}`"
+                                            :value="item.value"
+                                            :is-active="
+                                                item.value === meta.page
+                                            "
+                                            :data-test="`documentation-page-${item.value}`"
+                                        >
+                                            {{ item.value }}
+                                        </PaginationItem>
+                                        <PaginationEllipsis
+                                            v-else
+                                            :key="`ellipsis-${at}`"
+                                            :index="at"
+                                        />
+                                    </template>
+
+                                    <PaginationNext
+                                        :aria-label="
+                                            t('common.table.pagination.next')
+                                        "
+                                        data-test="documentation-next-page"
+                                    >
+                                        <ChevronRight />
+                                    </PaginationNext>
+                                    <PaginationLast
+                                        :aria-label="
+                                            t('common.table.pagination.last')
+                                        "
+                                        data-test="documentation-last-page"
+                                    >
+                                        <ChevronsRight />
+                                    </PaginationLast>
+                                </PaginationContent>
+                            </Pagination>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

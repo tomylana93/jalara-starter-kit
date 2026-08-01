@@ -2,8 +2,9 @@ import { router } from '@inertiajs/vue3';
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
-    DocumentationCategory,
-    DocumentationSummary,
+    DocumentationManagementCategory,
+    DocumentationManagementRow,
+    DocumentationTablePayload,
 } from '@/types/documentation';
 import Index from './Index.vue';
 
@@ -18,14 +19,14 @@ const breadcrumbs = (): Breadcrumb[] =>
         }
     ).layout({ locale: 'en', fallbackLocale: 'en' }).breadcrumbs;
 
-const account: DocumentationCategory = {
+const account: DocumentationManagementCategory = {
     id: 'category-1',
     name: 'Account',
     position: 1,
     documentations_count: 2,
 };
 
-const billing: DocumentationCategory = {
+const billing: DocumentationManagementCategory = {
     id: 'category-2',
     name: 'Billing',
     position: 2,
@@ -33,32 +34,54 @@ const billing: DocumentationCategory = {
 };
 
 /* The server hands these over already ordered by category then document position. */
-const documentations: DocumentationSummary[] = [
+const rows: DocumentationManagementRow[] = [
     {
         id: 'document-1',
         title: 'Reset password',
         slug: 'reset-password',
         status: 'published',
-        position: 1,
-        category: account,
+        category: { id: account.id, name: account.name },
     },
     {
         id: 'document-2',
         title: 'Change email',
         slug: 'change-email',
         status: 'draft',
-        position: 2,
-        category: account,
+        category: { id: account.id, name: account.name },
     },
     {
         id: 'document-3',
         title: 'Read an invoice',
         slug: 'read-an-invoice',
         status: 'published',
-        position: 1,
-        category: billing,
+        category: { id: billing.id, name: billing.name },
     },
 ];
+
+/* One page of the server-driven table, in the payload contract it publishes. */
+const payload = (
+    data: DocumentationManagementRow[],
+    meta: Partial<DocumentationTablePayload['meta']> = {},
+): DocumentationTablePayload => ({
+    data,
+    meta: {
+        page: 1,
+        perPage: 10,
+        perPageOptions: [10, 25, 50],
+        total: data.length,
+        lastPage: 1,
+        from: data.length === 0 ? null : 1,
+        to: data.length === 0 ? null : data.length,
+        ...meta,
+    },
+    state: {
+        search: null,
+        sort: 'position',
+        direction: 'asc',
+        perPage: 10,
+        filters: {},
+    },
+});
 
 const passthroughStub = { template: '<div><slot /></div>' };
 
@@ -75,8 +98,8 @@ const dialogStubs = {
 };
 
 function mountManage(props: {
-    categories: DocumentationCategory[];
-    documentations: DocumentationSummary[];
+    categories: DocumentationManagementCategory[];
+    documentations: DocumentationTablePayload;
 }) {
     return mount(Index, {
         props,
@@ -108,26 +131,26 @@ describe('documentation management', () => {
     it('lists documents in a table following the order the server sent', () => {
         const wrapper = mountManage({
             categories: [account, billing],
-            documentations,
+            documentations: payload(rows),
         });
-        const rows = wrapper.findAll('[data-test="documentation-row"]');
+        const rendered = wrapper.findAll('[data-test="documentation-row"]');
 
         expect(wrapper.find('table').exists()).toBe(true);
-        expect(rows).toHaveLength(3);
-        expect(rows.map((row) => row.text())).toEqual([
+        expect(rendered).toHaveLength(3);
+        expect(rendered.map((row) => row.text())).toEqual([
             expect.stringContaining('Reset password'),
             expect.stringContaining('Change email'),
             expect.stringContaining('Read an invoice'),
         ]);
         /* Category position wins over document position across the whole table. */
-        expect(rows[0]?.text()).toContain('Account');
-        expect(rows[2]?.text()).toContain('Billing');
+        expect(rendered[0]?.text()).toContain('Account');
+        expect(rendered[2]?.text()).toContain('Billing');
     });
 
     it('translates the table headings and the status badge', () => {
         const wrapper = mountManage({
             categories: [account],
-            documentations,
+            documentations: payload(rows),
         });
 
         expect(wrapper.text()).toContain('documentation.manage.column.title');
@@ -139,7 +162,7 @@ describe('documentation management', () => {
     it('renders the translated empty row when nothing is stored yet', () => {
         const wrapper = mountManage({
             categories: [account],
-            documentations: [],
+            documentations: payload([]),
         });
 
         expect(wrapper.findAll('[data-test="documentation-row"]')).toHaveLength(
@@ -151,7 +174,7 @@ describe('documentation management', () => {
     it('moves a document through its wayfinder route', async () => {
         const wrapper = mountManage({
             categories: [account],
-            documentations,
+            documentations: payload(rows),
         });
 
         await wrapper
@@ -171,7 +194,7 @@ describe('documentation management', () => {
         vi.stubGlobal('prompt', prompt);
         const wrapper = mountManage({
             categories: [account],
-            documentations,
+            documentations: payload(rows),
         });
 
         expect(wrapper.find('[data-test="rename-dialog"]').exists()).toBe(
@@ -197,7 +220,7 @@ describe('documentation management', () => {
         vi.stubGlobal('confirm', confirm);
         const wrapper = mountManage({
             categories: [account],
-            documentations,
+            documentations: payload(rows),
         });
 
         await wrapper
@@ -221,7 +244,7 @@ describe('documentation management', () => {
     it('deletes a document permanently after the alert dialog is confirmed', async () => {
         const wrapper = mountManage({
             categories: [account],
-            documentations,
+            documentations: payload(rows),
         });
 
         await wrapper
@@ -237,6 +260,73 @@ describe('documentation management', () => {
                 method: 'delete',
             }),
             expect.objectContaining({ preserveScroll: true }),
+        );
+    });
+
+    it('renders the server row window instead of counting the rows it received', () => {
+        const wrapper = mountManage({
+            categories: [account],
+            documentations: payload(rows, {
+                page: 2,
+                total: 23,
+                lastPage: 3,
+                from: 11,
+                to: 13,
+            }),
+        });
+
+        expect(wrapper.get('[data-test="documentation-summary"]').text()).toBe(
+            'common.table.summary',
+        );
+        expect(
+            wrapper.find('[data-test="documentation-page-3"]').exists(),
+        ).toBe(true);
+    });
+
+    it('hides the pager while a single page holds every document', () => {
+        const wrapper = mountManage({
+            categories: [account],
+            documentations: payload(rows),
+        });
+
+        expect(
+            wrapper.find('[data-test="documentation-next-page"]').exists(),
+        ).toBe(false);
+        expect(
+            wrapper.find('[data-test="documentation-summary"]').exists(),
+        ).toBe(true);
+    });
+
+    it('navigates to another page through the management route', async () => {
+        const get = vi
+            .spyOn(router, 'get')
+            .mockImplementation(
+                () => undefined as unknown as ReturnType<typeof router.get>,
+            );
+        const wrapper = mountManage({
+            categories: [account],
+            documentations: payload(rows, {
+                page: 1,
+                total: 23,
+                lastPage: 3,
+                from: 1,
+                to: 10,
+            }),
+        });
+
+        await wrapper
+            .get('[data-test="documentation-page-2"]')
+            .trigger('click');
+
+        expect(get).toHaveBeenCalledWith(
+            expect.objectContaining({ url: '/documentation/manage?page=2' }),
+            {},
+            expect.objectContaining({
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+                only: ['documentations'],
+            }),
         );
     });
 });

@@ -2,64 +2,80 @@
 
 namespace App\Http\Controllers\Documentation;
 
+use App\Actions\Documentation\CreateDocumentationCategory;
+use App\Actions\Documentation\DeleteDocumentationCategory;
+use App\Actions\Documentation\MoveDocumentationCategory;
+use App\Actions\Documentation\UpdateDocumentationCategory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Documentation\StoreDocumentationCategoryRequest;
 use App\Http\Requests\Documentation\UpdateDocumentationCategoryRequest;
 use App\Models\DocumentationCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class DocumentationCategoryController extends Controller
 {
-    public function store(StoreDocumentationCategoryRequest $request): RedirectResponse
+    /**
+     * Add a category to the documentation hierarchy.
+     */
+    public function store(StoreDocumentationCategoryRequest $request, CreateDocumentationCategory $createDocumentationCategory): RedirectResponse
     {
-        DocumentationCategory::query()->create([
-            ...$request->validated(),
-            'position' => DocumentationCategory::query()->max('position') + 1,
+        $createDocumentationCategory->handle(['name' => (string) $request->validated('name')]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('documentation.message.category_created'),
         ]);
 
         return back();
     }
 
-    public function update(UpdateDocumentationCategoryRequest $request, DocumentationCategory $documentationCategory): RedirectResponse
+    /**
+     * Rename a category.
+     */
+    public function update(UpdateDocumentationCategoryRequest $request, DocumentationCategory $documentationCategory, UpdateDocumentationCategory $updateDocumentationCategory): RedirectResponse
     {
-        $documentationCategory->update($request->validated());
+        $updateDocumentationCategory->handle($documentationCategory, ['name' => (string) $request->validated('name')]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('documentation.message.category_updated'),
+        ]);
 
         return back();
     }
 
-    public function destroy(Request $request, DocumentationCategory $documentationCategory): RedirectResponse
+    /**
+     * Delete a category that no longer holds any documentation.
+     */
+    public function destroy(Request $request, DocumentationCategory $documentationCategory, DeleteDocumentationCategory $deleteDocumentationCategory): RedirectResponse
     {
         Gate::authorize('delete', $documentationCategory);
 
-        if ($documentationCategory->documentations()->exists()) {
-            throw ValidationException::withMessages(['category' => __('documentation.validation.category_in_use')]);
-        }
+        $deleteDocumentationCategory->handle($documentationCategory);
 
-        $documentationCategory->delete();
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('documentation.message.category_deleted'),
+        ]);
 
         return back();
     }
 
-    public function move(Request $request, DocumentationCategory $documentationCategory, string $direction): RedirectResponse
+    /**
+     * Swap a category with its neighbour.
+     *
+     * Reordering stays silent for the same reason document reordering does: it
+     * is a repeated, immediately visible action.
+     */
+    public function move(Request $request, DocumentationCategory $documentationCategory, string $direction, MoveDocumentationCategory $moveDocumentationCategory): RedirectResponse
     {
         Gate::authorize('update', $documentationCategory);
         abort_unless(in_array($direction, ['up', 'down'], true), 404);
 
-        DB::transaction(function () use ($documentationCategory, $direction): void {
-            $operator = $direction === 'up' ? '<' : '>';
-            $order = $direction === 'up' ? 'desc' : 'asc';
-            $adjacent = DocumentationCategory::query()->where('position', $operator, $documentationCategory->position)->orderBy('position', $order)->first();
-
-            if ($adjacent !== null) {
-                [$documentationCategory->position, $adjacent->position] = [$adjacent->position, $documentationCategory->position];
-                $documentationCategory->save();
-                $adjacent->save();
-            }
-        });
+        $moveDocumentationCategory->handle($documentationCategory, $direction);
 
         return back();
     }

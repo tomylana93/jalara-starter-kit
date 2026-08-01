@@ -5,6 +5,8 @@ use App\Enums\Role;
 use App\Models\Documentation;
 use App\Models\DocumentationCategory;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * @return array<string, mixed>
@@ -43,7 +45,8 @@ it('stores validated tiptap json with an automatic slug and searchable text', fu
             'status' => DocumentationStatus::Published->value,
             'content' => documentationContent('Cara mengubah profil'),
         ])
-        ->assertRedirect();
+        ->assertRedirect(route('documentation.manage.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The documentation has been created.']);
 
     $documentation = Documentation::query()->sole();
     expect($documentation->slug)->toBe('panduan-akun')
@@ -78,7 +81,8 @@ it('blocks deleting a used category and permanently deletes a document', functio
 
     $this->actingAs($admin)
         ->delete(route('documentation.manage.documents.destroy', $documentation))
-        ->assertRedirect(route('documentation.manage.index'));
+        ->assertRedirect(route('documentation.manage.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The documentation has been deleted.']);
 
     expect(Documentation::query()->whereKey($documentation->id)->exists())->toBeFalse();
 });
@@ -93,9 +97,9 @@ it('lists documents by category position and then document position', function (
     $this->actingAs(userWithRole(Role::SuperAdmin))
         ->get(route('documentation.manage.index'))
         ->assertInertia(fn ($page) => $page
-            ->where('documentations.0.title', 'First category, first document')
-            ->where('documentations.1.title', 'First category, second document')
-            ->where('documentations.2.title', 'Second category, first document'));
+            ->where('documentations.data.0.title', 'First category, first document')
+            ->where('documentations.data.1.title', 'First category, second document')
+            ->where('documentations.data.2.title', 'Second category, first document'));
 });
 
 it('accepts internal paths and HTTP(S) links but rejects protocol-relative ones', function () {
@@ -139,4 +143,221 @@ it('rejects malformed nodes whose marks or content are not arrays', function () 
             ])
             ->assertSessionHasErrors('content');
     }
+});
+
+it('returns the author to the management list with a toast after an update', function () {
+    $documentation = Documentation::factory()->create(['title' => 'Old title']);
+
+    $this->actingAs(userWithRole(Role::SuperAdmin))
+        ->put(route('documentation.manage.documents.update', $documentation), [
+            'documentation_category_id' => $documentation->documentation_category_id,
+            'title' => 'New title',
+            'slug' => (string) $documentation->slug,
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent('Isi baru'),
+        ])
+        ->assertRedirect(route('documentation.manage.index'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The documentation has been updated.']);
+
+    expect($documentation->refresh()->title)->toBe('New title');
+});
+
+it('keeps a rejected submission on the editor instead of redirecting to the list', function () {
+    $documentation = Documentation::factory()->create(['title' => 'Old title']);
+    $editor = route('documentation.manage.documents.edit', $documentation);
+
+    $this->actingAs(userWithRole(Role::SuperAdmin))
+        ->from($editor)
+        ->put(route('documentation.manage.documents.update', $documentation), [
+            'documentation_category_id' => $documentation->documentation_category_id,
+            'title' => '',
+            'slug' => (string) $documentation->slug,
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent(),
+        ])
+        ->assertRedirect($editor)
+        ->assertSessionHasErrors('title');
+
+    expect($documentation->refresh()->title)->toBe('Old title');
+});
+
+it('reports every category mutation with a toast but keeps reordering silent', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.categories.store'), ['name' => 'Akun'])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been created.']);
+
+    $category = DocumentationCategory::query()->sole();
+
+    $this->actingAs($admin)
+        ->put(route('documentation.manage.categories.update', $category), ['name' => 'Akun & Keamanan'])
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been updated.']);
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.categories.move', [$category, 'up']))
+        ->assertSessionMissing('toast');
+
+    $this->actingAs($admin)
+        ->delete(route('documentation.manage.categories.destroy', $category))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been deleted.']);
+
+    expect(DocumentationCategory::query()->count())->toBe(0);
+});
+
+it('appends a new category to the end of the manual ordering', function () {
+    DocumentationCategory::factory()->create(['position' => 4]);
+
+    $this->actingAs(userWithRole(Role::SuperAdmin))
+        ->post(route('documentation.manage.categories.store'), ['name' => 'Terakhir']);
+
+    expect(DocumentationCategory::query()->where('name', 'Terakhir')->sole()->position)->toBe(5);
+});
+
+it('swaps a document with its neighbour inside the same category only', function () {
+    $category = DocumentationCategory::factory()->create();
+    $other = DocumentationCategory::factory()->create();
+    $first = Documentation::factory()->create(['documentation_category_id' => $category->id, 'position' => 1]);
+    $second = Documentation::factory()->create(['documentation_category_id' => $category->id, 'position' => 2]);
+    $elsewhere = Documentation::factory()->create(['documentation_category_id' => $other->id, 'position' => 1]);
+
+    $this->actingAs(userWithRole(Role::SuperAdmin))
+        ->post(route('documentation.manage.documents.move', [$second, 'up']))
+        ->assertSessionMissing('toast');
+
+    expect($first->refresh()->position)->toBe(2)
+        ->and($second->refresh()->position)->toBe(1)
+        ->and($elsewhere->refresh()->position)->toBe(1);
+});
+
+it('paginates the management list ten rows at a time', function () {
+    $category = DocumentationCategory::factory()->create(['position' => 1]);
+    Documentation::factory()->count(12)->sequence(fn ($sequence) => [
+        'documentation_category_id' => $category->id,
+        'position' => $sequence->index + 1,
+        'title' => 'Document '.str_pad((string) ($sequence->index + 1), 2, '0', STR_PAD_LEFT),
+    ])->create();
+
+    $admin = userWithRole(Role::SuperAdmin);
+
+    $this->actingAs($admin)
+        ->get(route('documentation.manage.index'))
+        ->assertInertia(fn ($page) => $page
+            ->has('documentations.data', 10)
+            ->where('documentations.meta.page', 1)
+            ->where('documentations.meta.perPage', 10)
+            ->where('documentations.meta.total', 12)
+            ->where('documentations.meta.lastPage', 2)
+            ->where('documentations.data.0.title', 'Document 01'));
+
+    $this->actingAs($admin)
+        ->get(route('documentation.manage.index', ['page' => 2]))
+        ->assertInertia(fn ($page) => $page
+            ->has('documentations.data', 2)
+            ->where('documentations.meta.page', 2)
+            ->where('documentations.data.0.title', 'Document 11'));
+
+    /* A page past the end settles on the last page that exists. */
+    $this->actingAs($admin)
+        ->get(route('documentation.manage.index', ['page' => 99]))
+        ->assertInertia(fn ($page) => $page->where('documentations.meta.page', 2));
+});
+
+it('sends explicit payloads instead of raw documentation models', function () {
+    $documentation = Documentation::factory()->published()->create();
+
+    $this->actingAs(userWithRole(Role::SuperAdmin))
+        ->get(route('documentation.manage.index'))
+        ->assertInertia(fn ($page) => $page
+            ->has('documentations.data.0', fn ($row) => $row
+                ->hasAll(['id', 'title', 'slug', 'status', 'category'])
+                ->has('category', fn ($cat) => $cat
+                    ->hasAll(['id', 'name'])
+                )
+            )
+            ->has('categories.0', fn ($category) => $category
+                ->hasAll(['id', 'name', 'position', 'documentations_count'])));
+
+    $this->actingAs(userWithRole(Role::SuperAdmin))
+        ->get(route('documentation.manage.documents.edit', $documentation))
+        ->assertInertia(fn ($page) => $page
+            ->has('documentation', fn ($value) => $value
+                ->hasAll(['id', 'documentation_category_id', 'title', 'slug', 'status', 'published_at', 'content']))
+            ->has('categories.0', fn ($category) => $category
+                ->hasAll(['id', 'name']))
+            ->where('statuses', [
+                ['label' => 'Draft', 'value' => 'draft'],
+                ['label' => 'Published', 'value' => 'published'],
+            ]));
+});
+
+it('denies the management pages to a super administrator the policy refuses', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $documentation = Documentation::factory()->create();
+
+    Gate::before(fn (): bool => false);
+
+    $this->actingAs($admin)->get(route('documentation.manage.index'))->assertForbidden();
+    $this->actingAs($admin)->get(route('documentation.manage.create'))->assertForbidden();
+    $this->actingAs($admin)->get(route('documentation.manage.documents.edit', $documentation))->assertForbidden();
+});
+
+it('does not run the categories query when only documentations are requested', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+    Documentation::factory()->create(['documentation_category_id' => $category->id]);
+
+    DB::enableQueryLog();
+
+    $this->actingAs($admin)
+        ->withHeaders([
+            'X-Inertia-Partial-Component' => 'documentation/manage/Index',
+            'X-Inertia-Partial-Data' => 'documentations',
+        ])
+        ->get(route('documentation.manage.index'))
+        ->assertInertia(fn ($page) => $page
+            ->has('documentations')
+            ->missing('categories')
+        );
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $hasCategoryQuery = false;
+    foreach ($queries as $query) {
+        if (str_contains($query['query'], 'documentations_count')) {
+            $hasCategoryQuery = true;
+            break;
+        }
+    }
+
+    expect($hasCategoryQuery)->toBeFalse();
+});
+
+it('runs both queries and returns both props on standard visit', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+    Documentation::factory()->create(['documentation_category_id' => $category->id]);
+
+    DB::enableQueryLog();
+
+    $this->actingAs($admin)
+        ->get(route('documentation.manage.index'))
+        ->assertInertia(fn ($page) => $page
+            ->has('documentations')
+            ->has('categories')
+        );
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $hasCategoryQuery = false;
+    foreach ($queries as $query) {
+        if (str_contains($query['query'], 'documentations_count')) {
+            $hasCategoryQuery = true;
+            break;
+        }
+    }
+
+    expect($hasCategoryQuery)->toBeTrue();
 });

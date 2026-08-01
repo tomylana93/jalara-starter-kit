@@ -20,21 +20,22 @@ import { index as documentationIndex } from '@/routes/documentation';
 import { create, index as manageIndex } from '@/routes/documentation/manage';
 import { edit, store, update } from '@/routes/documentation/manage/documents';
 import type {
-    DocumentationCategory,
-    DocumentationDetail,
+    DocumentationCategoryOption,
+    DocumentationEditorValue,
+    DocumentationStatus,
 } from '@/types/documentation';
 import type { RichTextDocument } from '@/types/editor';
 
 type LayoutProps = {
     locale: string;
     fallbackLocale: string;
-    documentation: DocumentationDetail | null;
+    documentation: DocumentationEditorValue | null;
 };
 
 const props = defineProps<{
-    documentation: DocumentationDetail | null;
-    categories: Pick<DocumentationCategory, 'id' | 'name'>[];
-    statuses: { value: 'draft' | 'published'; label: string }[];
+    documentation: DocumentationEditorValue | null;
+    categories: DocumentationCategoryOption[];
+    statuses: { value: DocumentationStatus; label: string }[];
 }>();
 
 defineOptions({
