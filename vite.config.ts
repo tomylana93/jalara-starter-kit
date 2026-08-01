@@ -5,7 +5,10 @@ import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vitest/config';
+import { resolveAssetOutput } from './vite/asset-output';
 import { laravelLang } from './vite/plugins/laravel-lang';
+
+const assetOutput = resolveAssetOutput(process.env);
 
 export default defineConfig({
     resolve: {
@@ -29,6 +32,8 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
+            buildDirectory: assetOutput.buildDirectory,
+            hotFile: assetOutput.hotFile,
             fonts: [
                 bunny('Instrument Sans', {
                     optimizedFallbacks: false,
