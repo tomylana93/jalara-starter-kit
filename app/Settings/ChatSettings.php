@@ -14,6 +14,9 @@ class ChatSettings extends Settings
      */
     public bool $chatEnabled;
 
+    /** Whether users may attach a new image to a chat message. */
+    public bool $imageUploadsEnabled;
+
     public static function group(): string
     {
         return 'chat';

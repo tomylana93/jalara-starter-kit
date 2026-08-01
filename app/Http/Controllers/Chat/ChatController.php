@@ -61,7 +61,9 @@ class ChatController extends Controller
             pageName: self::MESSAGES_PAGE,
         );
 
-        $messages->through(ChatPresenter::message(...));
+        $messages->through(
+            fn (Message $message): array => ChatPresenter::message($message),
+        );
 
         return Inertia::render('chat/Index', [
             'conversations' => Inertia::scroll($conversations),
@@ -85,7 +87,7 @@ class ChatController extends Controller
         }
 
         $conversation = Conversation::query()
-            ->with('participants.user', 'latestMessage')
+            ->with('participants.user', 'latestMessage.reactions')
             ->find($requested);
 
         if (! $conversation instanceof Conversation) {
@@ -113,6 +115,6 @@ class ChatController extends Controller
             /* No conversation open: the column is NOT NULL, so this window is empty. */
             : Message::query()->whereNull('conversation_id');
 
-        return $query->latest()->orderByDesc('id');
+        return $query->with('reactions')->latest()->orderByDesc('id');
     }
 }

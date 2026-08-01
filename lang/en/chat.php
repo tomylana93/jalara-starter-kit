@@ -14,9 +14,15 @@ return [
         'composer' => 'Message',
         'unavailable' => 'Unavailable',
         'read' => 'Read',
+        'sent' => 'Sent',
         'delivered' => 'Delivered',
         'you' => 'Sent',
         'reconnecting' => 'Reconnecting',
+        'image' => 'Image',
+        'image_preview' => 'Full-size chat image preview',
+        'uploading' => 'Uploading image',
+        'today' => 'Today',
+        'yesterday' => 'Yesterday',
     ],
 
     'placeholder' => [
@@ -33,6 +39,10 @@ return [
         'expand' => 'Expand chat',
         'close' => 'Close chat',
         'retry' => 'Try again',
+        'add_image' => 'Add image',
+        'remove_image' => 'Remove image',
+        'preview_image' => 'Preview image',
+        'react' => 'React to message',
     ],
 
     'empty' => [
@@ -53,6 +63,8 @@ return [
         'rate_limited' => 'Too many messages were sent. Wait a moment and try again.',
         'send_failed' => 'The message was not sent.',
         'reconnected' => 'Connection restored.',
+        'image_upload_disabled' => 'Image uploads are currently disabled.',
+        'image_removed_disabled' => 'The selected image was removed because image uploads were disabled.',
     ],
 
     'notification' => [

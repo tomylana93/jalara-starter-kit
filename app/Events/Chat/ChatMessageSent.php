@@ -45,7 +45,7 @@ class ChatMessageSent implements ShouldBroadcast
     }
 
     /**
-     * @return array{message: array{id: string, conversation_id: string, sender_id: string, body: string, created_at: string|null}}
+     * @return array{message: array<string, mixed>}
      */
     public function broadcastWith(): array
     {

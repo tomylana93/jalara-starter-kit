@@ -4,7 +4,9 @@ import ChatSettingsPage from '@/pages/settings/Chat.vue';
 
 const mountPage = (chatEnabled: boolean) =>
     mount(ChatSettingsPage, {
-        props: { settings: { chatEnabled } },
+        props: {
+            settings: { chatEnabled, imageUploadsEnabled: true },
+        },
     });
 
 describe('settings/Chat', () => {

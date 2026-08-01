@@ -276,9 +276,11 @@ return [
         'description' => 'Availability of direct messages between users',
         'label' => [
             'chat_enabled' => 'Enable chat',
+            'image_uploads_enabled' => 'Enable image uploads',
         ],
         'help' => [
             'chat_enabled' => 'While disabled, the chat page, the desktop widget, and chat notifications are closed for everyone. Conversations, messages, and audit records are kept.',
+            'image_uploads_enabled' => 'Allow users to attach one private PNG, JPEG, or WebP image to a message. Existing images remain available when disabled.',
         ],
         'button' => [
             'save' => 'Save',

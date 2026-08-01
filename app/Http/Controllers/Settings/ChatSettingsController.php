@@ -20,6 +20,7 @@ class ChatSettingsController extends Controller
         return Inertia::render('settings/Chat', [
             'settings' => [
                 'chatEnabled' => $settings->chatEnabled,
+                'imageUploadsEnabled' => $settings->imageUploadsEnabled,
             ],
         ]);
     }
@@ -34,6 +35,9 @@ class ChatSettingsController extends Controller
     ): RedirectResponse {
         $updateChatSettings->handle($settings, [
             'chatEnabled' => $request->boolean('chatEnabled'),
+            'imageUploadsEnabled' => $request->has('imageUploadsEnabled')
+                ? $request->boolean('imageUploadsEnabled')
+                : $settings->imageUploadsEnabled,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.chat.message.updated')]);

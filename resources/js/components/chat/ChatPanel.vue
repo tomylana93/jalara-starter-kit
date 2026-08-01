@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import ChatComposer from '@/components/chat/ChatComposer.vue';
 import ChatMessageList from '@/components/chat/ChatMessageList.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useChat } from '@/composables/useChat';
 import { getInitials } from '@/composables/useInitials';
 import { useTranslations } from '@/composables/useTranslations';
 import type { ChatConversation, ChatMessage, ChatProfile } from '@/types';
@@ -19,6 +20,9 @@ type Props = {
     hasOlder?: boolean;
     loadingOlder?: boolean;
     error?: string | null;
+    imageUploadsEnabled?: boolean;
+    uploadProgress?: number | null;
+    draftKey: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,15 +32,27 @@ const props = withDefaults(defineProps<Props>(), {
     hasOlder: false,
     loadingOlder: false,
     error: null,
+    imageUploadsEnabled: true,
+    uploadProgress: null,
 });
 
 const emit = defineEmits<{
-    send: [body: string];
+    send: [
+        payload: { body: string; image: File | null },
+        complete: (succeeded: boolean) => void,
+    ];
     loadOlder: [];
     seen: [messageId: string];
+    react: [message: ChatMessage, emoji: string | null];
 }>();
 
 const { t } = useTranslations();
+const { draftFor, setDraft } = useChat();
+
+const draft = computed({
+    get: () => draftFor(props.draftKey),
+    set: (value: string) => setDraft(props.draftKey, value),
+});
 
 const participant = computed<ChatProfile | null>(
     () => props.conversation?.participant ?? props.pendingRecipient,
@@ -98,6 +114,7 @@ const canSend = computed(() => participant.value?.available === true);
                 :has-older="props.hasOlder"
                 :loading-older="props.loadingOlder"
                 :peer-read-at="props.conversation?.peer_read_at ?? null"
+                @react="(message, emoji) => emit('react', message, emoji)"
                 @load-older="emit('loadOlder')"
                 @seen="(messageId) => emit('seen', messageId)"
             />
@@ -120,8 +137,11 @@ const canSend = computed(() => participant.value?.available === true);
 
             <ChatComposer
                 v-if="canSend"
+                v-model="draft"
                 :sending="props.sending"
-                @send="(body) => emit('send', body)"
+                :image-uploads-enabled="props.imageUploadsEnabled"
+                :upload-progress="props.uploadProgress"
+                @send="(payload, complete) => emit('send', payload, complete)"
             />
         </template>
     </div>

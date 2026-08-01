@@ -5,7 +5,8 @@
 - Tables: `chat_conversations` (canonical `participant_key` = both user UUIDs
   sorted and joined, unique - this index is what prevents a duplicate DM for a
   pair), `chat_participants` (per-side `last_read_at`), `chat_messages`
-  (immutable; nothing updates or deletes one), `chat_audit_logs` (access
+  (immutable text, one private image, or both), `chat_message_reactions`
+  (one reaction per user/message), `chat_audit_logs` (access
   metadata only, permanent, never a copy of a body).
 - A conversation is never created on its own: `SendMessage` is the only writer,
   so an abandoned recipient search leaves nothing behind.
@@ -44,6 +45,18 @@
 - The chat toggle hides chat notifications from the bell and the notification
   page (`ChatMessageNotification::excludeFrom()`); rows are never deleted.
 
+## Images and reactions
+
+- A message requires text, one image, or both. Images are private `local`-disk
+  files (PNG/JPEG/WebP, <= 2 MiB, <= 2048 px per dimension); only a participant
+  endpoint or the separately audited Super Admin endpoint may serve them, with
+  private/no-store caching. File creation is compensated if the message
+  transaction fails.
+- Reactions use the fixed 12-emoji `Reaction::ALLOWED` set. Each user has at
+  most one reaction per message; only the peer may react (never the message
+  sender). Add/replace/remove broadcasts realtime state but does not generate a
+  notification.
+
 ## Feature toggle
 
 - `ChatSettings::$chatEnabled` persists as `chat.chatEnabled` (spatie maps
@@ -51,8 +64,11 @@
   `chat.enabled`).
 - `EnsureChatIsEnabled` closes only the user surface. Chat Settings and the
   Super Admin audit routes deliberately stay reachable while chat is off.
-- `UpdateChatSettings` broadcasts `ChatAvailabilityChanged` on the private
-  `chat.control` channel only when the value actually moved.
+- `ChatSettings::$imageUploadsEnabled` persists as
+  `chat.imageUploadsEnabled`; disabling it blocks new image uploads but does
+  not hide or delete existing message images.
+- `UpdateChatSettings` broadcasts the full chat/image-upload configuration via
+  `ChatAvailabilityChanged` on private `chat.control` when either value moves.
 
 ## Larastan and paginators
 

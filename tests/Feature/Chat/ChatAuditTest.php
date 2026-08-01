@@ -6,8 +6,10 @@ use App\Models\Chat\AuditLog;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
+use App\Models\Chat\Reaction;
 use App\Models\User;
 use App\Settings\ChatSettings;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -76,6 +78,42 @@ test('opening a conversation records permanent access metadata', function (): vo
     actingAs($auditor)->get(route('chat.audit.show', $conversation))->assertOk();
 
     expect(AuditLog::query()->count())->toBe(2);
+});
+
+test('an auditor can view an image and its current reaction read only', function (): void {
+    Storage::fake('local');
+
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+    $reaction = (new Reaction)->forceFill([
+        'user_id' => $second->id,
+        'emoji' => '❤️',
+    ]);
+    $message->reactions()->save($reaction);
+    Storage::disk('local')->put((string) $message->image_path, 'image');
+
+    actingAs($auditor)
+        ->get(route('chat.audit.show', $conversation))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('messages.data.0.image.url', route('chat.audit.messages.image', $message))
+            ->where('messages.data.0.reactions.0.emoji', '❤️'),
+        );
+
+    $response = actingAs($auditor)
+        ->get(route('chat.audit.messages.image', $message))
+        ->assertOk();
+
+    expect($response->headers->get('Cache-Control'))
+        ->toContain('private')
+        ->toContain('no-store')
+        ->and(AuditLog::query()->count())->toBe(2);
 });
 
 test('an audit never touches the participants receipts or notifications', function (): void {

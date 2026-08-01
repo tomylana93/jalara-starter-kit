@@ -17,8 +17,11 @@
 ## Registry primitives
 
 - Message rows use `Message`/`MessageContent` + `Bubble`/`BubbleContent`; the
-  transcript uses `MessageScroller*`. Never hand-roll these, and never
-  hand-edit `resources/js/components/ui/**` (see `mem:frontend/core`).
+  transcript uses `MessageScroller*`; the composer uses `InputGroup`; date
+  separators use `Marker`; reactions use `Popover`; image previews use
+  `Attachment`. Long scroll containers use `scroll-fade-y`, and upload state
+  uses the Attachment shimmer. Never hand-roll these, and never hand-edit
+  `resources/js/components/ui/**` (see `mem:frontend/core`).
 - Vitest stubs them in `resources/js/test/setup.ts`: the real scroller measures
   layout through ResizeObserver/MutationObserver, which jsdom lacks.
   `InfiniteScroll` is stubbed for the same reason.
@@ -28,8 +31,9 @@
 - `ChatWidget` mounts in `AppShell` (both layout variants) and renders only at
   `lg` and above via `useMediaQuery`, never merely hidden with a class. It also
   hides itself on `/chat`, where the page owns the conversation.
-- Open/minimized/conversation state persists in `sessionStorage` so it survives
-  an Inertia navigation within the browser session.
+- Open/minimized/conversation state and text drafts persist in user-scoped
+  `sessionStorage` so they survive Inertia navigation without crossing account
+  boundaries. `File` objects never persist; preview object URLs must be revoked.
 - A minimized widget does not mark messages read; that is what keeps its
   notification alive. The widget never reports a page context - only the Chat
   page does, and that silences every DM (see `mem:backend/chat`).
@@ -46,6 +50,7 @@
 
 ## Shared props
 
-- `chat` (`{enabled, unreadCount}`) and `can.auditChat` come from
-  `HandleInertiaRequests`; the navigation entry, the badge, and the widget all
-  read that one server-owned state rather than deriving availability locally.
+- `chat` (`{enabled, imageUploadsEnabled, unreadCount}`) and `can.auditChat`
+  come from `HandleInertiaRequests`; navigation, upload controls, badges, and
+  the widget read that server-owned state rather than deriving availability
+  locally.

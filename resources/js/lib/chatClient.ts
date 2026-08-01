@@ -37,14 +37,25 @@ const parse = (body: string): unknown => {
  */
 export const chatRequest = async <TResponse>(
     route: RouteDefinition<Method>,
-    data?: Record<string, unknown>,
+    data?: Record<string, unknown> | FormData,
     signal?: AbortSignal,
+    onUploadProgress?: (percentage: number) => void,
 ): Promise<TResponse> => {
     const response = await http.getClient().request({
         method: route.method,
         url: route.url,
         data,
         signal,
+        onUploadProgress: (progress) => {
+            if (progress.total && onUploadProgress) {
+                onUploadProgress(
+                    Math.min(
+                        100,
+                        Math.round((progress.loaded / progress.total) * 100),
+                    ),
+                );
+            }
+        },
         headers: {
             Accept: 'application/json',
             'X-Requested-With': 'XMLHttpRequest',

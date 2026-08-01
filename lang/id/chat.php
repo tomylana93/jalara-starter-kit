@@ -14,9 +14,15 @@ return [
         'composer' => 'Pesan',
         'unavailable' => 'Tidak tersedia',
         'read' => 'Dibaca',
+        'sent' => 'Terkirim',
         'delivered' => 'Terkirim',
         'you' => 'Terkirim',
         'reconnecting' => 'Menyambungkan ulang',
+        'image' => 'Gambar',
+        'image_preview' => 'Pratinjau gambar chat ukuran penuh',
+        'uploading' => 'Mengunggah gambar',
+        'today' => 'Hari ini',
+        'yesterday' => 'Kemarin',
     ],
 
     'placeholder' => [
@@ -33,6 +39,10 @@ return [
         'expand' => 'Perbesar chat',
         'close' => 'Tutup chat',
         'retry' => 'Coba lagi',
+        'add_image' => 'Tambahkan gambar',
+        'remove_image' => 'Hapus gambar',
+        'preview_image' => 'Pratinjau gambar',
+        'react' => 'Beri reaksi pada pesan',
     ],
 
     'empty' => [
@@ -53,6 +63,8 @@ return [
         'rate_limited' => 'Terlalu banyak pesan terkirim. Tunggu sebentar lalu coba lagi.',
         'send_failed' => 'Pesan tidak terkirim.',
         'reconnected' => 'Koneksi tersambung kembali.',
+        'image_upload_disabled' => 'Upload gambar sedang dinonaktifkan.',
+        'image_removed_disabled' => 'Gambar yang dipilih dihapus karena upload gambar dinonaktifkan.',
     ],
 
     'notification' => [

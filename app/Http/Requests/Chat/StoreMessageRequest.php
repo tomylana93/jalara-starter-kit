@@ -3,8 +3,12 @@
 namespace App\Http\Requests\Chat;
 
 use App\Models\Chat\Message;
+use App\Settings\ChatSettings;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Validator;
 
 class StoreMessageRequest extends FormRequest
 {
@@ -26,8 +30,31 @@ class StoreMessageRequest extends FormRequest
              * Multiline is allowed; whitespace-only is not, which `string` alone
              * would accept.
              */
-            'body' => ['required', 'string', 'max:'.Message::MAX_LENGTH],
+            'body' => ['nullable', 'required_without:image', 'string', 'max:'.Message::MAX_LENGTH],
+            'image' => [
+                'nullable',
+                'required_without:body',
+                File::image()
+                    ->types(['png', 'jpg', 'jpeg', 'webp'])
+                    ->max(Message::IMAGE_MAX_KILOBYTES)
+                    ->dimensions(
+                        Rule::dimensions()
+                            ->maxWidth(Message::IMAGE_MAX_DIMENSION)
+                            ->maxHeight(Message::IMAGE_MAX_DIMENSION),
+                    ),
+                'extensions:png,jpg,jpeg,webp',
+            ],
         ];
+    }
+
+    /** @return array<int, callable(Validator): void> */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($this->hasFile('image') && ! app(ChatSettings::class)->imageUploadsEnabled) {
+                $validator->errors()->add('image', __('chat.message.image_upload_disabled'));
+            }
+        }];
     }
 
     /**

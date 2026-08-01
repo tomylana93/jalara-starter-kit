@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { ChevronDown, ChevronUp, MessagesSquare, X } from '@lucide/vue';
+import { ArrowLeft, MessagesSquare, Minus, X } from '@lucide/vue';
 import { useMediaQuery } from '@vueuse/core';
 import { computed, onMounted, ref, watch } from 'vue';
 import ChatConversationList from '@/components/chat/ChatConversationList.vue';
 import ChatPanel from '@/components/chat/ChatPanel.vue';
 import ChatRecipientSearch from '@/components/chat/ChatRecipientSearch.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useChat } from '@/composables/useChat';
 import { useTranslations } from '@/composables/useTranslations';
-import type { ChatProfile } from '@/types';
+import { useUploadGuard } from '@/composables/useUploadGuard';
+import type { ChatMessage, ChatProfile } from '@/types';
 
 /**
  * Where the widget's own state lives between Inertia navigations.
@@ -17,8 +24,6 @@ import type { ChatProfile } from '@/types';
  * Session storage, not local storage: the widget is expected to come back
  * within the same browser session, not to be restored days later.
  */
-const STORAGE_KEY = 'chat-widget';
-
 /* Matches Tailwind's `lg` breakpoint; below it the widget is not rendered. */
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
@@ -46,14 +51,28 @@ const {
     watchAvailability,
     watchConnection,
     clearActive,
+    updateReaction,
+    scopeToUser,
 } = useChat();
+const { beginUpload } = useUploadGuard();
 
 const enabled = ref(page.props.chat.enabled);
+const imageUploadsEnabled = ref(page.props.chat.imageUploadsEnabled);
 const open = ref(false);
 const minimized = ref(false);
 const pendingRecipient = ref<ChatProfile | null>(null);
 
 const currentUserId = computed(() => page.props.auth.user?.id ?? null);
+const storageKey = computed(
+    () => `chat-widget:${currentUserId.value ?? 'guest'}`,
+);
+const draftKey = computed(
+    () =>
+        activeConversation.value?.id ??
+        (pendingRecipient.value
+            ? `recipient:${pendingRecipient.value.id}`
+            : 'new'),
+);
 const unreadCount = computed(() => page.props.chat.unreadCount);
 
 /* The chat page owns the conversation; a second copy would fight it for reads. */
@@ -69,7 +88,7 @@ const readStored = (): WidgetState | null => {
     }
 
     try {
-        const raw = window.sessionStorage.getItem(STORAGE_KEY);
+        const raw = window.sessionStorage.getItem(storageKey.value);
 
         return raw === null ? null : (JSON.parse(raw) as WidgetState);
     } catch {
@@ -84,7 +103,7 @@ const persist = (): void => {
 
     try {
         window.sessionStorage.setItem(
-            STORAGE_KEY,
+            storageKey.value,
             JSON.stringify({
                 open: open.value,
                 minimized: minimized.value,
@@ -95,6 +114,21 @@ const persist = (): void => {
         /* A storage quota or a private session must not break the widget. */
     }
 };
+
+watch(
+    currentUserId,
+    (nextUserId, previousUserId) => {
+        scopeToUser(nextUserId);
+
+        if (previousUserId !== undefined && nextUserId !== previousUserId) {
+            open.value = false;
+            minimized.value = false;
+            pendingRecipient.value = null;
+            clearActive();
+        }
+    },
+    { immediate: true },
+);
 
 onMounted(async () => {
     watchConnection(() => {
@@ -107,9 +141,10 @@ onMounted(async () => {
     });
 
     watchAvailability((next) => {
-        enabled.value = next;
+        enabled.value = next.enabled;
+        imageUploadsEnabled.value = next.imageUploadsEnabled;
 
-        if (!next) {
+        if (!next.enabled) {
             open.value = false;
             persist();
         }
@@ -167,17 +202,33 @@ const startWith = (recipient: ChatProfile): void => {
     pendingRecipient.value = recipient;
 };
 
-const send = async (body: string): Promise<void> => {
+const send = async (
+    payload: { body: string; image: File | null },
+    complete: (succeeded: boolean) => void,
+): Promise<void> => {
     const conversationId = activeConversation.value?.id ?? null;
+    const upload = payload.image ? beginUpload() : null;
 
-    await sendMessage({
-        body,
+    const message = await sendMessage({
+        body: payload.body,
+        image: payload.image,
         conversationId,
         recipientId:
             conversationId === null ? pendingRecipient.value?.id : null,
     });
 
-    pendingRecipient.value = null;
+    upload?.release();
+    complete(message !== null);
+
+    if (message !== null) {
+        pendingRecipient.value = null;
+    }
+};
+
+const react = (message: ChatMessage, emoji: string | null): void => {
+    if (currentUserId.value) {
+        void updateReaction(message, currentUserId.value, emoji);
+    }
 };
 
 const loadOlder = (): void => {
@@ -213,40 +264,80 @@ const seen = (messageId: string): void => {
             <header
                 class="flex items-center justify-between gap-2 border-b px-3 py-2"
             >
-                <p class="truncate text-sm font-medium">
-                    {{
-                        activeConversation?.participant?.name ??
-                        pendingRecipient?.name ??
-                        t('chat.page.title')
-                    }}
-                </p>
-                <span class="flex shrink-0 items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="size-7"
-                        :aria-label="
-                            minimized
-                                ? t('chat.button.expand')
-                                : t('chat.button.minimize')
-                        "
-                        data-test="chat-widget-minimize"
-                        @click="minimized = !minimized"
-                    >
-                        <ChevronUp v-if="minimized" class="size-4" />
-                        <ChevronDown v-else class="size-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="size-7"
-                        :aria-label="t('chat.button.close')"
-                        data-test="chat-widget-close"
-                        @click="close"
-                    >
-                        <X class="size-4" />
-                    </Button>
-                </span>
+                <TooltipProvider :delay-duration="0">
+                    <Tooltip v-if="activeConversation || pendingRecipient">
+                        <TooltipTrigger as-child>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="size-7"
+                                :aria-label="t('chat.label.conversations')"
+                                data-test="chat-widget-back"
+                                @click="
+                                    clearActive();
+                                    pendingRecipient = null;
+                                "
+                            >
+                                <ArrowLeft class="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {{ t('chat.label.conversations') }}
+                        </TooltipContent>
+                    </Tooltip>
+                    <div v-else class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold">
+                            {{ t('chat.page.title') }}
+                        </p>
+                        <p class="truncate text-xs text-muted-foreground">
+                            {{ t('chat.page.description') }}
+                        </p>
+                    </div>
+                    <span class="flex shrink-0 items-center gap-1">
+                        <Tooltip>
+                            <TooltipTrigger as-child>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-7"
+                                    :aria-label="
+                                        minimized
+                                            ? t('chat.button.expand')
+                                            : t('chat.button.minimize')
+                                    "
+                                    data-test="chat-widget-minimize"
+                                    @click="minimized = !minimized"
+                                >
+                                    <Minus class="size-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {{
+                                    minimized
+                                        ? t('chat.button.expand')
+                                        : t('chat.button.minimize')
+                                }}
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger as-child>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-7"
+                                    :aria-label="t('chat.button.close')"
+                                    data-test="chat-widget-close"
+                                    @click="close"
+                                >
+                                    <X class="size-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {{ t('chat.button.close') }}
+                            </TooltipContent>
+                        </Tooltip>
+                    </span>
+                </TooltipProvider>
             </header>
 
             <div v-if="!minimized" class="flex min-h-0 flex-1 flex-col">
@@ -276,32 +367,22 @@ const seen = (messageId: string): void => {
                 </div>
 
                 <div v-else class="flex min-h-0 flex-1 flex-col">
-                    <div class="border-b p-1">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            data-test="chat-widget-back"
-                            @click="
-                                clearActive();
-                                pendingRecipient = null;
-                            "
-                        >
-                            {{ t('chat.label.conversations') }}
-                        </Button>
-                    </div>
-
                     <ChatPanel
                         :conversation="activeConversation"
                         :pending-recipient="pendingRecipient"
                         :messages="activeMessages"
                         :current-user-id="currentUserId"
                         :sending="state.sending"
+                        :upload-progress="state.uploadProgress"
+                        :image-uploads-enabled="imageUploadsEnabled"
+                        :draft-key="draftKey"
                         :has-older="hasOlderMessages"
                         :loading-older="state.loadingOlder"
                         :error="state.error"
                         @send="send"
                         @load-older="loadOlder"
                         @seen="seen"
+                        @react="react"
                     />
                 </div>
             </div>

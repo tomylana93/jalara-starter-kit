@@ -26,7 +26,9 @@ describe('ChatWidget', () => {
     beforeEach(() => {
         desktop.value = true;
         inertiaPageProps.chat.enabled = true;
+        inertiaPageProps.chat.imageUploadsEnabled = true;
         inertiaPageProps.chat.unreadCount = 0;
+        inertiaPageProps.auth.user = { id: 'user-1', name: 'User One' };
         inertiaPageUrl.value = '/dashboard';
         window.sessionStorage.clear();
     });
@@ -76,7 +78,7 @@ describe('ChatWidget', () => {
 
     it('restores an open window from the browser session', async () => {
         window.sessionStorage.setItem(
-            'chat-widget',
+            'chat-widget:user-1',
             JSON.stringify({
                 open: true,
                 minimized: true,
@@ -100,7 +102,9 @@ describe('ChatWidget', () => {
         await wrapper.vm.$nextTick();
 
         expect(
-            JSON.parse(window.sessionStorage.getItem('chat-widget') ?? '{}'),
+            JSON.parse(
+                window.sessionStorage.getItem('chat-widget:user-1') ?? '{}',
+            ),
         ).toMatchObject({ open: true, minimized: false });
     });
 });

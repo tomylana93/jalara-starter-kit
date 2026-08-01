@@ -67,7 +67,7 @@ class ConversationController extends Controller
 
         Gate::authorize('view', $conversation);
 
-        $query = $conversation->messages()->latest()->orderByDesc('id');
+        $query = $conversation->messages()->with('reactions')->latest()->orderByDesc('id');
 
         $before = $request->validated('before');
 

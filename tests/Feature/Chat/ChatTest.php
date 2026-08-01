@@ -8,9 +8,13 @@ use App\Jobs\Chat\DeliverChatMessageNotification;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
+use App\Models\Chat\Reaction;
 use App\Models\User;
+use App\Settings\ChatSettings;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -131,6 +135,115 @@ test('a message at the maximum length is accepted', function (): void {
             'body' => str_repeat('a', Message::MAX_LENGTH),
         ])
         ->assertStatus(201);
+});
+
+test('a message may contain one private image without text', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $response = actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('photo.png', 640, 480),
+        ])
+        ->assertCreated()
+        ->assertJsonPath('message.body', null)
+        ->assertJsonPath('message.reactions', []);
+
+    $message = Message::query()->firstOrFail();
+
+    expect($response->json('message.image.url'))->toBe(route('chat.messages.image', $message))
+        ->and($message->image_mime_type)->toBe('image/png');
+    Storage::disk('local')->assertExists((string) $message->image_path);
+});
+
+test('a chat image obeys type size dimension and feature toggle rules', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->create('notes.txt', 1, 'text/plain'),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('image');
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('wide.png', Message::IMAGE_MAX_DIMENSION + 1, 10),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('image');
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()
+                ->image('large.png', 10, 10)
+                ->size(Message::IMAGE_MAX_KILOBYTES + 1),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('image');
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => [
+                UploadedFile::fake()->image('first.png', 10, 10),
+                UploadedFile::fake()->image('second.png', 10, 10),
+            ],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('image');
+
+    $settings = app(ChatSettings::class);
+    $settings->imageUploadsEnabled = false;
+    $settings->save();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('blocked.webp', 10, 10),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('image');
+
+    expect(Message::query()->count())->toBe(0);
+});
+
+test('a peer can add replace and remove their single reaction', function (): void {
+    $sender = User::factory()->create();
+    $peer = User::factory()->create();
+    $conversation = Conversation::factory()->between($sender, $peer)->create();
+    $message = Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $sender->id,
+    ]);
+
+    actingAs($peer)
+        ->putJson(route('chat.messages.reaction.update', $message), ['emoji' => '👍'])
+        ->assertOk()
+        ->assertJsonPath('reaction.emoji', '👍');
+
+    actingAs($peer)
+        ->putJson(route('chat.messages.reaction.update', $message), ['emoji' => '🔥'])
+        ->assertOk()
+        ->assertJsonPath('reaction.emoji', '🔥');
+
+    expect(Reaction::query()->count())->toBe(1);
+
+    actingAs($peer)
+        ->deleteJson(route('chat.messages.reaction.destroy', $message))
+        ->assertOk()
+        ->assertJsonPath('reaction', null);
+
+    expect(Reaction::query()->count())->toBe(0);
 });
 
 test('the sender cannot open a conversation with themselves', function (): void {

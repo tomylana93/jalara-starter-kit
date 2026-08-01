@@ -7,6 +7,10 @@ import {
     show as conversationShow,
 } from '@/routes/chat/conversations';
 import { store as messageStore } from '@/routes/chat/messages';
+import {
+    destroy as reactionDestroy,
+    update as reactionUpdate,
+} from '@/routes/chat/messages/reaction';
 import { index as recipientIndex } from '@/routes/chat/recipients';
 import type {
     ChatConversation,
@@ -37,6 +41,8 @@ type ChatState = {
     loadingMessages: boolean;
     loadingOlder: boolean;
     sending: boolean;
+    uploadProgress: number | null;
+    drafts: Record<string, string>;
     connection: ConnectionState;
     error: string | null;
 };
@@ -63,15 +69,25 @@ const state = reactive<ChatState>({
     loadingMessages: false,
     loadingOlder: false,
     sending: false,
+    uploadProgress: null,
+    drafts: {},
     connection: 'connected',
     error: null,
 });
 
 const subscribed = new Set<string>();
 const reconnectHandlers = new Set<() => void>();
-const availabilityHandlers = new Set<(enabled: boolean) => void>();
+type ChatAvailability = {
+    enabled: boolean;
+    imageUploadsEnabled: boolean;
+};
+
+const availabilityHandlers = new Set<
+    (availability: ChatAvailability) => void
+>();
 let controlSubscribed = false;
 let connectionBound = false;
+let scopedUserId: string | null = null;
 
 const conversationChannel = (conversationId: string): string =>
     `chat.conversation.${conversationId}`;
@@ -146,6 +162,31 @@ const applyIncomingMessage = (message: ChatMessage): void => {
     sortConversations();
 };
 
+const replaceReaction = (
+    messageId: string,
+    userId: string,
+    reaction: ChatMessage['reactions'][number] | null,
+): void => {
+    const apply = (message: ChatMessage): void => {
+        if (message.id !== messageId) {
+            return;
+        }
+
+        message.reactions = [
+            ...message.reactions.filter((item) => item.user_id !== userId),
+            ...(reaction ? [reaction] : []),
+        ];
+    };
+
+    Object.values(state.messages).flat().forEach(apply);
+    Object.values(state.live).flat().forEach(apply);
+    state.conversations.forEach((conversation) => {
+        if (conversation.last_message) {
+            apply(conversation.last_message);
+        }
+    });
+};
+
 const applyReadReceipt = (payload: {
     conversation_id: string;
     user_id: string;
@@ -201,6 +242,20 @@ const subscribeTo = (conversationId: string): void => {
                 last_read_at: string | null;
             }) => {
                 applyReadReceipt(payload);
+            },
+        )
+        .listen(
+            '.chat.reaction',
+            (payload: {
+                message_id: string;
+                user_id: string;
+                reaction: ChatMessage['reactions'][number] | null;
+            }) => {
+                replaceReaction(
+                    payload.message_id,
+                    payload.user_id,
+                    payload.reaction,
+                );
             },
         );
 };
@@ -370,26 +425,41 @@ const loadOlderMessages = async (conversationId: string): Promise<void> => {
  */
 const sendMessage = async (payload: {
     body: string;
+    image?: File | null;
     conversationId?: string | null;
     recipientId?: string | null;
 }): Promise<ChatMessage | null> => {
     const body = payload.body.trim();
 
-    if (body === '' || state.sending) {
+    if ((body === '' && !payload.image) || state.sending) {
         return null;
     }
 
     state.sending = true;
+    state.uploadProgress = payload.image ? 0 : null;
 
     try {
+        const data = new FormData();
+
+        if (body !== '') {
+            data.append('body', body);
+        }
+
+        if (payload.image) {
+            data.append('image', payload.image);
+        }
+
+        if (payload.conversationId) {
+            data.append('conversation_id', payload.conversationId);
+        } else if (payload.recipientId) {
+            data.append('recipient_id', payload.recipientId);
+        }
+
         const response = await chatRequest<{
             conversation: ChatConversation;
             message: ChatMessage;
-        }>(messageStore(), {
-            body,
-            ...(payload.conversationId
-                ? { conversation_id: payload.conversationId }
-                : { recipient_id: payload.recipientId }),
+        }>(messageStore(), data, undefined, (percentage) => {
+            state.uploadProgress = percentage;
         });
 
         upsertConversation(response.conversation);
@@ -412,6 +482,41 @@ const sendMessage = async (payload: {
         return null;
     } finally {
         state.sending = false;
+        state.uploadProgress = null;
+    }
+};
+
+const updateReaction = async (
+    message: ChatMessage,
+    userId: string,
+    emoji: string | null,
+): Promise<void> => {
+    const previous =
+        message.reactions.find((item) => item.user_id === userId) ?? null;
+    const optimistic = emoji
+        ? {
+              id: previous?.id ?? `optimistic-${message.id}`,
+              user_id: userId,
+              emoji,
+          }
+        : null;
+
+    replaceReaction(message.id, userId, optimistic);
+
+    try {
+        const response = emoji
+            ? await chatRequest<{ reaction: ChatMessage['reactions'][number] }>(
+                  reactionUpdate(message.id),
+                  { emoji },
+              )
+            : await chatRequest<{ reaction: null }>(
+                  reactionDestroy(message.id),
+              );
+
+        replaceReaction(message.id, userId, response.reaction);
+    } catch (error) {
+        replaceReaction(message.id, userId, previous);
+        state.error = messageFor(error);
     }
 };
 
@@ -490,7 +595,9 @@ const reset = (): void => {
  * Listen for the global chat toggle so an administrator's change reaches every
  * online client without a reload.
  */
-const watchAvailability = (onChange: (enabled: boolean) => void): void => {
+const watchAvailability = (
+    onChange: (availability: ChatAvailability) => void,
+): void => {
     availabilityHandlers.add(onChange);
 
     if (controlSubscribed) {
@@ -507,13 +614,61 @@ const watchAvailability = (onChange: (enabled: boolean) => void): void => {
 
     instance
         .private('chat.control')
-        .listen('.chat.availability', (payload: { enabled: boolean }) => {
-            if (!payload.enabled) {
-                reset();
-            }
+        .listen(
+            '.chat.availability',
+            (payload: { enabled: boolean; image_uploads_enabled: boolean }) => {
+                if (!payload.enabled) {
+                    reset();
+                }
 
-            availabilityHandlers.forEach((handler) => handler(payload.enabled));
-        });
+                const availability = {
+                    enabled: payload.enabled,
+                    imageUploadsEnabled: payload.image_uploads_enabled,
+                };
+                availabilityHandlers.forEach((handler) =>
+                    handler(availability),
+                );
+            },
+        );
+};
+
+const scopeToUser = (userId: string | null): void => {
+    if (scopedUserId === userId) {
+        return;
+    }
+
+    scopedUserId = userId;
+    state.drafts = {};
+
+    if (typeof window === 'undefined' || userId === null) {
+        return;
+    }
+
+    try {
+        const stored = window.sessionStorage.getItem(`chat-drafts:${userId}`);
+        state.drafts = stored
+            ? (JSON.parse(stored) as Record<string, string>)
+            : {};
+    } catch {
+        state.drafts = {};
+    }
+};
+
+const setDraft = (key: string, value: string): void => {
+    state.drafts[key] = value;
+
+    if (typeof window === 'undefined' || scopedUserId === null) {
+        return;
+    }
+
+    try {
+        window.sessionStorage.setItem(
+            `chat-drafts:${scopedUserId}`,
+            JSON.stringify(state.drafts),
+        );
+    } catch {
+        /* Draft persistence is best effort. */
+    }
 };
 
 export function useChat() {
@@ -575,6 +730,10 @@ export function useChat() {
         subscribeTo,
         watchAvailability,
         watchConnection,
+        updateReaction,
+        scopeToUser,
+        draftFor: (key: string): string => state.drafts[key] ?? '',
+        setDraft,
         reset,
         clearActive: (): void => {
             state.activeId = null;

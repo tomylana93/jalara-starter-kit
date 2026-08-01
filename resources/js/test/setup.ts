@@ -49,6 +49,7 @@ export const inertiaPageProps = {
     },
     chat: {
         enabled: true,
+        imageUploadsEnabled: true,
         unreadCount: 0,
     },
 };

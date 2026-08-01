@@ -10,6 +10,7 @@ use App\Settings\ChatSettings;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
@@ -79,6 +80,50 @@ test('a non participant cannot send into a conversation', function (): void {
         ->assertForbidden();
 
     expect(Message::query()->count())->toBe(0);
+});
+
+test('only participants can open a private chat image', function (): void {
+    Storage::fake('local');
+
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $outsider = User::factory()->create();
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+    Storage::disk('local')->put((string) $message->image_path, 'image');
+
+    $response = actingAs($second)
+        ->get(route('chat.messages.image', $message))
+        ->assertOk()
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+    expect($response->headers->get('Cache-Control'))
+        ->toContain('private')
+        ->toContain('no-store');
+
+    actingAs($outsider)->get(route('chat.messages.image', $message))->assertForbidden();
+});
+
+test('a sender cannot react to their own message and invalid emoji is rejected', function (): void {
+    $sender = User::factory()->create();
+    $peer = User::factory()->create();
+    $conversation = Conversation::factory()->between($sender, $peer)->create();
+    $message = Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $sender->id,
+    ]);
+
+    actingAs($sender)
+        ->putJson(route('chat.messages.reaction.update', $message), ['emoji' => '👍'])
+        ->assertForbidden();
+
+    actingAs($peer)
+        ->putJson(route('chat.messages.reaction.update', $message), ['emoji' => 'not-allowed'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('emoji');
 });
 
 test('a non participant is refused the conversation channel', function (): void {
