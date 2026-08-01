@@ -88,6 +88,7 @@ return [
 
         'placeholder' => [
             'category' => 'Select a category',
+            'slug' => 'Generated from the title',
         ],
 
         'message' => [

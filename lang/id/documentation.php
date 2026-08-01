@@ -88,6 +88,7 @@ return [
 
         'placeholder' => [
             'category' => 'Pilih kategori',
+            'slug' => 'Dibuat otomatis dari judul',
         ],
 
         'message' => [

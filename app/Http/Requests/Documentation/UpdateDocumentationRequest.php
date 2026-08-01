@@ -11,11 +11,15 @@ use Illuminate\Validation\Validator;
 
 class UpdateDocumentationRequest extends FormRequest
 {
+    use NormalizesDocumentationSlug;
+
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('content'))) {
             $this->merge(['content' => json_decode($this->string('content')->toString(), true)]);
         }
+
+        $this->normalizeSlug();
     }
 
     public function authorize(): bool
@@ -27,14 +31,14 @@ class UpdateDocumentationRequest extends FormRequest
     }
 
     /**
-     * @return array{documentation_category_id: string, title: string, slug: string, status: string, content: array<string, mixed>}
+     * @return array{documentation_category_id: string, title: string, slug: string|null, status: string, content: array<string, mixed>}
      */
     public function documentationAttributes(): array
     {
         return [
             'documentation_category_id' => $this->string('documentation_category_id')->toString(),
             'title' => $this->string('title')->toString(),
-            'slug' => $this->string('slug')->toString(),
+            'slug' => $this->filled('slug') ? $this->string('slug')->toString() : null,
             'status' => $this->string('status')->toString(),
             'content' => $this->array('content'),
         ];
@@ -47,7 +51,7 @@ class UpdateDocumentationRequest extends FormRequest
         $documentation = $this->route('documentation');
 
         $slugRules = [
-            'required',
+            'nullable',
             'string',
             'max:255',
             'alpha_dash:ascii',

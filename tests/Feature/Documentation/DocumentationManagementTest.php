@@ -54,6 +54,56 @@ it('stores validated tiptap json with an automatic slug and searchable text', fu
         ->and($documentation->published_at)->not->toBeNull();
 });
 
+it('regenerates the slug of a draft submitted without one', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $documentation = Documentation::factory()->create(['slug' => 'judul-lama', 'published_at' => null]);
+
+    $this->actingAs($admin)
+        ->put(route('documentation.manage.documents.update', $documentation), [
+            'documentation_category_id' => $documentation->documentation_category_id,
+            'title' => 'Judul Baru',
+            'slug' => '',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent('Isi dokumen'),
+        ])
+        ->assertRedirect(route('documentation.manage.index'));
+
+    expect($documentation->refresh()->slug)->toBe('judul-baru');
+});
+
+it('rejects a custom slug that normalizes onto an existing one', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    Documentation::factory()->create(['slug' => 'reset-password']);
+    $category = DocumentationCategory::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Panduan Akun',
+            'slug' => 'Reset_Password',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent('Isi dokumen'),
+        ])
+        ->assertSessionHasErrors('slug');
+});
+
+it('rejects a custom slug that normalizes to nothing', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Panduan Akun',
+            'slug' => '!!!',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent('Isi dokumen'),
+        ])
+        ->assertSessionHasErrors('slug');
+
+    expect(Documentation::query()->count())->toBe(0);
+});
+
 it('rejects unsafe links and locks a slug after first publication', function () {
     $admin = userWithRole(Role::SuperAdmin);
     $documentation = Documentation::factory()->published()->create(['slug' => 'stable-slug']);

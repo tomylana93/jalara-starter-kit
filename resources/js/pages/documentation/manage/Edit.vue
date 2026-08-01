@@ -168,6 +168,9 @@ onBeforeUnmount(() => {
                         ><Input
                             id="slug"
                             v-model="form.slug"
+                            :placeholder="
+                                t('documentation.form.placeholder.slug')
+                            "
                             :disabled="Boolean(documentation?.published_at)"
                             :aria-invalid="Boolean(form.errors.slug)"
                         />
