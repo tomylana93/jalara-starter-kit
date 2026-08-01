@@ -8,6 +8,8 @@ const message = (id: string, body: string, sender = 'peer'): ChatMessage => ({
     conversation_id: 'conversation-1',
     sender_id: sender,
     body,
+    image: null,
+    reactions: [],
     created_at: '2026-07-31T00:00:00+00:00',
 });
 
@@ -18,7 +20,11 @@ const livePage = [message('m-31', 'Message 31'), message('m-32', 'Message 32')];
 const olderPage = [message('m-1', 'Message 1'), message('m-2', 'Message 2')];
 
 const bodies = (wrapper: ReturnType<typeof mount>): string[] =>
-    wrapper.findAll('[data-message-id]').map((node) => node.text().trim());
+    wrapper
+        .findAll('[data-message-id]')
+        .map((node) =>
+            node.find('[data-test="chat-message-body"]').text().trim(),
+        );
 
 describe('ChatMessageList', () => {
     it('renders each message as a registry bubble', () => {

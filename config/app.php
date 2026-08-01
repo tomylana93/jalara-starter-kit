@@ -136,4 +136,23 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Isolated Vite Assets
+    |--------------------------------------------------------------------------
+    |
+    | The Playwright runner builds its own production bundle while a local Vite
+    | development server may still be running. Enabling isolation points the
+    | application at a dedicated build directory and hot file, so a test run
+    | never reads, replaces, or removes the assets that session owns. The same
+    | paths are selected in "vite/asset-output.ts".
+    |
+    */
+
+    'vite' => [
+        'isolated_assets' => (bool) env('E2E_ASSET_ISOLATION', false),
+        'isolated_build_directory' => 'build-e2e',
+        'isolated_hot_file' => 'hot-e2e',
+    ],
+
 ];

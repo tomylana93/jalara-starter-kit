@@ -46,11 +46,23 @@ return new class extends Migration
             $table->foreignUuid('sender_id')->constrained('users')->cascadeOnDelete();
 
             /* Messages are immutable: nothing in the application updates this column. */
-            $table->text('body');
+            $table->text('body')->nullable();
+            $table->string('image_path')->nullable();
+            $table->string('image_mime_type', 100)->nullable();
             $table->timestamps();
 
             /* Supports the newest-first window and the keyset scroll into history. */
             $table->index(['conversation_id', 'created_at', 'id']);
+        });
+
+        Schema::create('chat_message_reactions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('message_id')->constrained('chat_messages')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+            $table->string('emoji', 16);
+            $table->timestamps();
+
+            $table->unique(['message_id', 'user_id']);
         });
     }
 
@@ -59,6 +71,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('chat_message_reactions');
         Schema::dropIfExists('chat_messages');
         Schema::dropIfExists('chat_participants');
         Schema::dropIfExists('chat_conversations');

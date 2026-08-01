@@ -1,30 +1,26 @@
+import { ArrowLeft } from '@lucide/vue';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type {
-    DocumentationCategory,
-    DocumentationDetail,
+    DocumentationReaderCategory,
+    DocumentationReaderDetail,
 } from '@/types/documentation';
 import Show from './Show.vue';
 
 type Breadcrumb = { title: string; href: { url: string } };
 
-const documentation: DocumentationDetail = {
+const documentation: DocumentationReaderDetail = {
     id: 'document-1',
     title: 'Reset password',
     slug: 'reset-password',
-    status: 'published',
-    position: 1,
-    documentation_category_id: 'category-1',
-    published_at: '2026-07-31T00:00:00+00:00',
     content: { type: 'doc', content: [] },
-    category: { id: 'category-1', name: 'Account', position: 1 },
+    category: { id: 'category-1', name: 'Account' },
 };
 
-const categories: DocumentationCategory[] = [
+const categories: DocumentationReaderCategory[] = [
     {
         id: 'category-1',
         name: 'Account',
-        position: 1,
         documentations: [documentation],
     },
 ];
@@ -35,7 +31,7 @@ const breadcrumbs = (): Breadcrumb[] =>
             layout: (props: {
                 locale: string;
                 fallbackLocale: string;
-                documentation: DocumentationDetail;
+                documentation: DocumentationReaderDetail;
             }) => { breadcrumbs: Breadcrumb[] };
         }
     ).layout({
@@ -69,5 +65,12 @@ describe('documentation reader', () => {
         );
         expect(wrapper.get('h1').text()).toBe('Reset password');
         expect(wrapper.text()).toContain('Account');
+
+        // Verify the desktop back link
+        const backLink = wrapper.find('a[href="/documentation"]');
+        expect(backLink.exists()).toBe(true);
+        expect(backLink.text()).toContain('documentation.title');
+        expect(backLink.text()).not.toContain('←');
+        expect(backLink.findComponent(ArrowLeft).exists()).toBe(true);
     });
 });

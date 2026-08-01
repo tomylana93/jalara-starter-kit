@@ -276,9 +276,11 @@ return [
         'description' => 'Ketersediaan pesan langsung antar pengguna',
         'label' => [
             'chat_enabled' => 'Aktifkan chat',
+            'image_uploads_enabled' => 'Aktifkan upload gambar',
         ],
         'help' => [
             'chat_enabled' => 'Saat dinonaktifkan, halaman chat, widget desktop, dan notifikasi chat tertutup untuk semua orang. Percakapan, pesan, dan catatan audit tetap tersimpan.',
+            'image_uploads_enabled' => 'Izinkan pengguna melampirkan satu gambar privat PNG, JPEG, atau WebP pada pesan. Gambar lama tetap tersedia saat dinonaktifkan.',
         ],
         'button' => [
             'save' => 'Simpan',

@@ -24,7 +24,10 @@ class ChatAvailabilityChanged implements ShouldBroadcast
      */
     public const string CHANNEL = 'chat.control';
 
-    public function __construct(public bool $enabled) {}
+    public function __construct(
+        public bool $enabled,
+        public bool $imageUploadsEnabled,
+    ) {}
 
     /**
      * @return array<int, Channel>
@@ -40,10 +43,13 @@ class ChatAvailabilityChanged implements ShouldBroadcast
     }
 
     /**
-     * @return array{enabled: bool}
+     * @return array{enabled: bool, image_uploads_enabled: bool}
      */
     public function broadcastWith(): array
     {
-        return ['enabled' => $this->enabled];
+        return [
+            'enabled' => $this->enabled,
+            'image_uploads_enabled' => $this->imageUploadsEnabled,
+        ];
     }
 }

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 import { inertiaPageProps } from '@/test/setup';
-import type { DocumentationCategory } from '@/types/documentation';
+import type { DocumentationReaderCategory } from '@/types/documentation';
 import Index from './Index.vue';
 
 type Breadcrumb = { title: string; href: { url: string } };
@@ -15,18 +15,15 @@ const breadcrumbs = (): Breadcrumb[] =>
         }
     ).layout({ locale: 'en', fallbackLocale: 'en' }).breadcrumbs;
 
-const categories: DocumentationCategory[] = [
+const categories: DocumentationReaderCategory[] = [
     {
         id: 'category-1',
         name: 'Account',
-        position: 1,
         documentations: [
             {
                 id: 'document-1',
                 title: 'Reset password',
                 slug: 'reset-password',
-                status: 'published',
-                position: 1,
             },
         ],
     },

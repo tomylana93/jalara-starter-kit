@@ -2,85 +2,109 @@
 
 namespace App\Http\Controllers\Documentation;
 
-use App\Actions\Documentation\SaveDocumentation;
-use App\Enums\DocumentationStatus;
+use App\Actions\Documentation\CreateDocumentation;
+use App\Actions\Documentation\DeleteDocumentation;
+use App\Actions\Documentation\MoveDocumentation;
+use App\Actions\Documentation\UpdateDocumentation;
 use App\Http\Controllers\Controller;
+use App\Http\Presenters\DocumentationPresenter;
 use App\Http\Requests\Documentation\StoreDocumentationRequest;
 use App\Http\Requests\Documentation\UpdateDocumentationRequest;
 use App\Models\Documentation;
 use App\Models\DocumentationCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DocumentationWriteController extends Controller
 {
+    /**
+     * Show the editor with an empty document.
+     */
     public function create(): Response
     {
-        return Inertia::render('documentation/manage/Edit', $this->editorProps());
+        Gate::authorize('create', Documentation::class);
+
+        return Inertia::render('documentation/manage/Edit', DocumentationPresenter::editorProps(
+            DocumentationCategory::query()->orderBy('position')->get(),
+        ));
     }
 
-    public function store(StoreDocumentationRequest $request, SaveDocumentation $save): RedirectResponse
+    /**
+     * Store a new document and return the author to the management list.
+     */
+    public function store(StoreDocumentationRequest $request, CreateDocumentation $createDocumentation): RedirectResponse
     {
-        $documentation = $save->handle($request->documentationAttributes());
+        $createDocumentation->handle($request->documentationAttributes());
 
-        return to_route('documentation.manage.documents.edit', $documentation);
-    }
-
-    public function edit(Documentation $documentation): Response
-    {
-        return Inertia::render('documentation/manage/Edit', $this->editorProps($documentation));
-    }
-
-    public function update(UpdateDocumentationRequest $request, Documentation $documentation, SaveDocumentation $save): RedirectResponse
-    {
-        $save->handle($request->documentationAttributes(), $documentation);
-
-        return to_route('documentation.manage.documents.edit', $documentation);
-    }
-
-    public function destroy(Request $request, Documentation $documentation): RedirectResponse
-    {
-        Gate::authorize('delete', $documentation);
-        $documentation->delete();
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('documentation.message.created'),
+        ]);
 
         return to_route('documentation.manage.index');
     }
 
-    public function move(Request $request, Documentation $documentation, string $direction): RedirectResponse
+    /**
+     * Show the editor loaded with an existing document.
+     */
+    public function edit(Documentation $documentation): Response
+    {
+        Gate::authorize('update', $documentation);
+
+        return Inertia::render('documentation/manage/Edit', DocumentationPresenter::editorProps(
+            DocumentationCategory::query()->orderBy('position')->get(),
+            $documentation,
+        ));
+    }
+
+    /**
+     * Apply the editor changes and return the author to the management list.
+     */
+    public function update(UpdateDocumentationRequest $request, Documentation $documentation, UpdateDocumentation $updateDocumentation): RedirectResponse
+    {
+        $updateDocumentation->handle($documentation, $request->documentationAttributes());
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('documentation.message.updated'),
+        ]);
+
+        return to_route('documentation.manage.index');
+    }
+
+    /**
+     * Permanently delete a document.
+     */
+    public function destroy(Request $request, Documentation $documentation, DeleteDocumentation $deleteDocumentation): RedirectResponse
+    {
+        Gate::authorize('delete', $documentation);
+
+        $deleteDocumentation->handle($documentation);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('documentation.message.deleted'),
+        ]);
+
+        return to_route('documentation.manage.index');
+    }
+
+    /**
+     * Swap a document with its neighbour.
+     *
+     * Reordering is a repeated, incremental action, so it stays silent: a toast
+     * per click would drown the list the author is looking at.
+     */
+    public function move(Request $request, Documentation $documentation, string $direction, MoveDocumentation $moveDocumentation): RedirectResponse
     {
         Gate::authorize('update', $documentation);
         abort_unless(in_array($direction, ['up', 'down'], true), 404);
 
-        DB::transaction(function () use ($documentation, $direction): void {
-            $operator = $direction === 'up' ? '<' : '>';
-            $order = $direction === 'up' ? 'desc' : 'asc';
-            $adjacent = Documentation::query()
-                ->where('documentation_category_id', $documentation->documentation_category_id)
-                ->where('position', $operator, $documentation->position)
-                ->orderBy('position', $order)
-                ->first();
-
-            if ($adjacent !== null) {
-                [$documentation->position, $adjacent->position] = [$adjacent->position, $documentation->position];
-                $documentation->save();
-                $adjacent->save();
-            }
-        });
+        $moveDocumentation->handle($documentation, $direction);
 
         return back();
-    }
-
-    /** @return array<string, mixed> */
-    private function editorProps(?Documentation $documentation = null): array
-    {
-        return [
-            'documentation' => $documentation,
-            'categories' => DocumentationCategory::query()->orderBy('position')->get(['id', 'name']),
-            'statuses' => collect(DocumentationStatus::cases())->map(fn (DocumentationStatus $status): array => ['value' => $status->value, 'label' => __('documentation.status.'.$status->value)]),
-        ];
     }
 }

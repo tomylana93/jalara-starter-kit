@@ -44,6 +44,11 @@ test('opens a direct message from the recipient search and stores it', async ({
     await page.getByText(PEER_NAME, { exact: true }).first().click();
 
     await page
+        .locator('[data-test="chat-image-input"]')
+        .setInputFiles('public/assets/images/branding/icon.png');
+    await expect(page.locator('[data-test="chat-image-draft"]')).toBeVisible();
+
+    await page
         .locator('[data-test="chat-composer-input"]')
         .fill('First line\nSecond line');
     await page.locator('[data-test="chat-send-button"]').click();
@@ -51,6 +56,7 @@ test('opens a direct message from the recipient search and stores it', async ({
     await expect(
         page.locator('[data-test="chat-message-list"]'),
     ).toContainText('First line');
+    await expect(page.locator('[data-test="chat-message-image"]')).toBeVisible();
     await expect(
         page.locator('[data-test="chat-conversation-list"]'),
     ).toContainText(PEER_NAME);

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/composables/useInitials';
 import { useTranslations } from '@/composables/useTranslations';
@@ -16,6 +17,18 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useTranslations();
+const preview = computed(() => {
+    if (props.conversation.participant?.available === false) {
+        return t('chat.label.unavailable');
+    }
+
+    return (
+        props.conversation.last_message?.body ||
+        (props.conversation.last_message?.image ? t('chat.label.image') : '') ||
+        props.conversation.participant?.role ||
+        ''
+    );
+});
 </script>
 
 <template>
@@ -63,13 +76,7 @@ const { t } = useTranslations();
                 <span
                     class="mt-0.5 block truncate text-xs text-muted-foreground"
                 >
-                    {{
-                        props.conversation.participant?.available === false
-                            ? t('chat.label.unavailable')
-                            : (props.conversation.last_message?.body ??
-                              props.conversation.participant?.role ??
-                              '')
-                    }}
+                    {{ preview }}
                 </span>
             </span>
         </button>

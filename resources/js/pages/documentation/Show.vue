@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Menu } from '@lucide/vue';
+import { ArrowLeft, Menu } from '@lucide/vue';
 import DocumentationRenderer from '@/components/documentation/DocumentationRenderer.vue';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,19 +14,19 @@ import {
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index, show } from '@/routes/documentation';
 import type {
-    DocumentationCategory,
-    DocumentationDetail,
+    DocumentationReaderCategory,
+    DocumentationReaderDetail,
 } from '@/types/documentation';
 
 type LayoutProps = {
     locale: string;
     fallbackLocale: string;
-    documentation: DocumentationDetail;
+    documentation: DocumentationReaderDetail;
 };
 
 defineProps<{
-    documentation: DocumentationDetail;
-    categories: DocumentationCategory[];
+    documentation: DocumentationReaderDetail;
+    categories: DocumentationReaderCategory[];
 }>();
 
 defineOptions({
@@ -59,9 +59,13 @@ const { t } = useTranslations();
         >
             <aside class="hidden lg:block">
                 <ScrollArea class="h-[calc(100vh-8rem)] pr-4">
-                    <Link :href="index()" class="text-sm font-medium"
-                        >← {{ t('documentation.title') }}</Link
+                    <Link
+                        :href="index()"
+                        class="inline-flex items-center gap-1.5 text-sm font-medium"
                     >
+                        <ArrowLeft class="size-4" aria-hidden="true" />
+                        {{ t('documentation.title') }}
+                    </Link>
                     <div
                         v-for="category in categories"
                         :key="category.id"

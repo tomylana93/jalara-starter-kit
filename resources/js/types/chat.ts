@@ -21,8 +21,16 @@ export type ChatMessage = {
     id: string;
     conversation_id: string;
     sender_id: string;
-    body: string;
+    body: string | null;
+    image: { url: string } | null;
+    reactions: readonly ChatReaction[];
     created_at: string | null;
+};
+
+export type ChatReaction = {
+    id: string;
+    user_id: string;
+    emoji: string;
 };
 
 export type ChatConversation = {
@@ -61,6 +69,7 @@ export type ChatConversationWindow = {
  */
 export type ChatSharedState = {
     enabled: boolean;
+    imageUploadsEnabled: boolean;
     unreadCount: number;
 };
 

@@ -52,7 +52,7 @@ const { t } = useTranslations();
             :data="props.scrollProp"
             preserve-url
             items-element="#chat-conversations"
-            class="min-h-0 flex-1 overflow-y-auto"
+            class="min-h-0 flex-1 scroll-fade-y overflow-y-auto"
         >
             <ul id="chat-conversations" data-test="chat-conversation-list">
                 <ChatConversationRow
@@ -65,7 +65,7 @@ const { t } = useTranslations();
             </ul>
         </InfiniteScroll>
 
-        <div v-else class="min-h-0 flex-1 overflow-y-auto">
+        <div v-else class="min-h-0 flex-1 scroll-fade-y overflow-y-auto">
             <ul data-test="chat-conversation-list">
                 <ChatConversationRow
                     v-for="conversation in props.conversations"

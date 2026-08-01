@@ -24,6 +24,15 @@ return [
         'manage' => 'No documentation yet.',
     ],
 
+    'message' => [
+        'created' => 'The documentation has been created.',
+        'updated' => 'The documentation has been updated.',
+        'deleted' => 'The documentation has been deleted.',
+        'category_created' => 'The category has been created.',
+        'category_updated' => 'The category has been updated.',
+        'category_deleted' => 'The category has been deleted.',
+    ],
+
     'reader' => [
         'list' => 'Documentation list',
         'list_description' => 'Pick the documentation to read.',
@@ -79,39 +88,11 @@ return [
 
         'placeholder' => [
             'category' => 'Select a category',
+            'slug' => 'Generated from the title',
         ],
 
         'message' => [
             'discard' => 'Discard unsaved changes?',
-        ],
-    ],
-
-    'editor' => [
-        'placeholder' => 'Start writing documentation…',
-
-        'action' => [
-            'heading_1' => 'Heading 1',
-            'heading_2' => 'Heading 2',
-            'heading_3' => 'Heading 3',
-            'bold' => 'Bold',
-            'italic' => 'Italic',
-            'bullet_list' => 'Bullet list',
-            'ordered_list' => 'Numbered list',
-            'quote' => 'Quote',
-            'code' => 'Code',
-            'link' => 'Link',
-            'table' => 'Table',
-            'undo' => 'Undo',
-            'redo' => 'Redo',
-        ],
-
-        'link' => [
-            'title' => 'Link URL',
-            'description' => 'Use an internal path, HTTP, or HTTPS. An empty value removes the link.',
-            'label' => 'URL',
-            'placeholder' => 'https://',
-            'submit' => 'Apply',
-            'cancel' => 'Cancel',
         ],
     ],
 

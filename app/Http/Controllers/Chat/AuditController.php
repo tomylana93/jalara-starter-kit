@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Presenters\ChatPresenter;
 use App\Http\Requests\Chat\IndexAuditRequest;
 use App\Models\Chat\Conversation;
+use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class AuditController extends Controller
         $search = is_string($search) ? trim($search) : '';
 
         $conversations = Conversation::query()
-            ->with(['participants.user', 'latestMessage'])
+            ->with(['participants.user', 'latestMessage.reactions'])
             ->withCount('messages')
             ->when($search !== '', fn (Builder $query) => $query->whereHas(
                 'participants.user',
@@ -99,11 +100,12 @@ class AuditController extends Controller
         $recordConversationAccess->handle($conversation, $viewer, $request);
 
         $messages = $conversation->messages()
+            ->with('reactions')
             ->oldest()
             ->orderBy('id')
             ->paginate(perPage: self::MESSAGES_PER_PAGE, pageName: self::MESSAGES_PAGE);
 
-        $messages->through(ChatPresenter::message(...));
+        $messages->through(fn (Message $message): array => ChatPresenter::message($message, true));
 
         $logs = $conversation->auditLogs()
             ->with('viewer')

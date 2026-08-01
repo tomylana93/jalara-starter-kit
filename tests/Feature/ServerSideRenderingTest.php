@@ -21,10 +21,21 @@ beforeEach(function (): void {
     Http::fake();
 });
 
+/*
+ * Inertia posts to the Vite dev server's "/__inertia_ssr" endpoint instead of
+ * the bundle's "/render" whenever a hot marker exists, and the stubbed Vite of
+ * the base test case still reads the real marker. Both endpoints prove the page
+ * was rendered on the server, so the assertion accepts either rather than
+ * depending on whether a development session happens to be running.
+ */
 it('server side renders guest pages', function () {
     get(route('login'))->assertOk();
 
-    Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/render'));
+    Http::assertSent(fn (Request $request) => in_array(
+        parse_url($request->url(), PHP_URL_PATH),
+        ['/render', '/__inertia_ssr'],
+        true,
+    ));
 });
 
 it('skips server side rendering for pages that render the application shell', function (string $route) {

@@ -25,4 +25,12 @@ class MessageFactory extends Factory
             'body' => fake()->sentence(),
         ];
     }
+
+    public function withImage(): static
+    {
+        return $this->state(fn (): array => [
+            'image_path' => 'chat/'.fake()->uuid().'.png',
+            'image_mime_type' => 'image/png',
+        ]);
+    }
 }

@@ -1,19 +1,13 @@
 <script setup lang="ts">
 import { Head, InfiniteScroll, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import ChatMessageBubble from '@/components/chat/ChatMessageBubble.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
-import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { buttonVariants } from '@/components/ui/button';
-import {
-    Message,
-    MessageContent,
-    MessageHeader,
-} from '@/components/ui/message';
 import {
     MessageScroller,
     MessageScrollerButton,
     MessageScrollerContent,
-    MessageScrollerItem,
     MessageScrollerProvider,
     MessageScrollerViewport,
 } from '@/components/ui/message-scroller';
@@ -123,32 +117,24 @@ const nameFor = (senderId: string): string =>
                                         id="chat-audit-transcript"
                                         class="gap-3"
                                     >
-                                        <MessageScrollerItem
+                                        <div
                                             v-for="message in props.messages
                                                 .data"
                                             :key="message.id"
-                                            :message-id="message.id"
                                             :data-test="`chat-audit-message-${message.id}`"
+                                            class="space-y-1"
                                         >
-                                            <Message align="start">
-                                                <MessageContent>
-                                                    <MessageHeader>
-                                                        {{
-                                                            nameFor(
-                                                                message.sender_id,
-                                                            )
-                                                        }}
-                                                    </MessageHeader>
-                                                    <Bubble variant="muted">
-                                                        <BubbleContent
-                                                            class="whitespace-pre-wrap"
-                                                        >
-                                                            {{ message.body }}
-                                                        </BubbleContent>
-                                                    </Bubble>
-                                                </MessageContent>
-                                            </Message>
-                                        </MessageScrollerItem>
+                                            <p
+                                                class="text-xs font-medium text-muted-foreground"
+                                            >
+                                                {{ nameFor(message.sender_id) }}
+                                            </p>
+                                            <ChatMessageBubble
+                                                :message="message"
+                                                :current-user-id="null"
+                                                audit
+                                            />
+                                        </div>
                                     </MessageScrollerContent>
                                 </InfiniteScroll>
                             </MessageScrollerViewport>

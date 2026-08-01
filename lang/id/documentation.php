@@ -24,6 +24,15 @@ return [
         'manage' => 'Belum ada dokumentasi.',
     ],
 
+    'message' => [
+        'created' => 'Dokumentasi berhasil dibuat.',
+        'updated' => 'Dokumentasi berhasil diperbarui.',
+        'deleted' => 'Dokumentasi berhasil dihapus.',
+        'category_created' => 'Kategori berhasil dibuat.',
+        'category_updated' => 'Kategori berhasil diperbarui.',
+        'category_deleted' => 'Kategori berhasil dihapus.',
+    ],
+
     'reader' => [
         'list' => 'Daftar dokumentasi',
         'list_description' => 'Pilih dokumentasi yang ingin dibaca.',
@@ -79,39 +88,11 @@ return [
 
         'placeholder' => [
             'category' => 'Pilih kategori',
+            'slug' => 'Dibuat otomatis dari judul',
         ],
 
         'message' => [
             'discard' => 'Buang perubahan yang belum disimpan?',
-        ],
-    ],
-
-    'editor' => [
-        'placeholder' => 'Mulai menulis dokumentasi…',
-
-        'action' => [
-            'heading_1' => 'Heading 1',
-            'heading_2' => 'Heading 2',
-            'heading_3' => 'Heading 3',
-            'bold' => 'Tebal',
-            'italic' => 'Miring',
-            'bullet_list' => 'Daftar',
-            'ordered_list' => 'Daftar bernomor',
-            'quote' => 'Kutipan',
-            'code' => 'Kode',
-            'link' => 'Tautan',
-            'table' => 'Tabel',
-            'undo' => 'Urungkan',
-            'redo' => 'Ulangi',
-        ],
-
-        'link' => [
-            'title' => 'URL tautan',
-            'description' => 'Gunakan path internal, HTTP, atau HTTPS. Nilai kosong akan menghapus tautan.',
-            'label' => 'URL',
-            'placeholder' => 'https://',
-            'submit' => 'Terapkan',
-            'cancel' => 'Batal',
         ],
     ],
 

@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class MessageController extends Controller
 {
@@ -32,11 +33,27 @@ class MessageController extends Controller
     ): JsonResponse {
         $user = $this->authenticatedUser($request);
 
+        $conversationId = $request->validated('conversation_id');
+        $isFirstMessage = ! is_string($conversationId);
         $conversation = $this->resolveConversation($request, $user, $startConversation);
 
         Gate::authorize('send', $conversation);
 
-        $message = $sendMessage->handle($conversation, $user, (string) $request->validated('body'));
+        try {
+            $body = $request->validated('body');
+            $message = $sendMessage->handle(
+                $conversation,
+                $user,
+                is_string($body) ? $body : null,
+                $request->file('image'),
+            );
+        } catch (Throwable $throwable) {
+            if ($isFirstMessage && $conversation->messages()->doesntExist()) {
+                $conversation->delete();
+            }
+
+            throw $throwable;
+        }
 
         $conversation->load('participants.user')->setRelation('latestMessage', $message);
 

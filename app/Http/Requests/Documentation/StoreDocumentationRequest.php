@@ -11,11 +11,15 @@ use Illuminate\Validation\Validator;
 
 class StoreDocumentationRequest extends FormRequest
 {
+    use NormalizesDocumentationSlug;
+
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('content'))) {
             $this->merge(['content' => json_decode($this->string('content')->toString(), true)]);
         }
+
+        $this->normalizeSlug();
     }
 
     public function authorize(): bool

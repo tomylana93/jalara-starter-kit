@@ -162,7 +162,7 @@ class HandleInertiaRequests extends Middleware
      * navigation badge renders. It is zero while chat is off, so no count
      * survives a switched-off surface.
      *
-     * @return array{enabled: bool, unreadCount: int}
+     * @return array{enabled: bool, imageUploadsEnabled: bool, unreadCount: int}
      */
     private function chatState(Request $request): array
     {
@@ -170,11 +170,16 @@ class HandleInertiaRequests extends Middleware
         $enabled = $this->chatEnabled();
 
         if (! $enabled || ! $user instanceof User) {
-            return ['enabled' => false, 'unreadCount' => 0];
+            return [
+                'enabled' => false,
+                'imageUploadsEnabled' => false,
+                'unreadCount' => 0,
+            ];
         }
 
         return [
             'enabled' => true,
+            'imageUploadsEnabled' => SettingsResolver::tryResolve(ChatSettings::class)->imageUploadsEnabled ?? false,
             'unreadCount' => Conversation::unreadMessageCountFor($user),
         ];
     }

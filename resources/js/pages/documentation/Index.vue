@@ -7,14 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index, show } from '@/routes/documentation';
 import { index as manageIndex } from '@/routes/documentation/manage';
-import type { DocumentationCategory } from '@/types/documentation';
+import type { DocumentationReaderCategory } from '@/types/documentation';
 
 type LayoutProps = {
     locale: string;
     fallbackLocale: string;
 };
 
-defineProps<{ categories: DocumentationCategory[] }>();
+defineProps<{ categories: DocumentationReaderCategory[] }>();
 
 defineOptions({
     layout: (layoutProps: LayoutProps) => ({

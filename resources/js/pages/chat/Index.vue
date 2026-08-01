@@ -8,6 +8,7 @@ import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
 import { useChat } from '@/composables/useChat';
 import { translate, useTranslations } from '@/composables/useTranslations';
+import { useUploadGuard } from '@/composables/useUploadGuard';
 import { chatRequest } from '@/lib/chatClient';
 import { index } from '@/routes/chat';
 import {
@@ -76,11 +77,22 @@ const {
     subscribeTo,
     watchAvailability,
     watchConnection,
+    updateReaction,
+    scopeToUser,
 } = useChat();
+const { beginUpload } = useUploadGuard();
 
 const currentUserId = computed(() => page.props.auth.user?.id ?? null);
 const enabled = ref(page.props.chat.enabled);
+const imageUploadsEnabled = ref(page.props.chat.imageUploadsEnabled);
 const pendingRecipient = ref<ChatProfile | null>(null);
+const draftKey = computed(
+    () =>
+        props.activeConversation?.id ??
+        (pendingRecipient.value
+            ? `recipient:${pendingRecipient.value.id}`
+            : 'new'),
+);
 
 /*
  * Inertia owns the transcript's pages and hands them back newest first, so the
@@ -129,13 +141,15 @@ const reportOpen = (): void => {
 };
 
 onMounted(() => {
+    scopeToUser(currentUserId.value);
     watchConnection(() => {
         /* The server is the only truth after a dropped socket. */
         router.reload({ reset: ['messages', 'conversations'] });
     });
 
     watchAvailability((next) => {
-        enabled.value = next;
+        enabled.value = next.enabled;
+        imageUploadsEnabled.value = next.imageUploadsEnabled;
     });
 
     if (props.activeConversation !== null) {
@@ -192,21 +206,37 @@ const startWith = (recipient: ChatProfile): void => {
     pendingRecipient.value = recipient;
 };
 
-const send = async (body: string): Promise<void> => {
+const send = async (
+    payload: { body: string; image: File | null },
+    complete: (succeeded: boolean) => void,
+): Promise<void> => {
     const conversationId = props.activeConversation?.id ?? null;
+    const upload = payload.image ? beginUpload() : null;
 
     const message = await sendMessage({
-        body,
+        body: payload.body,
+        image: payload.image,
         conversationId,
         recipientId:
             conversationId === null ? pendingRecipient.value?.id : null,
     });
 
-    pendingRecipient.value = null;
+    upload?.release();
+    complete(message !== null);
+
+    if (message !== null) {
+        pendingRecipient.value = null;
+    }
 
     /* A first message opens a conversation the inbox has not heard of yet. */
     if (message !== null && conversationId === null) {
         select(message.conversation_id, true);
+    }
+};
+
+const react = (message: ChatMessage, emoji: string | null): void => {
+    if (currentUserId.value) {
+        void updateReaction(message, currentUserId.value, emoji);
     }
 };
 
@@ -292,9 +322,13 @@ const seen = (messageId: string): void => {
                             :current-user-id="currentUserId"
                             scroll-prop="messages"
                             :sending="state.sending"
+                            :upload-progress="state.uploadProgress"
+                            :image-uploads-enabled="imageUploadsEnabled"
+                            :draft-key="draftKey"
                             :error="state.error"
                             @send="send"
                             @seen="seen"
+                            @react="react"
                         />
                     </div>
                 </div>

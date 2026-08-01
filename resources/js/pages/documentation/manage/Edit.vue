@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted } from 'vue';
-import DocumentationEditor from '@/components/documentation/DocumentationEditor.vue';
+import RichTextEditor from '@/components/editor/RichTextEditor.vue';
 import InputError from '@/components/InputError.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
@@ -20,21 +20,22 @@ import { index as documentationIndex } from '@/routes/documentation';
 import { create, index as manageIndex } from '@/routes/documentation/manage';
 import { edit, store, update } from '@/routes/documentation/manage/documents';
 import type {
-    DocumentationCategory,
-    DocumentationDetail,
-    TiptapDocument,
+    DocumentationCategoryOption,
+    DocumentationEditorValue,
+    DocumentationStatus,
 } from '@/types/documentation';
+import type { RichTextDocument } from '@/types/editor';
 
 type LayoutProps = {
     locale: string;
     fallbackLocale: string;
-    documentation: DocumentationDetail | null;
+    documentation: DocumentationEditorValue | null;
 };
 
 const props = defineProps<{
-    documentation: DocumentationDetail | null;
-    categories: Pick<DocumentationCategory, 'id' | 'name'>[];
-    statuses: { value: 'draft' | 'published'; label: string }[];
+    documentation: DocumentationEditorValue | null;
+    categories: DocumentationCategoryOption[];
+    statuses: { value: DocumentationStatus; label: string }[];
 }>();
 
 defineOptions({
@@ -95,8 +96,8 @@ const form = useForm({
         },
     ),
 });
-const editorContent = computed<TiptapDocument>({
-    get: () => JSON.parse(form.content) as TiptapDocument,
+const editorContent = computed<RichTextDocument>({
+    get: () => JSON.parse(form.content) as RichTextDocument,
     set: (value) => {
         form.content = JSON.stringify(value);
     },
@@ -167,6 +168,9 @@ onBeforeUnmount(() => {
                         ><Input
                             id="slug"
                             v-model="form.slug"
+                            :placeholder="
+                                t('documentation.form.placeholder.slug')
+                            "
                             :disabled="Boolean(documentation?.published_at)"
                             :aria-invalid="Boolean(form.errors.slug)"
                         />
@@ -224,7 +228,7 @@ onBeforeUnmount(() => {
                         <InputError :message="form.errors.status" />
                     </div>
                 </div>
-                <DocumentationEditor v-model="editorContent" />
+                <RichTextEditor v-model="editorContent" />
                 <InputError :message="form.errors.content" />
                 <div class="flex justify-end gap-3">
                     <Button

@@ -16,6 +16,7 @@ class UpdateChatSettingsRequest extends FormRequest
     {
         return [
             'chatEnabled' => ['required', 'boolean'],
+            'imageUploadsEnabled' => ['sometimes', 'boolean'],
         ];
     }
 }

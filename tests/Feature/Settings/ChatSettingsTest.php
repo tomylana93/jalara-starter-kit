@@ -11,7 +11,8 @@ use function Pest\Laravel\get;
 use function Pest\Laravel\put;
 
 test('chat is available by default', function (): void {
-    expect(app(ChatSettings::class)->chatEnabled)->toBeTrue();
+    expect(app(ChatSettings::class)->chatEnabled)->toBeTrue()
+        ->and(app(ChatSettings::class)->imageUploadsEnabled)->toBeTrue();
 });
 
 test('a settings manager can read the chat settings page', function (): void {
@@ -21,8 +22,28 @@ test('a settings manager can read the chat settings page', function (): void {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/Chat')
-            ->where('settings.chatEnabled', true),
+            ->where('settings.chatEnabled', true)
+            ->where('settings.imageUploadsEnabled', true),
         );
+});
+
+test('the image upload toggle is stored and announced with the full chat configuration', function (): void {
+    Event::fake([ChatAvailabilityChanged::class]);
+
+    actingAs(settingsManager())
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->put(route('settings.chat.update'), [
+            'chatEnabled' => '1',
+            'imageUploadsEnabled' => '0',
+        ])
+        ->assertRedirect(route('settings.chat.edit'));
+
+    expect(app(ChatSettings::class)->refresh()->imageUploadsEnabled)->toBeFalse();
+
+    Event::assertDispatched(
+        ChatAvailabilityChanged::class,
+        fn (ChatAvailabilityChanged $event): bool => $event->enabled && ! $event->imageUploadsEnabled,
+    );
 });
 
 test('the chat toggle is stored and announced to online clients', function (): void {

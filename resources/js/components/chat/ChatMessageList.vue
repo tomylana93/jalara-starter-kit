@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { InfiniteScroll } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { InfiniteScroll, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import ChatMessageBubble from '@/components/chat/ChatMessageBubble.vue';
 import { Button } from '@/components/ui/button';
+import { Marker, MarkerContent } from '@/components/ui/marker';
 import {
     MessageScroller,
     MessageScrollerButton,
@@ -38,9 +39,70 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     loadOlder: [];
     seen: [messageId: string];
+    react: [message: ChatMessage, emoji: string | null];
 }>();
 
 const { t } = useTranslations();
+const page = usePage();
+
+const latestOutgoingId = computed(
+    () =>
+        [...props.messages]
+            .reverse()
+            .find((message) => message.sender_id === props.currentUserId)?.id ??
+        null,
+);
+
+const localDate = (message: ChatMessage): Date | null => {
+    if (!message.created_at) {
+        return null;
+    }
+
+    const date = new Date(message.created_at);
+
+    return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const showsDateMarker = (index: number): boolean => {
+    const current = localDate(props.messages[index]);
+    const previous = index > 0 ? localDate(props.messages[index - 1]) : null;
+
+    return (
+        current !== null && current.toDateString() !== previous?.toDateString()
+    );
+};
+
+const dateLabel = (message: ChatMessage): string => {
+    const date = localDate(message);
+
+    if (!date) {
+        return '';
+    }
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+        return t('chat.label.today');
+    }
+
+    if (date.toDateString() === yesterday.toDateString()) {
+        return t('chat.label.yesterday');
+    }
+
+    return new Intl.DateTimeFormat(page.props.locale, {
+        dateStyle: 'medium',
+    }).format(date);
+};
+
+const isRead = (message: ChatMessage): boolean =>
+    Boolean(
+        props.peerReadAt &&
+        message.created_at &&
+        new Date(props.peerReadAt).getTime() >=
+            new Date(message.created_at).getTime(),
+    );
 
 /* How close to the end still counts as reading the live edge. */
 const EDGE_THRESHOLD = 48;
@@ -102,7 +164,7 @@ watch(
     >
         <MessageScroller class="min-h-0 flex-1">
             <MessageScrollerViewport
-                class="px-4 py-3"
+                class="scroll-fade-y px-4 py-3"
                 data-test="chat-message-list"
                 @scroll="onScroll"
             >
@@ -136,12 +198,31 @@ watch(
                     </template>
 
                     <MessageScrollerContent id="chat-transcript" class="gap-3">
-                        <ChatMessageBubble
-                            v-for="message in props.messages"
+                        <template
+                            v-for="(message, index) in props.messages"
                             :key="message.id"
-                            :message="message"
-                            :current-user-id="props.currentUserId"
-                        />
+                        >
+                            <Marker
+                                v-if="showsDateMarker(index)"
+                                variant="separator"
+                            >
+                                <MarkerContent>{{
+                                    dateLabel(message)
+                                }}</MarkerContent>
+                            </Marker>
+                            <ChatMessageBubble
+                                :message="message"
+                                :current-user-id="props.currentUserId"
+                                :latest-outgoing="
+                                    message.id === latestOutgoingId
+                                "
+                                :read="isRead(message)"
+                                @react="
+                                    (target, emoji) =>
+                                        emit('react', target, emoji)
+                                "
+                            />
+                        </template>
                     </MessageScrollerContent>
                 </InfiniteScroll>
 
@@ -158,21 +239,29 @@ watch(
                         </Button>
                     </div>
 
-                    <ChatMessageBubble
-                        v-for="message in props.messages"
+                    <template
+                        v-for="(message, index) in props.messages"
                         :key="message.id"
-                        :message="message"
-                        :current-user-id="props.currentUserId"
-                    />
+                    >
+                        <Marker
+                            v-if="showsDateMarker(index)"
+                            variant="separator"
+                        >
+                            <MarkerContent>{{
+                                dateLabel(message)
+                            }}</MarkerContent>
+                        </Marker>
+                        <ChatMessageBubble
+                            :message="message"
+                            :current-user-id="props.currentUserId"
+                            :latest-outgoing="message.id === latestOutgoingId"
+                            :read="isRead(message)"
+                            @react="
+                                (target, emoji) => emit('react', target, emoji)
+                            "
+                        />
+                    </template>
                 </MessageScrollerContent>
-
-                <p
-                    v-if="props.peerReadAt && props.messages.length > 0"
-                    class="pt-2 text-right text-xs text-muted-foreground"
-                    data-test="chat-read-receipt"
-                >
-                    {{ t('chat.label.read') }}
-                </p>
             </MessageScrollerViewport>
 
             <MessageScrollerButton

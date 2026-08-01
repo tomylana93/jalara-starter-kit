@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Models\Chat\AuditLog;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
+use App\Models\Chat\Reaction;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -43,26 +44,50 @@ final class ChatPresenter
     }
 
     /**
-     * @return array{id: string, conversation_id: string, sender_id: string, body: string, created_at: string|null}
+     * @return array{id: string, conversation_id: string, sender_id: string, body: string|null, image: array{url: string}|null, reactions: list<array{id: string, user_id: string, emoji: string}>, created_at: string|null}
      */
-    public static function message(Message $message): array
+    public static function message(Message $message, bool $audit = false): array
     {
         return [
             'id' => $message->id,
             'conversation_id' => $message->conversation_id,
             'sender_id' => $message->sender_id,
             'body' => $message->body,
+            'image' => $message->image_path === null ? null : [
+                'url' => route($audit ? 'chat.audit.messages.image' : 'chat.messages.image', $message),
+            ],
+            'reactions' => $message->relationLoaded('reactions')
+                ? array_values($message->reactions->map(
+                    fn (Reaction $reaction): array => self::reaction($reaction),
+                )->all())
+                : [],
             'created_at' => $message->created_at?->toIso8601String(),
+        ];
+    }
+
+    /** @return array{id: string, user_id: string, emoji: string}|null */
+    public static function reaction(?Reaction $reaction): ?array
+    {
+        if (! $reaction instanceof Reaction) {
+            return null;
+        }
+
+        return [
+            'id' => $reaction->id,
+            'user_id' => $reaction->user_id,
+            'emoji' => $reaction->emoji,
         ];
     }
 
     /**
      * @param  Collection<int, Message>  $messages
-     * @return list<array{id: string, conversation_id: string, sender_id: string, body: string, created_at: string|null}>
+     * @return list<array<string, mixed>>
      */
     public static function messages(Collection $messages): array
     {
-        return array_values($messages->map(self::message(...))->all());
+        return array_values($messages->map(
+            fn (Message $message): array => self::message($message),
+        )->all());
     }
 
     /**
