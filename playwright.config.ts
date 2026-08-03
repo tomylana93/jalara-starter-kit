@@ -1,7 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const databasePath = `${process.cwd()}/storage/framework/testing/playwright.sqlite`;
+/*
+ * `e2e/run-tests.sh` owns a per-run temporary Laravel storage root and removes
+ * it afterwards, so nothing a run writes lands in the application's real
+ * storage. A direct `pnpm exec playwright test` invocation has no runner, and
+ * falls back to the repository storage path it has always used.
+ */
+const storageRoot =
+    process.env.LARAVEL_STORAGE_PATH ?? `${process.cwd()}/storage`;
+const databasePath = `${storageRoot}/framework/testing/playwright.sqlite`;
 const baseURL = 'http://127.0.0.1:8010';
+
+/*
+ * Set only when the runner created a uniquely named public symlink into the
+ * isolated public storage root; otherwise the public disk keeps its usual
+ * `APP_URL/storage` URL.
+ */
+const publicStorageLink = process.env.E2E_PUBLIC_STORAGE_LINK;
 
 /*
  * Reverb runs on its own port so a development server started with
@@ -15,6 +30,10 @@ const reverbKey = 'playwright-reverb-key';
 const applicationEnvironment = {
     APP_ENV: 'testing',
     APP_URL: baseURL,
+    LARAVEL_STORAGE_PATH: storageRoot,
+    ...(publicStorageLink
+        ? { FILESYSTEM_PUBLIC_URL: `${baseURL}/${publicStorageLink}` }
+        : {}),
     DB_CONNECTION: 'sqlite',
     DB_DATABASE: databasePath,
     SESSION_DRIVER: 'file',

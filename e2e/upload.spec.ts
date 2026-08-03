@@ -1,5 +1,5 @@
-import { expect, test  } from '@playwright/test';
-import type {Page} from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /** A genuinely valid 1x1 PNG, which satisfies the square icon rule. */
 const pngFixture = {
@@ -63,6 +63,25 @@ test('locks the page while an upload is in flight and releases it afterwards', a
 
     await expect(page.getByText('Upload in progress')).toBeHidden();
     await expect(field).toHaveAttribute('data-state', 'done');
+
+    /*
+     * The processed file lives in the run's isolated public storage root, so
+     * this also proves the temporary public symlink and the configurable public
+     * disk URL really serve it to a browser.
+     */
+    const preview = page.locator('[data-test="branding-icon-preview"] img');
+    await expect(preview).toHaveAttribute('src', /^https?:\/\//);
+
+    const previewUrl = await preview.getAttribute('src');
+    expect((await page.request.get(previewUrl ?? '')).status()).toBe(200);
+    await expect
+        .poll(() =>
+            preview.evaluate(
+                (image: HTMLImageElement) =>
+                    image.complete && image.naturalWidth > 0,
+            ),
+        )
+        .toBe(true);
 
     // Navigation works normally again once the upload has settled.
     await page.goto('/settings/general');
