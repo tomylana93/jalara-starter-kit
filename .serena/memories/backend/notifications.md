@@ -31,6 +31,7 @@
   'desc')` as a tie-breaker for deterministic paging; without it a row can repeat
   or vanish between pages. Tests that assert "newest first" must `travel()`
   between sends, since same-second inserts have no meaningful order.
+- Same-second notification ordering tests must derive the expected order by sorting the actual generated UUIDv4 IDs descending, or explicitly assign controlled IDs; they must never treat insertion order as UUID lexical order.
 
 ## Channel authorization
 

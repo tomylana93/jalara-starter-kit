@@ -115,15 +115,22 @@ it('shares the five newest notifications and the unread count with the bell', fu
 
     travelBack();
 
+    $sortedTied = $user->notifications()
+        ->get()
+        ->filter(fn ($notification) => in_array($notification->data['title'] ?? null, ['Title 5', 'Title 6', 'Title 7'], true))
+        ->sortByDesc('id')
+        ->values();
+
     actingAs($user)
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('notificationBell.items', 5)
             ->where('notificationBell.unreadCount', 7)
-            ->where('notificationBell.items.0.title', 'Title 7')
-            ->where('notificationBell.items.1.title', 'Title 6')
-            ->where('notificationBell.items.2.title', 'Title 5')
+            ->where('notificationBell.items.0.id', $sortedTied[0]->id)
+            ->where('notificationBell.items.1.id', $sortedTied[1]->id)
+            ->where('notificationBell.items.2.id', $sortedTied[2]->id)
             ->where('notificationBell.items.3.title', 'Title 4')
+            ->where('notificationBell.items.4.title', 'Title 3')
         );
 });
 
