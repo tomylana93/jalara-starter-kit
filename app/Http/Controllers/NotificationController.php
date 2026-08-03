@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Notifications\PaginateNotifications;
 use App\Http\Presenters\NotificationPresenter;
 use App\Http\Requests\Notifications\IndexNotificationRequest;
 use App\Models\User;
-use App\Notifications\ChatMessageNotification;
-use App\Settings\ChatSettings;
-use App\Settings\SettingsResolver;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\DatabaseNotification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,52 +26,23 @@ class NotificationController extends Controller
      */
     public const FILTERS = [self::FILTER_ALL, self::FILTER_UNREAD];
 
-    private const int PER_PAGE = 10;
-
     /**
      * Show the authenticated user's notification history.
      */
-    public function index(IndexNotificationRequest $request): Response
+    public function index(IndexNotificationRequest $request, PaginateNotifications $paginateNotifications): Response
     {
         $user = $this->user($request);
 
         $filter = $request->validated('filter');
         $filter = is_string($filter) ? $filter : self::FILTER_ALL;
 
-        $query = $this->scopedQuery($user, $filter);
-
-        /*
-         * Laravel accepts any positive page, so a page past the end would answer
-         * with an empty window instead of rows. Counting first lets the request
-         * settle on the last page that exists; the count is handed to the
-         * paginator so normalizing costs no extra query.
-         */
-        $total = $query->toBase()->getCountForPagination();
-        $lastPage = max(1, (int) ceil($total / self::PER_PAGE));
+        $unreadOnly = $filter === self::FILTER_UNREAD;
         $requestedPage = (int) ($request->validated('page') ?? 1);
 
-        $paginator = $query->paginate(
-            perPage: self::PER_PAGE,
-            page: min(max($requestedPage, 1), $lastPage),
-            total: $total,
-        );
-
-        $page = $paginator->currentPage();
-        $count = count($paginator->items());
-        $from = $count === 0 ? null : (($page - 1) * self::PER_PAGE) + 1;
+        $paginator = $paginateNotifications->handle($user, $unreadOnly, $requestedPage);
 
         return Inertia::render('notifications/Index', [
-            'notifications' => [
-                'data' => NotificationPresenter::presentMany($paginator->getCollection()),
-                'meta' => [
-                    'page' => $page,
-                    'perPage' => self::PER_PAGE,
-                    'total' => $total,
-                    'lastPage' => $lastPage,
-                    'from' => $from,
-                    'to' => $from === null ? null : ($from + $count) - 1,
-                ],
-            ],
+            'notifications' => NotificationPresenter::presentPage($paginator),
             'filter' => $filter,
         ]);
     }
@@ -104,33 +71,6 @@ class NotificationController extends Controller
         $this->user($request)->unreadNotifications()->update(['read_at' => now()]);
 
         return back();
-    }
-
-    /**
-     * Both relations already sort by created_at descending. The id is added as a
-     * tie-breaker because several notifications can share a timestamp, and an
-     * ambiguous order would let a row repeat or vanish between pages.
-     *
-     * @return Builder<DatabaseNotification>
-     */
-    private function scopedQuery(User $user, string $filter): Builder
-    {
-        $relation = $filter === self::FILTER_UNREAD
-            ? $user->unreadNotifications()
-            : $user->notifications();
-
-        $query = $relation->getQuery()->orderBy('id', 'desc');
-
-        /*
-         * A switched-off chat surface hides its notifications too, so the page
-         * never links into a feature that is closed. Nothing is deleted: the
-         * rows come back with the toggle.
-         */
-        if (SettingsResolver::tryResolve(ChatSettings::class)?->chatEnabled !== true) {
-            ChatMessageNotification::excludeFrom($query);
-        }
-
-        return $query;
     }
 
     private function user(Request $request): User

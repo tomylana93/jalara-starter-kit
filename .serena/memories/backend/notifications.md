@@ -15,6 +15,11 @@
 - `App\Http\Presenters\NotificationPresenter` owns the record → client mapping;
   both the controller and `HandleInertiaRequests` go through it.
 
+## Pagination & Querying
+
+- `App\Actions\Notifications\PaginateNotifications` handles notification-history querying: relation selection (all vs unread), chat-toggle exclusion, deterministic `created_at desc, id desc` ordering, count reuse, fixed 10-row pagination, and clamping of out-of-range pages to the last available page.
+- `App\Http\Presenters\NotificationPresenter::presentPage` maps the resulting `LengthAwarePaginator` to the `{data, meta}` shape consumed by Inertia.
+
 ## Ordering
 
 - Notification ids are UUIDv4 (`Str::uuid()` in `NotificationSender`), NOT the

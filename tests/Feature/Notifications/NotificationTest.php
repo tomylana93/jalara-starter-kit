@@ -157,6 +157,16 @@ it('paginates the notification page ten at a time, newest first', function () {
             ->has('notifications.data', 2)
             ->where('notifications.meta.page', 2)
         );
+
+    actingAs($user)
+        ->get(route('notifications.index', ['page' => 5]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notifications.data', 2)
+            ->where('notifications.meta.page', 2)
+            ->where('notifications.meta.lastPage', 2)
+            ->where('notifications.meta.from', 11)
+            ->where('notifications.meta.to', 12)
+        );
 });
 
 it('filters the page down to unread notifications', function () {
