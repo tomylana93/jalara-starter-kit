@@ -41,4 +41,21 @@ enum BrandingAsset: string
             self::AuthBackground => 'branding/auth-backgrounds',
         };
     }
+
+    /**
+     * The maximum width and height the processed asset is scaled down into.
+     *
+     * These are display bounds, not the input limits enforced by
+     * `UpdateBrandingAssetRequest`: a larger upload is accepted and shrunk.
+     *
+     * @return array{0: positive-int, 1: positive-int}
+     */
+    public function maxDimensions(): array
+    {
+        return match ($this) {
+            self::Logo, self::LogoDark => [1200, 400],
+            self::Icon, self::IconDark => [512, 512],
+            self::AuthBackground => [1920, 1080],
+        };
+    }
 }

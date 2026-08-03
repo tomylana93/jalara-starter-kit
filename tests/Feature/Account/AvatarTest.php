@@ -25,7 +25,8 @@ it('stores an avatar for the authenticated user', function () {
 
     actingAs($user)
         ->post(route('account.profile.avatar.store'), ['image' => avatarImage()])
-        ->assertRedirect(route('account.profile.edit'));
+        ->assertStatus(202)
+        ->assertJsonPath('data.status', 'pending');
 
     $user->refresh();
 

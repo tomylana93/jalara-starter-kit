@@ -1,5 +1,45 @@
 # Media Upload UI
 
+## Async lifecycle
+
+- Uploads no longer travel as Inertia visits. `resources/js/lib/imageUploads.ts`
+  owns the transport (Inertia's standalone HTTP client, so CSRF and interceptors
+  still apply) and the polling state machine; the server contract lives in
+  `mem:backend/media_uploads`.
+- The navigation guard covers the **byte transfer only**. It is released as soon
+  as the server answers `202`; from there the work is server-side and leaving the
+  page costs nothing. Progress percentages therefore exist only while
+  `uploading` — the `processing` state has no measurable percentage and must not
+  render a progress bar.
+- Polling backs off 1s -> 5s and stops after 10 minutes. A stop is *not* a
+  failure: it never marks the job failed, and the UI offers "check again" against
+  the same record rather than re-uploading.
+- The stored image stays on screen until an upload reports `ready`; a failure or
+  cancellation restores it untouched. Local object-URL preview stands in
+  meanwhile.
+- `useResumableUploads()` fetches active uploads once per page and hands each
+  field its own via the `resume` prop, so a reload picks up work in flight
+  instead of showing a stale image. Chat does the same through
+  `restorePendingImage()`.
+- A `409` is adopted only when the server actually hands back a record. It does
+  so for the requester's own upload (another tab); for another administrator's
+  branding upload the body carries a message and nothing to poll, and the field
+  must stay in its conflict state rather than polling into a 403.
+- `useChat().sendMessage()` resolves at **acceptance**, never at publication. It
+  returns `{accepted, message, settled}`: `message` is set only for the
+  synchronous text path, and `settled` is the background watcher a surface may
+  optionally await (chat page uses it to navigate to a conversation a first
+  image message opened). Awaiting the watcher inside `sendMessage` is the bug
+  this shape exists to prevent — it pins `state.sending` and the navigation
+  guard to queue work that no longer needs the page.
+- Pending chat uploads live in `state.pendingImageUploads`, a list keyed by
+  upload id. Several may be in flight at once, so a single-record field would
+  let the second erase the first; `cancelPendingImage(id?)` cancels the named
+  upload, defaulting to the oldest.
+- `error_code` values map to `media.upload.error.*` keys; unknown codes fall back
+  rather than being displayed raw. `useChat` stores translation *keys* in
+  `state.error`, not translated strings.
+
 - Keep the installed shadcn-vue `AspectRatio` and `Progress` primitives under `resources/js/components/ui`; they are approved registry additions. The read-only registry rule in `mem:frontend/core` governs how they may be changed.
 - Image upload controls belong inside the page's primary form structure; rendering them as a separate section outside that form is a defect. They may still submit independently to dedicated POST/DELETE endpoints, but must not introduce nested `<form>` elements or leak their file input into the primary settings submission.
 - Upload fields intentionally have no helper/description text. Render only the label, preview, active status/progress, validation error, and actions. Do not render passive `Saved` or `No image selected` footer text; hide the status footer entirely while idle or done.

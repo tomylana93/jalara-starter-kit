@@ -31,9 +31,10 @@ it('stores an image for every branding asset', function (BrandingAsset $asset) {
         ->post(route('settings.branding.asset.store', $asset->value), [
             'image' => assetImage($asset),
         ])
-        ->assertRedirect(route('settings.branding.edit'));
+        ->assertStatus(202)
+        ->assertJsonPath('data.status', 'pending');
 
-    $path = app(BrandingSettings::class)->{$asset->property()};
+    $path = app(BrandingSettings::class)->refresh()->{$asset->property()};
 
     expect($path)->toStartWith($asset->directory().'/')
         ->and(Storage::disk('public')->exists($path))->toBeTrue();

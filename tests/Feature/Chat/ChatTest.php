@@ -1,17 +1,22 @@
 <?php
 
+use App\Actions\Chat\SendMessage;
+use App\Enums\ImageUploadStatus;
 use App\Enums\Role;
 use App\Events\Chat\ChatConversationRead;
 use App\Events\Chat\ChatMessageSent;
 use App\Http\Controllers\Chat\ChatController;
 use App\Jobs\Chat\DeliverChatMessageNotification;
+use App\Jobs\Media\ProcessChatImageUpload;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
 use App\Models\Chat\Reaction;
+use App\Models\ImageUpload;
 use App\Models\User;
 use App\Settings\ChatSettings;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -143,20 +148,115 @@ test('a message may contain one private image without text', function (): void {
     $sender = User::factory()->create();
     $recipient = User::factory()->create();
 
-    $response = actingAs($sender)
+    /*
+     * An image message is only accepted here; it is created once the queue has
+     * processed the image, so the job is run explicitly.
+     */
+    actingAs($sender)
         ->postJson(route('chat.messages.store'), [
             'recipient_id' => $recipient->id,
             'image' => UploadedFile::fake()->image('photo.png', 640, 480),
         ])
-        ->assertCreated()
-        ->assertJsonPath('message.body', null)
-        ->assertJsonPath('message.reactions', []);
+        ->assertStatus(202)
+        ->assertJsonPath('data.status', 'pending');
+
+    expect(Message::query()->exists())->toBeFalse();
+    Queue::assertPushed(ProcessChatImageUpload::class);
+
+    $upload = ImageUpload::query()->firstOrFail();
+    app()->call([new ProcessChatImageUpload($upload), 'handle']);
 
     $message = Message::query()->firstOrFail();
 
-    expect($response->json('message.image.url'))->toBe(route('chat.messages.image', $message))
-        ->and($message->image_mime_type)->toBe('image/png');
+    expect($message->body)->toBeNull()
+        ->and($message->image_mime_type)->toBe('image/png')
+        ->and($upload->refresh()->status)->toBe(ImageUploadStatus::Ready);
     Storage::disk('local')->assertExists((string) $message->image_path);
+});
+
+test('a message is announced only once the transaction holding it commits', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+
+    DB::transaction(function () use ($conversation, $sender): void {
+        app(SendMessage::class)->handle($conversation, $sender, 'still uncommitted');
+
+        /*
+         * The row exists but only inside this transaction. Announcing it here
+         * would show every client a message a rollback could still erase.
+         */
+        Event::assertNotDispatched(ChatMessageSent::class);
+        Queue::assertNotPushed(DeliverChatMessageNotification::class);
+    });
+
+    Event::assertDispatched(ChatMessageSent::class);
+    Queue::assertPushed(DeliverChatMessageNotification::class);
+});
+
+test('a failed image publication leaves no message, no conversation and no announcement', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('photo.png', 640, 480),
+        ])
+        ->assertStatus(202);
+
+    $upload = ImageUpload::query()->firstOrFail();
+
+    /* Fails after the row is written — the window a rollback has to cover. */
+    Message::created(function (): never {
+        throw new RuntimeException('the write went through, the job did not');
+    });
+
+    expect(fn (): mixed => app()->call([new ProcessChatImageUpload($upload), 'handle']))
+        ->toThrow(RuntimeException::class)
+        ->and(Message::query()->exists())->toBeFalse()
+        ->and(Conversation::query()->exists())->toBeFalse();
+
+    /* Nothing may be announced for a message that does not exist. */
+    Event::assertNotDispatched(ChatMessageSent::class);
+    Queue::assertNotPushed(DeliverChatMessageNotification::class);
+});
+
+test('an image message retried after a failure is created exactly once', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('photo.png', 640, 480),
+        ])
+        ->assertStatus(202);
+
+    $upload = ImageUpload::query()->firstOrFail();
+    $failing = true;
+
+    Message::created(function () use (&$failing): void {
+        throw_if($failing, RuntimeException::class, 'first attempt');
+    });
+
+    expect(fn (): mixed => app()->call([new ProcessChatImageUpload($upload), 'handle']))
+        ->toThrow(RuntimeException::class);
+
+    /* The retry the queue would make once the transient cause has cleared. */
+    $failing = false;
+    app()->call([new ProcessChatImageUpload($upload), 'handle']);
+
+    expect(Message::query()->count())->toBe(1)
+        ->and(Conversation::query()->count())->toBe(1)
+        ->and($upload->refresh()->status)->toBe(ImageUploadStatus::Ready);
+
+    Event::assertDispatchedTimes(ChatMessageSent::class, 1);
+    Queue::assertPushed(DeliverChatMessageNotification::class, 1);
 });
 
 test('a chat image obeys type size dimension and feature toggle rules', function (): void {

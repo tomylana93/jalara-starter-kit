@@ -47,6 +47,8 @@ const {
     openConversation,
     loadOlderMessages,
     sendMessage,
+    cancelPendingImage,
+    restorePendingImage,
     markRead,
     watchAvailability,
     watchConnection,
@@ -131,6 +133,9 @@ watch(
 );
 
 onMounted(async () => {
+    /* An image message may have outlived the page that sent it. */
+    void restorePendingImage();
+
     watchConnection(() => {
         /* The server is the only truth after a dropped socket. */
         void loadConversations(1);
@@ -209,7 +214,7 @@ const send = async (
     const conversationId = activeConversation.value?.id ?? null;
     const upload = payload.image ? beginUpload() : null;
 
-    const message = await sendMessage({
+    const outcome = await sendMessage({
         body: payload.body,
         image: payload.image,
         conversationId,
@@ -217,10 +222,14 @@ const send = async (
             conversationId === null ? pendingRecipient.value?.id : null,
     });
 
+    /*
+     * The guard protected the transfer, and the transfer is over. An image
+     * still has processing ahead of it, but that no longer needs this widget.
+     */
     upload?.release();
-    complete(message !== null);
+    complete(outcome.accepted);
 
-    if (message !== null) {
+    if (outcome.accepted) {
         pendingRecipient.value = null;
     }
 };
@@ -374,12 +383,14 @@ const seen = (messageId: string): void => {
                         :current-user-id="currentUserId"
                         :sending="state.sending"
                         :upload-progress="state.uploadProgress"
+                        :processing="state.pendingImageUploads.length > 0"
                         :image-uploads-enabled="imageUploadsEnabled"
                         :draft-key="draftKey"
                         :has-older="hasOlderMessages"
                         :loading-older="state.loadingOlder"
                         :error="state.error"
                         @send="send"
+                        @cancel-upload="cancelPendingImage"
                         @load-older="loadOlder"
                         @seen="seen"
                         @react="react"

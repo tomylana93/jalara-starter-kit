@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, usePage } from '@inertiajs/vue3';
+import { Form, Head, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Account/ProfileController';
 import DisableAccount from '@/components/DisableAccount.vue';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
 import { useInitials } from '@/composables/useInitials';
+import { useResumableUploads } from '@/composables/useResumableUploads';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { edit } from '@/routes/account/profile';
 import {
@@ -52,6 +53,17 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 const { t } = useTranslations();
 const { getInitials } = useInitials();
+
+const { find } = useResumableUploads();
+const resumableAvatar = find('avatar');
+
+/*
+ * The avatar is a shared prop rendered in several places, so a published one is
+ * pulled back through Inertia rather than only swapped inside the field.
+ */
+const refreshAvatar = (): void => {
+    router.reload();
+};
 </script>
 
 <template>
@@ -84,6 +96,8 @@ const { getInitials } = useInitials();
                 :delete-url="avatarDestroy().url"
                 shape="circle"
                 :fallback-text="getInitials(user.name)"
+                :resume="resumableAvatar"
+                @ready="refreshAvatar"
             />
 
             <div class="grid gap-2">

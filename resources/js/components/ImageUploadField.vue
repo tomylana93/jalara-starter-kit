@@ -25,10 +25,15 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTranslations } from '@/composables/useTranslations';
+import { useUploadGuard } from '@/composables/useUploadGuard';
+import type { ImageUploadRecord } from '@/lib/imageUploads';
 import {
-    UPLOAD_GUARD_HEADER,
-    useUploadGuard,
-} from '@/composables/useUploadGuard';
+    cancelImageUpload,
+    ImageUploadError,
+    pollImageUpload,
+    startImageUpload,
+    uploadErrorKey,
+} from '@/lib/imageUploads';
 
 /** The lifecycle states accepted by the shadcn-vue Attachment primitive. */
 export type UploadState =
@@ -49,6 +54,11 @@ type Props = {
     /** Fallback text shown inside the circular preview when empty. */
     fallbackText?: string;
     disabled?: boolean;
+    /**
+     * An upload for this target that was already in flight, handed down after a
+     * reload so the field can pick it back up instead of losing track of it.
+     */
+    resume?: ImageUploadRecord | null;
     /** Stable hook for end-to-end tests. */
     testId?: string;
 };
@@ -58,8 +68,14 @@ const props = withDefaults(defineProps<Props>(), {
     ratio: 16 / 9,
     fallbackText: '',
     disabled: false,
+    resume: null,
     testId: undefined,
 });
+
+const emit = defineEmits<{
+    /** The queue published a new image; the page may refresh what it shows. */
+    (event: 'ready', record: ImageUploadRecord): void;
+}>();
 
 const { t } = useTranslations();
 const { beginUpload } = useUploadGuard();
@@ -175,76 +191,212 @@ watch(
     { immediate: true },
 );
 
-const upload = (file: File): void => {
+/*
+ * Only the byte transfer is watched here. Once the server has the file the
+ * queue owns the rest, so the polling controller is separate from the transfer
+ * and survives being left alone.
+ */
+const activeUpload = ref<ImageUploadRecord | null>(null);
+const pollController = ref<AbortController | null>(null);
+const canCheckAgain = ref(false);
+
+const stopPolling = (): void => {
+    pollController.value?.abort();
+    pollController.value = null;
+};
+
+onBeforeUnmount(stopPolling);
+
+/**
+ * Follow an accepted upload until it settles.
+ *
+ * The stored image is only swapped once the upload reports `ready`, which is
+ * what keeps the previous image on screen through a failure or a cancellation.
+ */
+const watchUpload = async (record: ImageUploadRecord): Promise<void> => {
+    activeUpload.value = record;
+    state.value = 'processing';
+    canCheckAgain.value = false;
+
+    stopPolling();
+    const controller = new AbortController();
+    pollController.value = controller;
+
+    let settled: ImageUploadRecord | null = null;
+
+    try {
+        settled = await pollImageUpload(record, {
+            signal: controller.signal,
+            onUpdate: (update) => {
+                activeUpload.value = update;
+            },
+        });
+    } catch {
+        /* A dropped connection is not a failed job; offer another look. */
+        settled = null;
+    }
+
+    if (controller.signal.aborted) {
+        return;
+    }
+
+    pollController.value = null;
+
+    if (settled === null) {
+        /*
+         * The client stopped waiting. The job is untouched, so this is an
+         * invitation to look again rather than a failure.
+         */
+        state.value = 'error';
+        canCheckAgain.value = true;
+        errorMessage.value = t('media.upload.message.timed_out');
+
+        return;
+    }
+
+    activeUpload.value = null;
+
+    if (settled.status === 'ready') {
+        storedUrl.value = settled.url ?? storedUrl.value;
+        clearPreview();
+        pendingFile.value = null;
+        storedFileSize.value = null;
+        state.value = 'done';
+        emit('ready', settled);
+
+        return;
+    }
+
+    state.value = 'error';
+    errorMessage.value = t(uploadErrorKey(settled));
+};
+
+const upload = async (file: File): Promise<void> => {
     pendingFile.value = file;
     setPreview(file);
 
     errorMessage.value = undefined;
+    canCheckAgain.value = false;
     percentage.value = 0;
     state.value = 'uploading';
 
+    /*
+     * The guard covers the transfer only. Once the bytes are accepted, leaving
+     * the page loses nothing, so holding navigation any longer would be rude.
+     */
     const guard = beginUpload();
+    const controller = new AbortController();
+    guard.setCancel(() => controller.abort());
 
-    router.post(
-        props.uploadUrl,
-        { image: file },
-        {
-            forceFormData: true,
-            preserveScroll: true,
-            headers: { [UPLOAD_GUARD_HEADER]: 'allow' },
-            onCancelToken: (token) => guard.setCancel(() => token.cancel()),
-            onCancel: () => {
-                state.value = 'error';
-                errorMessage.value = t('common.upload.status.cancelled');
-            },
-            onProgress: (event) => {
-                if (!event) {
-                    return;
-                }
+    let accepted: ImageUploadRecord | null = null;
 
-                const value =
-                    event.percentage ??
-                    (event.total
-                        ? Math.round((event.loaded / event.total) * 100)
-                        : undefined);
-
-                if (value === undefined) {
-                    return;
-                }
-
+    try {
+        accepted = await startImageUpload(props.uploadUrl, file, {
+            signal: controller.signal,
+            onProgress: (value) => {
                 percentage.value = value;
                 guard.setProgress(value);
+            },
+        });
+    } catch (error) {
+        state.value = 'error';
+
+        if (error instanceof ImageUploadError) {
+            if (error.status === 409) {
+                const conflicting = error.conflicting;
 
                 /*
-                 * The bytes are on the wire but the server has not answered
-                 * yet, which is a distinct state from uploading.
+                 * The target is already busy. When the upload holding it is
+                 * this user's own — another tab, most likely — the server hands
+                 * it back and it can simply be followed. When it belongs to
+                 * someone else there is nothing to follow: its status endpoint
+                 * is owner-only, so polling it would only produce a 403.
                  */
-                if (value >= 100) {
-                    state.value = 'processing';
+                errorMessage.value = conflicting
+                    ? t('media.upload.message.conflict')
+                    : t('media.upload.message.conflict_other_owner');
+
+                if (conflicting) {
+                    await watchUpload(conflicting);
                 }
-            },
-            onSuccess: () => {
-                state.value = 'done';
-                pendingFile.value = null;
-            },
-            onError: (errors) => {
-                state.value = 'error';
-                errorMessage.value = errors.image ?? Object.values(errors)[0];
-            },
-            onFinish: () => {
-                percentage.value = 0;
-                guard.release();
-            },
-        },
-    );
+
+                return;
+            }
+
+            const errors = error.validationErrors;
+            errorMessage.value = errors.image ?? Object.values(errors)[0];
+        }
+
+        errorMessage.value ??= t('media.upload.error.processing_failed');
+
+        return;
+    } finally {
+        percentage.value = 0;
+        guard.release();
+    }
+
+    await watchUpload(accepted);
 };
+
+/** Give up on an upload that has not been published yet. */
+const cancel = async (): Promise<void> => {
+    const record = activeUpload.value;
+
+    if (!record) {
+        return;
+    }
+
+    stopPolling();
+
+    try {
+        const settled = await cancelImageUpload(record.cancel_url);
+
+        /*
+         * Cancellation is best effort: a job that finished first still wins,
+         * and its result is applied rather than discarded.
+         */
+        if (settled?.status === 'ready') {
+            await watchUpload(settled);
+
+            return;
+        }
+    } catch {
+        /* Nothing useful to add; the state below is accurate either way. */
+    }
+
+    activeUpload.value = null;
+    pendingFile.value = null;
+    clearPreview();
+    state.value = storedUrl.value ? 'done' : 'idle';
+    errorMessage.value = t('media.upload.message.cancelled');
+};
+
+/** Re-read an upload the client stopped waiting for. */
+const checkAgain = async (): Promise<void> => {
+    const record = activeUpload.value;
+
+    if (record) {
+        await watchUpload(record);
+    }
+};
+
+/* A reload hands back whatever was still running; pick it straight back up. */
+watch(
+    () => props.resume,
+    (record) => {
+        if (record && record.id !== activeUpload.value?.id) {
+            void watchUpload(record);
+        }
+    },
+    { immediate: true },
+);
 
 const onFileSelected = (event: Event): void => {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
     if (file) {
-        upload(file);
+        void upload(file);
     }
 
     /*
@@ -257,8 +409,15 @@ const onFileSelected = (event: Event): void => {
 const openPicker = (): void => fileInput.value?.click();
 
 const retry = (): void => {
+    /* An upload that merely outlasted the client is re-read, not re-sent. */
+    if (canCheckAgain.value) {
+        void checkAgain();
+
+        return;
+    }
+
     if (pendingFile.value) {
-        upload(pendingFile.value);
+        void upload(pendingFile.value);
 
         return;
     }
@@ -289,13 +448,21 @@ const statusLabel = computed(() => {
         case 'uploading':
             return t('common.upload.status.uploading');
         case 'processing':
-            return t('common.upload.status.processing');
+            return activeUpload.value?.status === 'pending'
+                ? t('media.upload.status.pending')
+                : t('media.upload.status.processing');
         case 'error':
             return t('common.upload.status.error');
         default:
             return '';
     }
 });
+
+const retryActionLabel = computed(() =>
+    canCheckAgain.value
+        ? t('media.upload.button.check_again')
+        : t('common.upload.action.retry'),
+);
 </script>
 
 <template>
@@ -388,8 +555,9 @@ const statusLabel = computed(() => {
                     {{ formattedFileSize }}
                 </AttachmentDescription>
 
+                <!-- Only the transfer has a measurable percentage; queue work does not. -->
                 <div
-                    v-if="isBusy"
+                    v-if="state === 'uploading'"
                     class="grid gap-1"
                     :data-test="testId ? `${testId}-progress` : undefined"
                 >
@@ -410,7 +578,7 @@ const statusLabel = computed(() => {
                                 type="button"
                                 variant="outline"
                                 size="icon-sm"
-                                :aria-label="t('common.upload.action.retry')"
+                                :aria-label="retryActionLabel"
                                 :disabled="disabled || isBusy"
                                 @click="retry"
                             >
@@ -418,7 +586,28 @@ const statusLabel = computed(() => {
                             </AttachmentAction>
                         </TooltipTrigger>
                         <TooltipContent>
-                            {{ t('common.upload.action.retry') }}
+                            {{ retryActionLabel }}
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip v-if="activeUpload">
+                        <TooltipTrigger as-child>
+                            <AttachmentAction
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                :aria-label="t('media.upload.button.cancel')"
+                                :disabled="disabled"
+                                :data-test="
+                                    testId ? `${testId}-cancel` : undefined
+                                "
+                                @click="cancel"
+                            >
+                                <XIcon />
+                            </AttachmentAction>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {{ t('media.upload.button.cancel') }}
                         </TooltipContent>
                     </Tooltip>
 
