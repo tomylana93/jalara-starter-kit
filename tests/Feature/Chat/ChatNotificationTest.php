@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -101,16 +102,34 @@ test('the queued job delivers through the notification action', function (): voi
 
 test('one active notification per conversation is kept and updated', function (): void {
     $sender = User::factory()->create();
+    $other = User::factory()->create();
     $recipient = User::factory()->create();
 
     $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $untouched = Conversation::factory()->between($other, $recipient)->create();
+
+    deliverChatMessage(chatMessageFrom($untouched, $other));
+    $untouchedId = $recipient->fresh()->notifications()->firstOrFail()->id;
+
+    $supersededIds = [];
 
     foreach (range(1, 3) as $index) {
-        $message = chatMessageFrom($conversation, $sender, 'Message '.$index);
-        deliverChatMessage($message);
+        deliverChatMessage(chatMessageFrom($conversation, $sender, 'Message '.$index));
+
+        $supersededIds[] = $recipient->fresh()->unreadNotifications()->get()
+            ->firstOrFail(fn (DatabaseNotification $notification): bool => $notification->data['conversation_id'] === $conversation->id)
+            ->id;
     }
 
-    expect($recipient->fresh()->unreadNotifications()->count())->toBe(1);
+    $active = array_pop($supersededIds);
+
+    /* Replacement deletes the superseded rows outright; it does not keep them as read history. */
+    expect(DatabaseNotification::query()->whereIn('id', $supersededIds)->count())->toBe(0);
+
+    $stored = $recipient->fresh()->notifications()->get();
+
+    expect($stored->pluck('id')->all())->toEqualCanonicalizing([$active, $untouchedId])
+        ->and($stored->whereNotNull('read_at'))->toBeEmpty();
 });
 
 test('no notification is created when the recipient already read the message', function (): void {
@@ -328,20 +347,30 @@ test('no notification is created while chat is switched off', function (): void 
 
 test('reading the conversation marks its notification as read', function (): void {
     $sender = User::factory()->create();
+    $other = User::factory()->create();
     $recipient = User::factory()->create();
 
     $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $untouched = Conversation::factory()->between($other, $recipient)->create();
+
     $message = chatMessageFrom($conversation, $sender);
 
     deliverChatMessage($message);
+    deliverChatMessage(chatMessageFrom($untouched, $other));
 
-    expect($recipient->fresh()->unreadNotifications()->count())->toBe(1);
+    expect($recipient->fresh()->unreadNotifications()->count())->toBe(2);
 
     actingAs($recipient)
         ->postJson(route('chat.conversations.read', $conversation), ['message_id' => $message->id])
         ->assertOk();
 
-    expect($recipient->fresh()->unreadNotifications()->count())->toBe(0);
+    $stored = $recipient->fresh()->notifications()->get()
+        ->keyBy(fn (DatabaseNotification $notification): string => (string) $notification->data['conversation_id']);
+
+    /* Reading keeps the row and stamps it; only the other conversation stays unread. */
+    expect($stored)->toHaveCount(2)
+        ->and($stored[$conversation->id]->read_at)->not->toBeNull()
+        ->and($stored[$untouched->id]->read_at)->toBeNull();
 });
 
 test('chat notifications are hidden while chat is switched off', function (): void {

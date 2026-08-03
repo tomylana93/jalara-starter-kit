@@ -42,8 +42,14 @@
     widget deliberately does not mark read, so its notification survives.
 - Exactly one active notification per conversation: the job deletes the
   recipient's existing unread chat notification before sending the new one.
-  Filtering is done in PHP over the small unread set, not a JSON path on the
-  `data` text column.
+- `App\Actions\Chat\LoadUnreadConversationNotifications` is the single owner of
+  selecting a user's unread `ChatMessageNotification` records for one
+  conversation: constrain by notification `type` in SQL, then filter the exact
+  `data.conversation_id` in PHP, because `notifications.data` is a text column
+  with no JSON index. Its two callers keep deliberately different terminal
+  semantics: `NotifyChatMessageRecipient` deletes the matches before sending the
+  replacement (no read history is retained), while `MarkConversationRead` marks
+  them read and preserves the rows.
 - The chat toggle hides chat notifications from the bell and the notification
   page (`ChatMessageNotification::excludeFrom()`); rows are never deleted.
 

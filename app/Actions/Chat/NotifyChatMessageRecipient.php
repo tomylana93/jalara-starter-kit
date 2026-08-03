@@ -5,7 +5,6 @@ namespace App\Actions\Chat;
 use App\Enums\UserStatus;
 use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
-use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
 use Illuminate\Notifications\DatabaseNotification;
@@ -34,6 +33,7 @@ final readonly class NotifyChatMessageRecipient
     public function __construct(
         private ChatSettings $settings,
         private TrackChatPageContext $chatPageContext,
+        private LoadUnreadConversationNotifications $unreadConversationNotifications,
     ) {}
 
     public function handle(Message $message): void
@@ -72,23 +72,10 @@ final readonly class NotifyChatMessageRecipient
             return;
         }
 
-        $this->clearActiveNotification($recipient->user, $conversation->id);
+        /* Replaced, not stacked: the superseded row is dropped, never kept as history. */
+        $this->unreadConversationNotifications->handle($recipient->user, $conversation->id)
+            ->each(fn (DatabaseNotification $notification) => $notification->delete());
 
         $recipient->user->notify(new ChatMessageNotification($conversation, $message->sender));
-    }
-
-    /**
-     * Drop the conversation's currently active notification, if any.
-     *
-     * The unread set is small, so it is filtered in PHP rather than through a
-     * JSON path expression, which the `data` text column does not index anyway.
-     */
-    private function clearActiveNotification(User $recipient, string $conversationId): void
-    {
-        $recipient->unreadNotifications()
-            ->where('type', ChatMessageNotification::class)
-            ->get()
-            ->filter(fn (DatabaseNotification $notification): bool => ($notification->data['conversation_id'] ?? null) === $conversationId)
-            ->each(fn (DatabaseNotification $notification) => $notification->delete());
     }
 }
