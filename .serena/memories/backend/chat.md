@@ -55,6 +55,11 @@
   on any list. Policy-only resolution loads `participants.user` first and adds
   the presentation-only `roles` (and reactions) after authorization passes, so a
   stranger's identifier never costs a presentation query.
+
+## Page loading & Querying
+
+- `App\Actions\Chat\LoadChatPage` handles orchestrating the page load: active-conversation resolution, authorization-sensitive graph loading (roles and reactions loaded only after authorization), inbox pagination, bulk unread counts, and transcript pagination.
+- It returns untransformed paginators within `LoadChatPageResult`, while `ChatController` keeps `through()` presentation mapping in local variables because mapped `LengthAwarePaginator` template types cannot safely cross a declared result boundary due to Larastan constraints.
 - HTTP submission is one action: `SubmitChatMessage` owns target resolution,
   authorization, first-conversation compensation, and the image branch, and
   returns `SubmitChatMessageResult` (sent message vs accepted upload) so the

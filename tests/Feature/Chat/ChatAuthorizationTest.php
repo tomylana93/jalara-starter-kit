@@ -265,3 +265,45 @@ test('every user chat surface is closed while chat is switched off', function ()
 test('a guest cannot post a message', function (): void {
     post(route('chat.messages.store'))->assertRedirect(route('login'));
 });
+
+test('an outsider deep link to an existing conversation is forbidden and performs no presentation query for roles or reactions', function (): void {
+    $outsider = User::factory()->create();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($outsider)
+            ->get(route('chat.index', ['conversation' => $conversation->id]))
+            ->assertForbidden();
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($first->id)
+            ->and($query['bindings'])->not->toContain($second->id);
+    }
+
+    $reactionQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'chat_message_reactions')
+    );
+
+    expect($reactionQueries)->toBeEmpty();
+});

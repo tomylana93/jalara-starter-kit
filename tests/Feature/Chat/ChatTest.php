@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -730,4 +731,44 @@ test('an inactive recipient does not trigger a role query', function (): void {
     foreach ($roleQueries as $query) {
         expect($query['bindings'])->not->toContain($recipient->id);
     }
+});
+
+test('the chat page renders successfully with empty transcript when conversation identifier is absent', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->get(route('chat.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations')
+            ->where('messages.data', [])
+            ->where('activeConversation', null)
+        );
+});
+
+test('the chat page renders successfully with empty transcript when conversation identifier is malformed', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->get(route('chat.index', ['conversation' => 'not-a-uuid']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations')
+            ->where('messages.data', [])
+            ->where('activeConversation', null)
+        );
+});
+
+test('the chat page renders successfully with empty transcript when conversation identifier is missing', function (): void {
+    $user = User::factory()->create();
+    $missingUuid = (string) Str::uuid();
+
+    actingAs($user)
+        ->get(route('chat.index', ['conversation' => $missingUuid]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations')
+            ->where('messages.data', [])
+            ->where('activeConversation', null)
+        );
 });
