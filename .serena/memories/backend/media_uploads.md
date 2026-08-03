@@ -111,8 +111,10 @@
   queries**: it renders the message/conversation only when the relation is
   already loaded, so an unloaded or deleted result presents as `null`. The
   controller preloads `resultMessage.reactions` and
-  `resultMessage.conversation.participants.user` for ready chat uploads *after*
+  `resultMessage.conversation.participants.user.roles` for ready chat uploads *after*
   `ImageUploadPolicy` authorization — never before, and never for the index,
-  whose active uploads can have no result.
+  whose active uploads can have no result. Participant roles are load-bearing
+  because `ChatPresenter::profile()` calls Spatie `getRoleNames()`, which
+  otherwise queries through `loadMissing('roles')` during Resource serialization.
 
 Frontend state machine and polling: `mem:frontend/media_uploads`.

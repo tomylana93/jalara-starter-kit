@@ -11,6 +11,7 @@ use App\Models\Chat\Message;
 use App\Models\ImageUpload;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -321,4 +322,48 @@ it('keeps branding uploads behind the settings permission', function (): void {
 
     expect(ImageUpload::query()->count())->toBe(0);
     Queue::assertNotPushed(ProcessBrandingImageUpload::class);
+});
+
+it('eager loads participant roles to avoid N+1 queries during serialization', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $sender->id,
+    ]);
+
+    $upload = ImageUpload::factory()
+        ->for($sender)
+        ->chatImage()
+        ->ready(resultPath: $message->image_path)
+        ->create(['target_key' => $message->id]);
+
+    DB::enableQueryLog();
+
+    actingAs($sender)
+        ->getJson(route('media.image-uploads.show', $upload))
+        ->assertOk();
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $roleQueries = array_filter($queries, function (array $query): bool {
+        return str_contains($query['query'], 'roles') || str_contains($query['query'], 'model_has_roles');
+    });
+
+    $eagerLoadedQueries = array_filter($roleQueries, function (array $query) use ($recipient): bool {
+        return in_array($recipient->id, $query['bindings'], true);
+    });
+
+    expect($eagerLoadedQueries)->toHaveCount(1);
+
+    $eagerQuery = reset($eagerLoadedQueries);
+    expect($eagerQuery)->toBeArray();
+    if (is_array($eagerQuery)) {
+        expect($eagerQuery['bindings'])->toContain($sender->id);
+    }
+
+    expect($roleQueries)->toHaveCount(2);
 });

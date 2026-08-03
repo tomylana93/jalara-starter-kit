@@ -27,7 +27,7 @@ use SplFileInfo;
  * touches anything younger than the grace period, and it reports without
  * deleting unless explicitly told otherwise.
  */
-final class PruneOrphanImages
+final readonly class PruneOrphanImages
 {
     /**
      * The only locations this sweep may ever read or delete from.
@@ -38,6 +38,10 @@ final class PruneOrphanImages
         'public' => ['avatars', 'branding'],
         'local' => ['chat', ImageUpload::SOURCE_DIRECTORY],
     ];
+
+    public function __construct(
+        private BrandingSettings $brandingSettings,
+    ) {}
 
     /**
      * @param  int  $hours  Grace period; files modified more recently are left alone.
@@ -170,7 +174,7 @@ final class PruneOrphanImages
                 $referenced['public:'.$path] = true;
             });
 
-        $settings = app(BrandingSettings::class);
+        $settings = $this->brandingSettings;
 
         foreach (BrandingAsset::cases() as $asset) {
             $path = $settings->{$asset->property()};

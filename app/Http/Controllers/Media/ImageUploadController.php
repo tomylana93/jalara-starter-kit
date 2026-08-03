@@ -34,7 +34,7 @@ class ImageUploadController extends Controller
      */
     private const array CHAT_RESULT_GRAPH = [
         'resultMessage.reactions',
-        'resultMessage.conversation.participants.user',
+        'resultMessage.conversation.participants.user.roles',
     ];
 
     /**
