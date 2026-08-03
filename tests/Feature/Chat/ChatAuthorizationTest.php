@@ -58,12 +58,15 @@ test('a non participant cannot read a conversation', function (): void {
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    actingAs($outsider)
-        ->getJson(route('chat.conversations.show', $conversation))
-        ->assertForbidden();
+    try {
+        actingAs($outsider)
+            ->getJson(route('chat.conversations.show', $conversation))
+            ->assertForbidden();
 
-    $queries = DB::getQueryLog();
-    DB::disableQueryLog();
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
 
     $roleQueries = array_filter(
         $queries,

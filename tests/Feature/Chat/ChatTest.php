@@ -1,7 +1,6 @@
 <?php
 
 use App\Actions\Chat\SendMessage;
-use App\Actions\Chat\SubmitChatMessage;
 use App\Enums\ImageUploadStatus;
 use App\Enums\Role;
 use App\Events\Chat\ChatConversationRead;
@@ -385,13 +384,38 @@ test('a peer can add replace and remove their single reaction', function (): voi
 
 test('the sender cannot open a conversation with themselves', function (): void {
     $user = User::factory()->create();
+    $user->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
 
-    actingAs($user)
-        ->postJson(route('chat.messages.store'), ['recipient_id' => $user->id, 'body' => 'Hello'])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors('recipient_id');
+    /* Warms the viewer's own role lookup, which the audit and middleware read. */
+    actingAs($user)->getJson(route('chat.conversations.index'))->assertOk();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($user)
+            ->postJson(route('chat.messages.store'), [
+                'recipient_id' => $user->id,
+                'body' => 'Hello',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('recipient_id');
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
 
     expect(Conversation::query()->count())->toBe(0);
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($user->id);
+    }
 });
 
 test('the recipient directory answers only Active users matched by name', function (): void {
@@ -649,12 +673,15 @@ test('authorized single conversation show returns counterpart role and loads bot
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $response = actingAs($user)
-        ->getJson(route('chat.conversations.show', $conversation))
-        ->assertOk();
+    try {
+        $response = actingAs($user)
+            ->getJson(route('chat.conversations.show', $conversation))
+            ->assertOk();
 
-    $queries = DB::getQueryLog();
-    DB::disableQueryLog();
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
 
     // Check that role label is present
     expect($response->json('conversation.participant.role'))->toBe(Role::User->label());
@@ -682,15 +709,18 @@ test('an inactive recipient does not trigger a role query', function (): void {
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    actingAs($sender)
-        ->postJson(route('chat.messages.store'), [
-            'recipient_id' => $recipient->id,
-            'body' => 'Hello',
-        ])
-        ->assertStatus(422);
+    try {
+        actingAs($sender)
+            ->postJson(route('chat.messages.store'), [
+                'recipient_id' => $recipient->id,
+                'body' => 'Hello',
+            ])
+            ->assertStatus(422);
 
-    $queries = DB::getQueryLog();
-    DB::disableQueryLog();
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
 
     $roleQueries = array_filter(
         $queries,
@@ -700,28 +730,4 @@ test('an inactive recipient does not trigger a role query', function (): void {
     foreach ($roleQueries as $query) {
         expect($query['bindings'])->not->toContain($recipient->id);
     }
-});
-
-test('a self recipient fails validation over HTTP', function (): void {
-    $user = User::factory()->create();
-
-    actingAs($user)
-        ->postJson(route('chat.messages.store'), [
-            'recipient_id' => $user->id,
-            'body' => 'Hello',
-        ])
-        ->assertStatus(422);
-});
-
-test('availableRecipient resolves recipients without preloading roles', function (): void {
-    $sender = User::factory()->create();
-    $recipient = User::factory()->create();
-
-    $action = app(SubmitChatMessage::class);
-    $reflector = new ReflectionClass($action);
-    $method = $reflector->getMethod('availableRecipient');
-
-    $resolved = $method->invoke($action, $sender, $recipient->id);
-
-    expect($resolved->relationLoaded('roles'))->toBeFalse();
 });
