@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
@@ -384,22 +385,64 @@ test('the shared chat state reports availability and the aggregate unread total'
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('chat.enabled', true)
+            ->where('chat.imageUploadsEnabled', true)
             ->where('chat.unreadCount', 2),
         );
 
     app(ChatSettings::class)->chatEnabled = false;
 
-    actingAs($user)
-        ->get(route('dashboard'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('chat.enabled', false)
-            ->where('chat.unreadCount', 0),
-        );
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('chat.enabled', false)
+                ->where('chat.imageUploadsEnabled', false)
+                ->where('chat.unreadCount', 0),
+            );
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $chatQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'chat_messages')
+            || str_contains((string) $query['query'], 'chat_participants')
+            || str_contains((string) $query['query'], 'chat_conversations')
+    );
+
+    expect($chatQueries)->toBeEmpty();
 });
 
-test('a guest sees no chat state', function (): void {
-    get(route('login'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('chat.unreadCount', 0));
+test('a guest sees no chat state and does not query chat data', function (): void {
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('chat.enabled', false)
+                ->where('chat.imageUploadsEnabled', false)
+                ->where('chat.unreadCount', 0)
+            );
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $chatQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'chat_messages')
+            || str_contains((string) $query['query'], 'chat_participants')
+            || str_contains((string) $query['query'], 'chat_conversations')
+    );
+
+    expect($chatQueries)->toBeEmpty();
 });

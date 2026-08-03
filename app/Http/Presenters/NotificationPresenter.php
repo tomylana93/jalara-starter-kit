@@ -2,6 +2,7 @@
 
 namespace App\Http\Presenters;
 
+use App\Actions\Notifications\LoadNotificationBellResult;
 use App\Notifications\RealtimeTestNotification;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -40,6 +41,30 @@ final class NotificationPresenter
             'url' => self::nullableString($data, 'url'),
             'read_at' => $notification->read_at?->toIso8601String(),
             'created_at' => $notification->created_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Format a notification bell result into the payload expected by the client.
+     *
+     * @return array{
+     *     items: list<array{
+     *         id: string,
+     *         type: string,
+     *         title: string,
+     *         message: string,
+     *         url: string|null,
+     *         read_at: string|null,
+     *         created_at: string|null,
+     *     }>,
+     *     unreadCount: int,
+     * }
+     */
+    public static function presentBell(LoadNotificationBellResult $result): array
+    {
+        return [
+            'items' => self::presentMany($result->items),
+            'unreadCount' => $result->unreadCount,
         ];
     }
 
