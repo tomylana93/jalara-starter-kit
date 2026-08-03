@@ -10,6 +10,7 @@ use App\Http\Requests\MasterData\ExportUsersRequest;
 use App\Models\User;
 use App\Settings\GeneralSettings;
 use App\Settings\UserProvisioningSettings;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
@@ -639,4 +640,68 @@ it('protects the export behind the view users permission', function () {
     actingAs(User::factory()->create())
         ->get(route('master-data.users.export', ['ids' => [$manager->id]]))
         ->assertForbidden();
+});
+
+it('resolves the primary role deterministically for a multi-role user across table, edit, and export', function () {
+    $manager = userManager();
+    $target = User::factory()->create();
+
+    $target->assignRole(
+        Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'),
+        Spatie\Permission\Models\Role::findOrCreate(Role::Admin->value, 'web')
+    );
+
+    // 1. Table transformation check
+    actingAs($manager)
+        ->get(route('master-data.users.index', ['search' => $target->name]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.role.value', Role::Admin->value)
+            ->where('users.data.0.role.label', Role::Admin->label())
+        );
+
+    // 2. Edit page preselection check
+    actingAs($manager)
+        ->get(route('master-data.users.edit', $target))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('user.role', Role::Admin->value)
+        );
+
+    // 3. Exporter check
+    $path = app(UsersExport::class)->write([$target->id]);
+
+    try {
+        $rows = SimpleExcelReader::create($path, 'xlsx')->getRows()->all();
+        expect($rows[0][__('master_data.user.label.role')])->toBe(Role::Admin->label());
+    } finally {
+        unlink($path);
+    }
+});
+
+it('is forbidden and performs no role query for the target user on unauthorized edit', function () {
+    $outsider = User::factory()->create();
+    $target = User::factory()->create();
+    $target->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($outsider)
+            ->get(route('master-data.users.edit', $target))
+            ->assertForbidden();
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($target->id);
+    }
 });

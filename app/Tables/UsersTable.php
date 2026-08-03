@@ -2,7 +2,6 @@
 
 namespace App\Tables;
 
-use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -91,11 +90,16 @@ final class UsersTable extends AbstractTable
      */
     protected function transform(Model $model): array
     {
+        $primaryRole = $model->primaryRole();
+
         return [
             'id' => $model->id,
             'name' => $model->name,
             'email' => $model->email,
-            'role' => $this->role($model),
+            'role' => $primaryRole ? [
+                'value' => $primaryRole->value,
+                'label' => $primaryRole->label(),
+            ] : null,
             'status' => [
                 'value' => $model->status->value,
                 'label' => $model->status->label(),
@@ -105,27 +109,5 @@ final class UsersTable extends AbstractTable
             'createdAt' => $model->created_at?->toISOString(),
             'canUpdate' => $this->actor->can('update', $model),
         ];
-    }
-
-    /**
-     * Present a single role for the user, most privileged first.
-     *
-     * A legacy account may carry more than one role; picking from the catalog
-     * order keeps the displayed role deterministic.
-     *
-     * @return array{value: string, label: string}|null
-     */
-    private function role(User $user): ?array
-    {
-        foreach (Role::cases() as $role) {
-            if ($user->roles->contains('name', $role->value)) {
-                return [
-                    'value' => $role->value,
-                    'label' => $role->label(),
-                ];
-            }
-        }
-
-        return null;
     }
 }

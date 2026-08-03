@@ -5,10 +5,10 @@ namespace App\Http\Controllers\MasterData;
 use App\Actions\Users\CreateManagedUser;
 use App\Actions\Users\UpdateUser;
 use App\Authorization\AuthorizationCatalog;
-use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Exceptions\DefaultUserPasswordNotConfigured;
 use App\Http\Controllers\Controller;
+use App\Http\Presenters\UserManagementPresenter;
 use App\Http\Requests\MasterData\IndexUserRequest;
 use App\Http\Requests\MasterData\StoreUserRequest;
 use App\Http\Requests\MasterData\UpdateUserRequest;
@@ -34,7 +34,7 @@ class UserController extends Controller
             'users' => $table->paginate(
                 TableQuery::fromValidated($request->validated(), UsersTable::FILTERABLE),
             ),
-            'filterOptions' => $this->filterOptions(),
+            'filterOptions' => UserManagementPresenter::filterOptions(),
             'canCreate' => Gate::allows('create', User::class),
             'dateFormat' => $generalSettings->dateFormat->value,
         ]);
@@ -48,7 +48,7 @@ class UserController extends Controller
         Gate::authorize('create', User::class);
 
         return Inertia::render('master-data/users/Create', [
-            'roleOptions' => $this->roleOptions($catalog),
+            'roleOptions' => UserManagementPresenter::roleOptions($catalog),
         ]);
     }
 
@@ -88,15 +88,11 @@ class UserController extends Controller
     {
         Gate::authorize('update', $user);
 
+        $user->loadMissing('roles');
+
         return Inertia::render('master-data/users/Edit', [
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'status' => $user->status->value,
-                'role' => $this->currentRole($user),
-            ],
-            'roleOptions' => $this->roleOptions($catalog),
+            'user' => UserManagementPresenter::editUser($user),
+            'roleOptions' => UserManagementPresenter::roleOptions($catalog),
             'statusOptions' => UserStatus::options(),
         ]);
     }
@@ -119,51 +115,5 @@ class UserController extends Controller
         ]);
 
         return to_route('master-data.users.index');
-    }
-
-    /**
-     * The values each table filter offers, labelled for the current locale.
-     *
-     * The role filter spans the whole catalog rather than the assignable roles:
-     * an account that already holds a protected role still has to be findable.
-     *
-     * @return array<string, list<array<string, mixed>>>
-     */
-    private function filterOptions(): array
-    {
-        return [
-            'status' => UserStatus::options(),
-            'role' => Role::options(),
-        ];
-    }
-
-    /**
-     * The roles user management is allowed to assign.
-     *
-     * @return list<array{value: string, label: string}>
-     */
-    private function roleOptions(AuthorizationCatalog $catalog): array
-    {
-        return array_map(
-            fn (Role $role): array => [
-                'value' => $role->value,
-                'label' => $role->label(),
-            ],
-            $catalog->assignableRoles(),
-        );
-    }
-
-    /**
-     * The single role the edit form should preselect.
-     */
-    private function currentRole(User $user): ?string
-    {
-        foreach (Role::cases() as $role) {
-            if ($user->hasRole($role->value)) {
-                return $role->value;
-            }
-        }
-
-        return null;
     }
 }

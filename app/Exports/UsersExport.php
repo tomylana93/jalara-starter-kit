@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use App\Enums\Role;
 use App\Models\User;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -131,7 +130,7 @@ final class UsersExport
         return [
             $user->name,
             $user->email,
-            $this->role($user) ?? __('master_data.user.role_missing'),
+            $user->primaryRole()?->label() ?? __('master_data.user.role_missing'),
             $user->status->label(),
             /* A native date/time cell, still carrying the UTC instant the
                table sends, so the workbook can sort and filter on it. */
@@ -140,20 +139,6 @@ final class UsersExport
                 : DateTimeImmutable::createFromInterface($user->created_at)
                     ->setTimezone(new DateTimeZone('UTC')),
         ];
-    }
-
-    /**
-     * Present a single role, most privileged first, as the table does.
-     */
-    private function role(User $user): ?string
-    {
-        foreach (Role::cases() as $role) {
-            if ($user->roles->contains('name', $role->value)) {
-                return $role->label();
-            }
-        }
-
-        return null;
     }
 
     /**
