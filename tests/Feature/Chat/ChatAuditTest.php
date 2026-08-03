@@ -142,12 +142,38 @@ test('an auditor can view an image and its current reaction read only', function
 
     $response = actingAs($auditor)
         ->get(route('chat.audit.messages.image', $message))
-        ->assertOk();
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png')
+        ->assertHeader('Content-Disposition', 'inline')
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
 
     expect($response->headers->get('Cache-Control'))
         ->toContain('private')
         ->toContain('no-store')
+        ->and($response->streamedContent())->toBe('image')
         ->and(AuditLog::query()->count())->toBe(2);
+});
+
+test('an audited image attempt is recorded even when the file is gone', function (): void {
+    Storage::fake('local');
+
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    /* The row survives, the file does not. */
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    actingAs($auditor)
+        ->get(route('chat.audit.messages.image', $message))
+        ->assertNotFound();
+
+    /* Access is permanent: the auditor asked, so the attempt is on the record. */
+    expect(AuditLog::query()->count())->toBe(1);
 });
 
 test('an audit never touches the participants receipts or notifications', function (): void {

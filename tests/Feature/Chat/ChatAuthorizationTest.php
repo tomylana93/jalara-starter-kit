@@ -118,13 +118,39 @@ test('only participants can open a private chat image', function (): void {
     $response = actingAs($second)
         ->get(route('chat.messages.image', $message))
         ->assertOk()
+        ->assertHeader('Content-Type', 'image/png')
+        ->assertHeader('Content-Disposition', 'inline')
         ->assertHeader('X-Content-Type-Options', 'nosniff');
 
     expect($response->headers->get('Cache-Control'))
         ->toContain('private')
-        ->toContain('no-store');
+        ->toContain('no-store')
+        ->and($response->streamedContent())->toBe('image');
 
     actingAs($outsider)->get(route('chat.messages.image', $message))->assertForbidden();
+});
+
+test('authorization decides a private chat image before its file is looked for', function (): void {
+    Storage::fake('local');
+
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $outsider = User::factory()->create();
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    /* The row points at a file that was never written. */
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    /*
+     * The outsider is refused before the file is probed, so a missing image can
+     * never answer the question the policy already refused.
+     */
+    actingAs($outsider)->get(route('chat.messages.image', $message))->assertForbidden();
+
+    actingAs($second)->get(route('chat.messages.image', $message))->assertNotFound();
 });
 
 test('a sender cannot react to their own message and invalid emoji is rejected', function (): void {

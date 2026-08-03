@@ -79,6 +79,15 @@
   endpoint or the separately audited Super Admin endpoint may serve them, with
   private/no-store caching. File creation is compensated if the message
   transaction fails.
+- `App\Actions\Chat\ServeChatMessageImage` is the only owner of private image
+  delivery: fixed `local` disk, 404 on a null or missing path, `Content-Type`
+  from `image_mime_type` falling back to `application/octet-stream`, forced
+  `inline` + `nosniff`, and private/no-store caching. It never authorizes.
+  Controllers own the ordering, and it is security-relevant: participant
+  authorization runs before any file probe, so an absent file can never become
+  an existence oracle for an outsider; the audit endpoint authorizes and records
+  its permanent access *before* serving, so an authorized missing-file audit
+  attempt is logged and then 404s.
 - Reactions use the fixed 12-emoji `Reaction::ALLOWED` set. Each user has at
   most one reaction per message; only the peer may react (never the message
   sender). Add/replace/remove broadcasts realtime state but does not generate a
