@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\BrandingAsset;
 use App\Enums\ImageUploadStatus;
 use App\Enums\ImageUploadTarget;
+use App\Models\Chat\Message;
 use Carbon\CarbonInterface;
 use Database\Factories\ImageUploadFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -41,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read User|null $user
+ * @property-read Message|null $resultMessage
  */
 #[Hidden(['user_id', 'lock_key', 'source_path', 'source_mime_type', 'result_path', 'payload'])]
 class ImageUpload extends Model
@@ -71,6 +73,19 @@ class ImageUpload extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The chat message a finished upload produced, if it produced one.
+     *
+     * A ready chat upload records the created message id in `target_key`, which
+     * makes the result graph eager-loadable before it is presented.
+     *
+     * @return BelongsTo<Message, $this>
+     */
+    public function resultMessage(): BelongsTo
+    {
+        return $this->belongsTo(Message::class, 'target_key');
     }
 
     /**

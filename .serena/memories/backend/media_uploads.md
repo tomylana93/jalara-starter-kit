@@ -83,6 +83,11 @@
 - `images:prune-orphans` is dry-run by default; `--delete` and `--older-than`
   (hours, default 24). Scheduled daily with `--delete` plus `model:prune`, both
   `withoutOverlapping`.
+- The command is only the CLI adapter. `App\Actions\Media\PruneOrphanImages`
+  owns managed-prefix traversal, reference protection, grace-period and symlink
+  protection, and optional deletion, returning `PruneOrphanImagesResult`
+  (per-disk `candidates`/`deleted`/`skipped`, always one entry per managed
+  disk). Negative `--older-than` clamps to zero in the Action, not the command.
 - Managed prefixes only: public `avatars/`, `branding/`; local `chat/`,
   `image-uploads/`. Never touches anything else.
 - It walks the directory itself rather than using `Storage::allFiles()`:
@@ -101,7 +106,13 @@
 - `ImageUploadResource` is the only view a client gets. The staging path, the
   encrypted `payload`, and `lock_key` never leave the server; `error_code` is a
   translation key, never an exception message.
-- A ready chat upload records the created message id in `target_key`, so the
-  resource can hand back the rendered message and conversation.
+- A ready chat upload records the created message id in `target_key`, which the
+  `resultMessage` belongs-to relation resolves. `ImageUploadResource` runs **no
+  queries**: it renders the message/conversation only when the relation is
+  already loaded, so an unloaded or deleted result presents as `null`. The
+  controller preloads `resultMessage.reactions` and
+  `resultMessage.conversation.participants.user` for ready chat uploads *after*
+  `ImageUploadPolicy` authorization — never before, and never for the index,
+  whose active uploads can have no result.
 
 Frontend state machine and polling: `mem:frontend/media_uploads`.

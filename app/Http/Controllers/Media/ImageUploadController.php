@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Media;
 
 use App\Actions\Media\CancelImageUpload;
 use App\Concerns\ResolvesAuthenticatedUser;
+use App\Enums\ImageUploadStatus;
+use App\Enums\ImageUploadTarget;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ImageUploadResource;
 use App\Models\ImageUpload;
@@ -21,6 +23,19 @@ use Illuminate\Support\Facades\Gate;
 class ImageUploadController extends Controller
 {
     use ResolvesAuthenticatedUser;
+
+    /**
+     * Everything `ImageUploadResource` needs to render a finished chat upload.
+     *
+     * The resource itself queries nothing, so the controller is where the
+     * result graph is selected — and only once authorization has passed.
+     *
+     * @var array<int, string>
+     */
+    private const array CHAT_RESULT_GRAPH = [
+        'resultMessage.reactions',
+        'resultMessage.conversation.participants.user',
+    ];
 
     /**
      * Every upload the caller still has in flight.
@@ -46,6 +61,12 @@ class ImageUploadController extends Controller
     {
         Gate::authorize('view', $imageUpload);
 
+        /* Only an owner may reach the result graph the resource renders. */
+        if ($imageUpload->target === ImageUploadTarget::ChatImage
+            && $imageUpload->status === ImageUploadStatus::Ready) {
+            $imageUpload->load(self::CHAT_RESULT_GRAPH);
+        }
+
         return new ImageUploadResource($imageUpload);
     }
 
@@ -64,7 +85,15 @@ class ImageUploadController extends Controller
 
         $cancelImageUpload->handle($imageUpload);
 
-        return new ImageUploadResource($imageUpload->refresh())
+        $imageUpload->refresh();
+
+        /* A cancellation that lost the race still answers with the result. */
+        if ($imageUpload->target === ImageUploadTarget::ChatImage
+            && $imageUpload->status === ImageUploadStatus::Ready) {
+            $imageUpload->load(self::CHAT_RESULT_GRAPH);
+        }
+
+        return new ImageUploadResource($imageUpload)
             ->response()
             ->setStatusCode(200);
     }

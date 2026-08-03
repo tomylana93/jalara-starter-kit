@@ -71,17 +71,14 @@ class ImageUploadResource extends JsonResource
     /**
      * The message a finished chat upload produced, ready to render.
      *
+     * Nothing is loaded here: the caller decides which uploads are worth the
+     * result graph, so a collection of uploads can never fan out into queries.
+     *
      * @return array<string, mixed>|null
      */
     private function chatMessage(): ?array
     {
-        if ($this->target !== ImageUploadTarget::ChatImage
-            || $this->status !== ImageUploadStatus::Ready
-            || $this->target_key === null) {
-            return null;
-        }
-
-        $message = Message::query()->with('reactions')->find($this->target_key);
+        $message = $this->loadedResultMessage();
 
         if (! $message instanceof Message) {
             return null;
@@ -101,22 +98,15 @@ class ImageUploadResource extends JsonResource
     private function chatConversation(Request $request): ?array
     {
         $viewer = $request->user();
+        $message = $this->loadedResultMessage();
 
-        if (! $viewer instanceof User || $this->target !== ImageUploadTarget::ChatImage) {
+        if (! $viewer instanceof User || ! $message instanceof Message) {
             return null;
         }
 
-        $message = $this->status === ImageUploadStatus::Ready && $this->target_key !== null
-            ? Message::query()->find($this->target_key)
+        $conversation = $message->relationLoaded('conversation')
+            ? $message->conversation
             : null;
-
-        if (! $message instanceof Message) {
-            return null;
-        }
-
-        $conversation = Conversation::query()
-            ->with('participants.user')
-            ->find($message->conversation_id);
 
         if (! $conversation instanceof Conversation) {
             return null;
@@ -125,5 +115,22 @@ class ImageUploadResource extends JsonResource
         $conversation->setRelation('latestMessage', $message);
 
         return ChatPresenter::conversation($conversation, $viewer);
+    }
+
+    /**
+     * The produced chat message, but only when it is already in memory.
+     *
+     * An upload whose result was never preloaded — or whose message has since
+     * been removed — presents as no result at all rather than a lazy query.
+     */
+    private function loadedResultMessage(): ?Message
+    {
+        if ($this->target !== ImageUploadTarget::ChatImage
+            || $this->status !== ImageUploadStatus::Ready
+            || ! $this->resource->relationLoaded('resultMessage')) {
+            return null;
+        }
+
+        return $this->resource->resultMessage;
     }
 }

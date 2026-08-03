@@ -6,11 +6,14 @@ use App\Enums\ImageUploadTarget;
 use App\Jobs\Media\ProcessAvatarImageUpload;
 use App\Jobs\Media\ProcessBrandingImageUpload;
 use App\Jobs\Media\ProcessChatImageUpload;
+use App\Models\Chat\Conversation;
+use App\Models\Chat\Message;
 use App\Models\ImageUpload;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -80,6 +83,55 @@ it('lets the owner poll an upload and refuses everyone else', function (): void 
     actingAs($stranger)
         ->getJson(route('media.image-uploads.show', $upload))
         ->assertForbidden();
+});
+
+it('hands a ready chat upload its message and conversation', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $sender->id,
+    ]);
+
+    $upload = ImageUpload::factory()
+        ->for($sender)
+        ->chatImage()
+        ->ready(resultPath: $message->image_path)
+        ->create(['target_key' => $message->id]);
+
+    actingAs($sender)
+        ->getJson(route('media.image-uploads.show', $upload))
+        ->assertOk()
+        ->assertJsonPath('data.message.id', $message->id)
+        ->assertJsonPath('data.message.conversation_id', $conversation->id)
+        ->assertJsonPath('data.conversation.id', $conversation->id)
+        ->assertJsonPath('data.conversation.participant.id', $recipient->id)
+        ->assertJsonPath('data.conversation.last_message.id', $message->id)
+        /* Chat images stay private; they are reached through the message. */
+        ->assertJsonPath('data.url', null);
+
+    /* Even holding the identifier, nobody else may read the result. */
+    actingAs($recipient)
+        ->getJson(route('media.image-uploads.show', $upload))
+        ->assertForbidden();
+});
+
+it('answers with no result when the produced message is gone', function (): void {
+    $sender = User::factory()->create();
+
+    $upload = ImageUpload::factory()
+        ->for($sender)
+        ->chatImage()
+        ->ready(resultPath: 'chat/removed.webp')
+        ->create(['target_key' => (string) Str::uuid7()]);
+
+    actingAs($sender)
+        ->getJson(route('media.image-uploads.show', $upload))
+        ->assertOk()
+        ->assertJsonPath('data.message', null)
+        ->assertJsonPath('data.conversation', null);
 });
 
 it('lets the owner cancel an upload and refuses everyone else', function (): void {
