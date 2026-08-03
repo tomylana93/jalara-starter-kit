@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Models\Chat\AuditLog;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
+use App\Models\Chat\Participant;
 use App\Models\Chat\Reaction;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -140,6 +141,20 @@ final class ChatPresenter
                     $viewer,
                     $unreadCounts[$conversation->id] ?? 0,
                 ))
+                ->all(),
+        );
+    }
+
+    /**
+     * Both sides of a conversation, as the audit surface lists them.
+     *
+     * @return list<array{id: string, name: string, avatar: string|null, role: string|null, available: bool}>
+     */
+    public static function participants(Conversation $conversation): array
+    {
+        return array_values(
+            $conversation->participants
+                ->map(fn (Participant $participant): array => self::profile($participant->user))
                 ->all(),
         );
     }

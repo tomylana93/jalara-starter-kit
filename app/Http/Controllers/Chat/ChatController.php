@@ -86,8 +86,9 @@ class ChatController extends Controller
             return null;
         }
 
+        /* Only what the policy reads; a stranger never costs a presentation query. */
         $conversation = Conversation::query()
-            ->with('participants.user', 'latestMessage.reactions')
+            ->with('participants.user')
             ->find($requested);
 
         if (! $conversation instanceof Conversation) {
@@ -96,7 +97,7 @@ class ChatController extends Controller
 
         Gate::authorize('view', $conversation);
 
-        return $conversation;
+        return $conversation->load('participants.user.roles', 'latestMessage.reactions');
     }
 
     /**

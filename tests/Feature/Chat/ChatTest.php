@@ -54,6 +54,42 @@ test('the chat page renders the first page of the inbox', function (): void {
         );
 });
 
+test('the inbox reads every participant role in one query', function (): void {
+    $user = User::factory()->create();
+
+    $openConversationWith = function (User $peer) use ($user): void {
+        $conversation = Conversation::factory()->between($user, $peer)->create();
+
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $peer->id,
+            'body' => 'Hello',
+        ]);
+    };
+
+    $openConversationWith(userWithRole(Role::User));
+
+    $response = null;
+    $inbox = function () use ($user, &$response): void {
+        $response = actingAs($user)->getJson(route('chat.conversations.index'))->assertOk();
+    };
+
+    /* Warms the viewer's own role lookup, which is not part of the payload. */
+    $inbox();
+
+    $single = roleQueryCount($inbox);
+
+    expect($single)->toBe(1)
+        ->and($response->json('data.0.participant.role'))->toBe(Role::User->label());
+
+    $openConversationWith(userWithRole(Role::User));
+    $openConversationWith(userWithRole(Role::User));
+
+    /* Three counterparts cost what one did: the roles come back in one load. */
+    expect(roleQueryCount($inbox))->toBe($single)
+        ->and($response->json('data'))->toHaveCount(3);
+});
+
 test('the inbox never exposes a conversation the viewer is not part of', function (): void {
     $user = User::factory()->create();
     $first = User::factory()->create();

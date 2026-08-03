@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Chat\NotifyChatMessageRecipient;
 use App\Actions\Chat\TrackChatPageContext;
 use App\Events\Chat\ChatMessageSent;
 use App\Jobs\Chat\DeliverChatMessageNotification;
@@ -38,11 +39,13 @@ function chatMessageFrom(Conversation $conversation, User $sender, string $body 
 
 /**
  * Run the delivery decision the queue worker would run.
+ *
+ * The decision belongs to the action, so it is exercised directly; the job is
+ * only the transport, covered by its own case below.
  */
 function deliverChatMessage(Message $message): void
 {
-    new DeliverChatMessageNotification($message)
-        ->handle(app(ChatSettings::class), app(TrackChatPageContext::class));
+    app(NotifyChatMessageRecipient::class)->handle($message);
 }
 
 /**
@@ -80,6 +83,19 @@ test('a waiting message creates one notification that carries no preview', funct
     expect($notification->data)->toMatchArray(['type' => ChatMessageNotification::TYPE, 'title' => 'Nadia Pratama'])
         ->and($notification->data['message'])->not->toContain('A private secret')
         ->and($notification->data['url'])->toContain($conversation->id);
+});
+
+test('the queued job delivers through the notification action', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $message = chatMessageFrom($conversation, $sender);
+
+    /* Resolved the way a worker resolves it: the job carries nothing but the message. */
+    app()->call([new DeliverChatMessageNotification($message), 'handle']);
+
+    expect($recipient->fresh()->unreadNotifications()->count())->toBe(1);
 });
 
 test('one active notification per conversation is kept and updated', function (): void {
@@ -262,14 +278,12 @@ test('the widget only silences the direct message it is showing', function (): v
         ->where('user_id', $recipient->id)
         ->update(['last_read_at' => $shownMessage->created_at]);
 
-    new DeliverChatMessageNotification($shownMessage)
-        ->handle(app(ChatSettings::class), app(TrackChatPageContext::class));
+    deliverChatMessage($shownMessage);
 
     /* A different conversation is not on screen, so it still announces itself. */
     $background = Conversation::factory()->between($other, $recipient)->create();
 
-    new DeliverChatMessageNotification(chatMessageFrom($background, $other))
-        ->handle(app(ChatSettings::class), app(TrackChatPageContext::class));
+    deliverChatMessage(chatMessageFrom($background, $other));
 
     $unread = $recipient->fresh()->unreadNotifications()->get();
 

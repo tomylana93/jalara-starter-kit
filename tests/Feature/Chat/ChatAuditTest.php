@@ -44,6 +44,40 @@ test('a Super Admin can list every conversation', function (): void {
         );
 });
 
+test('the audit list reads every participant role in one query', function (): void {
+    $auditor = chatAuditor();
+
+    $openConversation = fn (): Conversation => Conversation::factory()
+        ->between(userWithRole(Role::User), userWithRole(Role::User))
+        ->create();
+
+    $openConversation();
+
+    $response = null;
+    $list = function () use ($auditor, &$response): void {
+        $response = actingAs($auditor)->get(route('chat.audit.index'))->assertOk();
+    };
+
+    /* Warms the auditor's own role lookup, which the audit policy reads. */
+    $list();
+
+    $single = roleQueryCount($list);
+
+    expect($single)->toBe(1);
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('conversations.data.0.participants.0.role', Role::User->label()),
+    );
+
+    $openConversation();
+    $openConversation();
+
+    /* Six participants cost what two did: the audit list never walks them. */
+    expect(roleQueryCount($list))->toBe($single);
+
+    $response->assertInertia(fn (Assert $page) => $page->has('conversations.data', 3));
+});
+
 test('opening a conversation records permanent access metadata', function (): void {
     $auditor = chatAuditor();
     $first = User::factory()->create();

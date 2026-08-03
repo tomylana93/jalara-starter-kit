@@ -16,9 +16,11 @@
 
 ## Notification context without presence
 
-- `SendMessage` dispatches `DeliverChatMessageNotification` (queued). Two
-  independent checks silence it, and neither is presence (nothing is broadcast,
-  no other user can observe either):
+- `SendMessage` dispatches `DeliverChatMessageNotification` (queued), which is
+  transport only: recipient selection, suppression, replacement, and sending
+  live in `NotifyChatMessageRecipient` and stay callable without a worker.
+  Two independent checks silence it, and neither is presence (nothing is
+  broadcast, no other user can observe either):
   - `TrackChatPageContext` - a cache record the Chat *page* refreshes while it
     is open (TTL 90s per context, client refresh 60s, cleared on unmount). It
     suppresses *every* chat notification for that user, because the page shows
@@ -44,6 +46,19 @@
   `data` text column.
 - The chat toggle hides chat notifications from the bell and the notification
   page (`ChatMessageNotification::excludeFrom()`); rows are never deleted.
+
+## Presentation graph
+
+- Every response path that hands participant users to `ChatPresenter::profile`,
+  `conversation`, or `participants` must eager-load `user.roles`: the role label
+  goes through Spatie `getRoleNames()`, whose `loadMissing('roles')` is an N+1
+  on any list. Policy-only resolution loads `participants.user` first and adds
+  the presentation-only `roles` (and reactions) after authorization passes, so a
+  stranger's identifier never costs a presentation query.
+- HTTP submission is one action: `SubmitChatMessage` owns target resolution,
+  authorization, first-conversation compensation, and the image branch, and
+  returns `SubmitChatMessageResult` (sent message vs accepted upload) so the
+  controller keeps the status codes.
 
 ## Images and reactions
 

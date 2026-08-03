@@ -9,7 +9,6 @@ use App\Http\Presenters\ChatPresenter;
 use App\Http\Requests\Chat\IndexAuditRequest;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
-use App\Models\Chat\Participant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -57,7 +56,7 @@ class AuditController extends Controller
         $search = is_string($search) ? trim($search) : '';
 
         $conversations = Conversation::query()
-            ->with(['participants.user', 'latestMessage.reactions'])
+            ->with(['participants.user.roles', 'latestMessage.reactions'])
             ->withCount('messages')
             ->when($search !== '', fn (Builder $query) => $query->whereHas(
                 'participants.user',
@@ -69,7 +68,7 @@ class AuditController extends Controller
 
         $conversations->through(fn (Conversation $conversation): array => [
             'id' => $conversation->id,
-            'participants' => $this->participants($conversation),
+            'participants' => ChatPresenter::participants($conversation),
             'last_message_at' => $conversation->last_message_at?->toIso8601String(),
             'message_count' => (int) ($conversation->messages_count ?? 0),
         ]);
@@ -95,7 +94,7 @@ class AuditController extends Controller
 
         $viewer = $this->authenticatedUser($request);
 
-        $conversation->load('participants.user');
+        $conversation->load('participants.user.roles');
 
         $recordConversationAccess->handle($conversation, $viewer, $request);
 
@@ -118,24 +117,12 @@ class AuditController extends Controller
         return Inertia::render('chat/audit/Show', [
             'conversation' => [
                 'id' => $conversation->id,
-                'participants' => $this->participants($conversation),
+                'participants' => ChatPresenter::participants($conversation),
                 'last_message_at' => $conversation->last_message_at?->toIso8601String(),
                 'message_count' => $messages->total(),
             ],
             'messages' => Inertia::scroll($messages),
             'auditLogs' => Inertia::scroll($logs),
         ]);
-    }
-
-    /**
-     * @return list<array{id: string, name: string, avatar: string|null, role: string|null, available: bool}>
-     */
-    private function participants(Conversation $conversation): array
-    {
-        return array_values(
-            $conversation->participants
-                ->map(fn (Participant $participant): array => ChatPresenter::profile($participant->user))
-                ->all(),
-        );
     }
 }

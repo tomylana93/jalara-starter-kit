@@ -18,6 +18,9 @@ final class StartConversation
      * action, so an abandoned recipient search leaves nothing behind. The
      * canonical `participant_key` plus its unique index is what keeps two
      * simultaneous first messages from opening two conversations.
+     *
+     * Either way the participants come back with their roles, because the
+     * conversation is rendered straight after the message that opened it.
      */
     public function handle(User $sender, User $recipient): Conversation
     {
@@ -26,7 +29,7 @@ final class StartConversation
         $existing = Conversation::query()->where('participant_key', $key)->first();
 
         if ($existing instanceof Conversation) {
-            return $existing->load('participants.user');
+            return $existing->load('participants.user.roles');
         }
 
         try {
@@ -47,6 +50,6 @@ final class StartConversation
             $conversation = Conversation::query()->where('participant_key', $key)->firstOrFail();
         }
 
-        return $conversation->load('participants.user');
+        return $conversation->load('participants.user.roles');
     }
 }
