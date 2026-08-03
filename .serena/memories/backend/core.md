@@ -17,6 +17,6 @@
 - Direct-message schema, the notification-context rule, the chat feature toggle, the audit surface, and the Larastan paginator constraint: `mem:backend/chat`.
 - Queued image-upload lifecycle (202 intake contract, active-target locking, adaptive format/downscale rules, republication authorization, and the orphan sweep): `mem:backend/media_uploads`.
 - Models live in `app/Models`; use factories from `database/factories` in tests.
-- `User::primaryRole()` is the single deterministic resolver used by master-data table, edit, and export presentation; it returns the first loaded role in `Role::cases()` privilege order (Super Admin, Admin, User). Callers must preload `roles`, and HTTP presentation-only role loading occurs only after authorization.
+- `User::primaryRole()` is the sole deterministic resolver for all displayed primary roles, including chat, master-data table, edit, and export presentation; it returns the first loaded role in `Role::cases()` privilege order (Super Admin, Admin, User). Callers must preload `roles`, and HTTP presentation-only role loading occurs only after authorization.
 - Feature tests live in `tests/Feature`; feature tests automatically extend `Tests\TestCase` and use `RefreshDatabase` via `tests/Pest.php`. Unit tests live in `tests/Unit`.
 - Create framework artifacts with `php artisan make:*` and `--no-interaction`; inspect schema before migrations/models and prefer Eloquent/resources for APIs.

@@ -2,7 +2,6 @@
 
 namespace App\Http\Presenters;
 
-use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Chat\AuditLog;
 use App\Models\Chat\Conversation;
@@ -30,7 +29,7 @@ final class ChatPresenter
             'id' => $user->id,
             'name' => $user->name,
             'avatar' => $user->avatar,
-            'role' => self::roleLabel($user),
+            'role' => $user->primaryRole()?->label(),
             'available' => $user->status === UserStatus::Active,
         ];
     }
@@ -189,19 +188,5 @@ final class ChatPresenter
     public static function auditLogs(Collection $logs): array
     {
         return array_values($logs->map(self::auditLog(...))->all());
-    }
-
-    /**
-     * The localized label of the user's first role, when one is assigned.
-     */
-    private static function roleLabel(User $user): ?string
-    {
-        $name = $user->getRoleNames()->first();
-
-        if (! is_string($name)) {
-            return null;
-        }
-
-        return Role::tryFrom($name)?->label() ?? $name;
     }
 }

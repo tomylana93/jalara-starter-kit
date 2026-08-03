@@ -9,6 +9,7 @@ use App\Models\Chat\Participant;
 use App\Models\Chat\Reaction;
 use App\Models\User;
 use App\Settings\ChatSettings;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -319,4 +320,28 @@ test('the audit surface stays open while chat is switched off', function (): voi
     actingAs($auditor)->get(route('chat.audit.show', $conversation))->assertOk();
 
     expect(AuditLog::query()->count())->toBe(1);
+});
+
+test('the audit list presents a multi-role participant using enum priority', function (): void {
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    // Assign User first, then SuperAdmin to verify priority doesn't depend on assignment order
+    $first->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+    $first->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::SuperAdmin->value, 'web'));
+
+    Conversation::factory()->between($first, $second)->create();
+
+    actingAs($auditor)
+        ->get(route('chat.audit.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('conversations.data.0.participants', 2)
+            ->where('conversations.data.0.participants', function (Collection $participants) use ($first): bool {
+                $p = $participants->firstWhere('id', $first->id);
+
+                return $p && $p['role'] === Role::SuperAdmin->label();
+            })
+        );
 });

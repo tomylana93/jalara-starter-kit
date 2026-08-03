@@ -57,10 +57,7 @@
 
 - Every response path that hands participant users to `ChatPresenter::profile`,
   `conversation`, or `participants` must eager-load `user.roles`: the role label
-  goes through Spatie `getRoleNames()`, whose `loadMissing('roles')` is an N+1
-  on any list. Policy-only resolution loads `participants.user` first and adds
-  the presentation-only `roles` (and reactions) after authorization passes, so a
-  stranger's identifier never costs a presentation query.
+  delegates to `User::primaryRole()` over the preloaded `participants.user.roles` graph and must never select a role from incidental relationship ordering. Policy-only resolution loads `participants.user` first and adds the presentation-only `roles` (and reactions) after authorization passes, so a stranger's identifier never costs a presentation query.
 
 ## Page loading & Querying
 
