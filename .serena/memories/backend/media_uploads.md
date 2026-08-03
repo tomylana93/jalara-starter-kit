@@ -117,4 +117,11 @@
   because `ChatPresenter::profile()` calls Spatie `getRoleNames()`, which
   otherwise queries through `loadMissing('roles')` during Resource serialization.
 
+## Job & Action Architecture
+
+- `App\Actions\Media\ProcessQueuedImageUpload` owns the claim → authorize → process → re-authorize → atomic publish-and-complete → cleanup workflow and selects one of the avatar, branding, or chat `ImageUploadPublication` strategies.
+- The three concrete `App\Jobs\Media\Process*ImageUpload` classes own only queue identity, serialized upload state, retries/timeout/backoff, Action invocation, and terminal failure handling.
+- Laravel 13 container-injects Job `handle()` dependencies but `CallQueuedHandler` invokes `failed($throwable)` directly, so the existing `app(FailImageUpload::class)` inside the queue-only failure hook is the deliberate and sole service-locator exception.
+- Queued chat publication loads `participants.user` only for existing-conversation policy evaluation and never loads recipient roles for a first conversation because no presentation occurs in the queue workflow.
+
 Frontend state machine and polling: `mem:frontend/media_uploads`.

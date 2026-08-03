@@ -374,3 +374,13 @@ it('does not overwrite a cancellation when the job later gives up', function ():
 
     expect($upload->refresh()->status)->toBe(ImageUploadStatus::Cancelled);
 });
+
+it('retains the correct queue configuration values on jobs', function (): void {
+    $user = User::factory()->create();
+    $upload = stage($user, UploadedFile::fake()->image('avatar.png', 400, 400));
+    $job = new ProcessAvatarImageUpload($upload);
+
+    expect($job->tries)->toBe(3)
+        ->and($job->timeout)->toBe(60)
+        ->and($job->backoff())->toBe([1, 5, 10]);
+});

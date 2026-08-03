@@ -1,8 +1,11 @@
 <?php
 
 use App\Actions\Chat\SendMessage;
+use App\Actions\Media\FailImageUpload;
+use App\Actions\Media\ProcessQueuedImageUpload;
 use App\Enums\ImageUploadStatus;
 use App\Enums\Role;
+use App\Enums\UserStatus;
 use App\Events\Chat\ChatConversationRead;
 use App\Events\Chat\ChatMessageSent;
 use App\Http\Controllers\Chat\ChatController;
@@ -771,4 +774,68 @@ test('the chat page renders successfully with empty transcript when conversation
             ->where('messages.data', [])
             ->where('activeConversation', null)
         );
+});
+
+test('first recipient chat publication does not load recipient roles', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+    $recipient->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('chat.png', 400, 400),
+            'body' => 'Queued Hello',
+        ])
+        ->assertAccepted();
+
+    $upload = ImageUpload::query()->where('user_id', $sender->id)->firstOrFail();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        app(ProcessQueuedImageUpload::class)->handle($upload);
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($upload->refresh()->status)->toBe(ImageUploadStatus::Ready);
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($recipient->id);
+    }
+});
+
+test('chat image publication fails when recipient status is disabled', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('chat.png', 400, 400),
+            'body' => 'Queued Hello',
+        ])
+        ->assertAccepted();
+
+    $upload = ImageUpload::query()->where('user_id', $sender->id)->firstOrFail();
+
+    $recipient->forceFill(['status' => UserStatus::Disabled])->save();
+
+    app(ProcessQueuedImageUpload::class)->handle($upload);
+
+    expect($upload->refresh()->status)->toBe(ImageUploadStatus::Failed)
+        ->and($upload->error_code)->toBe(FailImageUpload::REASON_UNAUTHORIZED);
 });
