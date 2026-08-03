@@ -28,7 +28,7 @@ class AuthenticateUser
             return null;
         }
 
-        $this->reactivateExpiredSuspension($user);
+        $user->reactivateExpiredSuspension();
 
         if ($user->status !== UserStatus::Active) {
             $request->attributes->set(self::REQUEST_ATTRIBUTE, false);
@@ -47,18 +47,5 @@ class AuthenticateUser
         $request->attributes->set(self::REQUEST_ATTRIBUTE, $user);
 
         return $user;
-    }
-
-    private function reactivateExpiredSuspension(User $user): void
-    {
-        if (
-            $user->status === UserStatus::Suspended
-            && $user->suspended_until?->isPast()
-        ) {
-            $user->forceFill([
-                'status' => UserStatus::Active,
-                'suspended_until' => null,
-            ])->save();
-        }
     }
 }

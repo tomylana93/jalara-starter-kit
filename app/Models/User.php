@@ -132,4 +132,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
 
         return null;
     }
+
+    /**
+     * Reactivate the user if their suspension period has expired.
+     */
+    public function reactivateExpiredSuspension(): void
+    {
+        if (
+            $this->status === UserStatus::Suspended
+            && $this->suspended_until !== null
+            && $this->suspended_until->isPast()
+        ) {
+            $this->forceFill([
+                'status' => UserStatus::Active,
+                'suspended_until' => null,
+            ])->save();
+        }
+    }
 }

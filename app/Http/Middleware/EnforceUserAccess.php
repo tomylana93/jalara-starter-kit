@@ -24,7 +24,7 @@ class EnforceUserAccess
             return $next($request);
         }
 
-        $this->reactivateExpiredSuspension($user);
+        $user->reactivateExpiredSuspension();
 
         if ($user->status !== UserStatus::Active) {
             return $this->blockedResponse($request, $user);
@@ -37,19 +37,6 @@ class EnforceUserAccess
         }
 
         return $next($request);
-    }
-
-    private function reactivateExpiredSuspension(User $user): void
-    {
-        if (
-            $user->status === UserStatus::Suspended
-            && $user->suspended_until?->isPast()
-        ) {
-            $user->forceFill([
-                'status' => UserStatus::Active,
-                'suspended_until' => null,
-            ])->save();
-        }
     }
 
     private function blockedResponse(Request $request, User $user): Response
