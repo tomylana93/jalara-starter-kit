@@ -29,7 +29,7 @@ final class StartConversation
         $existing = Conversation::query()->where('participant_key', $key)->first();
 
         if ($existing instanceof Conversation) {
-            return $existing->load('participants.user.roles');
+            return $existing->load('participants.user');
         }
 
         try {
@@ -50,6 +50,6 @@ final class StartConversation
             $conversation = Conversation::query()->where('participant_key', $key)->firstOrFail();
         }
 
-        return $conversation->load('participants.user.roles');
+        return $conversation->load('participants.user');
     }
 }

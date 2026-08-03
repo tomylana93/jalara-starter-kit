@@ -8,6 +8,7 @@ use App\Models\Chat\Message;
 use App\Models\User;
 use App\Settings\ChatSettings;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -54,9 +55,25 @@ test('a non participant cannot read a conversation', function (): void {
         'sender_id' => $first->id,
     ]);
 
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
     actingAs($outsider)
         ->getJson(route('chat.conversations.show', $conversation))
         ->assertForbidden();
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($first->id)
+            ->and($query['bindings'])->not->toContain($second->id);
+    }
 
     actingAs($outsider)
         ->postJson(route('chat.conversations.read', $conversation), [

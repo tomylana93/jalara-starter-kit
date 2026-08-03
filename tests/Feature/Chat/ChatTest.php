@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Chat\SendMessage;
+use App\Actions\Chat\SubmitChatMessage;
 use App\Enums\ImageUploadStatus;
 use App\Enums\Role;
 use App\Events\Chat\ChatConversationRead;
@@ -634,4 +635,93 @@ test('a sender is throttled after thirty messages in a minute', function (): voi
 test('a guest cannot reach any chat surface', function (): void {
     get(route('chat.index'))->assertRedirect(route('login'));
     post(route('chat.messages.store'))->assertRedirect(route('login'));
+});
+
+test('authorized single conversation show returns counterpart role and loads both participant roles in one query', function (): void {
+    $user = userWithRole(Role::User);
+    $peer = userWithRole(Role::User);
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+
+    // Warm the user's roles lookup (for authorization, etc.)
+    actingAs($user)->getJson(route('chat.conversations.show', $conversation))->assertOk();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $response = actingAs($user)
+        ->getJson(route('chat.conversations.show', $conversation))
+        ->assertOk();
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    // Check that role label is present
+    expect($response->json('conversation.participant.role'))->toBe(Role::User->label());
+
+    // Check that there is a query on model_has_roles containing both user and peer IDs.
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    expect($roleQueries)->toHaveCount(1);
+
+    $roleQuery = reset($roleQueries);
+    $bindings = $roleQuery ? $roleQuery['bindings'] : [];
+
+    expect($bindings)->toContain($user->id)
+        ->and($bindings)->toContain($peer->id);
+});
+
+test('an inactive recipient does not trigger a role query', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->disabled()->create();
+    $recipient->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'body' => 'Hello',
+        ])
+        ->assertStatus(422);
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($recipient->id);
+    }
+});
+
+test('a self recipient fails validation over HTTP', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $user->id,
+            'body' => 'Hello',
+        ])
+        ->assertStatus(422);
+});
+
+test('availableRecipient resolves recipients without preloading roles', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $action = app(SubmitChatMessage::class);
+    $reflector = new ReflectionClass($action);
+    $method = $reflector->getMethod('availableRecipient');
+
+    $resolved = $method->invoke($action, $sender, $recipient->id);
+
+    expect($resolved->relationLoaded('roles'))->toBeFalse();
 });

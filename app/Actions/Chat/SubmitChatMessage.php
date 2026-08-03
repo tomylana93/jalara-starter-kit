@@ -60,7 +60,7 @@ final readonly class SubmitChatMessage
         }
 
         /* Roles travel with the participants: the payload renders their labels. */
-        $conversation->load('participants.user.roles')->setRelation('latestMessage', $message);
+        $conversation->loadMissing('participants.user.roles')->setRelation('latestMessage', $message);
 
         return SubmitChatMessageResult::sent($conversation, $message);
     }
@@ -138,7 +138,7 @@ final readonly class SubmitChatMessage
      */
     private function availableRecipient(User $sender, ?string $recipientId): User
     {
-        $recipient = User::query()->with('roles')->findOrFail((string) $recipientId);
+        $recipient = User::query()->findOrFail((string) $recipientId);
 
         if ($recipient->is($sender) || $recipient->status !== UserStatus::Active) {
             throw ValidationException::withMessages([

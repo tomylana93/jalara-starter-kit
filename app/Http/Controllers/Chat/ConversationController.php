@@ -63,9 +63,11 @@ class ConversationController extends Controller
     {
         $user = $this->authenticatedUser($request);
 
-        $conversation->load('participants.user', 'latestMessage');
+        $conversation->load('participants.user');
 
         Gate::authorize('view', $conversation);
+
+        $conversation->loadMissing(['participants.user.roles', 'latestMessage']);
 
         $query = $conversation->messages()->with('reactions')->latest()->orderByDesc('id');
 
