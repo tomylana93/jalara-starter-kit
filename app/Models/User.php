@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Jobs\SendEmailVerification;
 use Carbon\CarbonInterface;
@@ -114,5 +115,38 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'failed_login_attempts' => 'integer',
             'suspended_until' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the user's primary role in priority order.
+     */
+    public function primaryRole(): ?Role
+    {
+        $roleNames = $this->roles->pluck('name')->all();
+
+        foreach (Role::cases() as $role) {
+            if (in_array($role->value, $roleNames, true)) {
+                return $role;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Reactivate the user if their suspension period has expired.
+     */
+    public function reactivateExpiredSuspension(): void
+    {
+        if (
+            $this->status === UserStatus::Suspended
+            && $this->suspended_until !== null
+            && $this->suspended_until->isPast()
+        ) {
+            $this->forceFill([
+                'status' => UserStatus::Active,
+                'suspended_until' => null,
+            ])->save();
+        }
     }
 }

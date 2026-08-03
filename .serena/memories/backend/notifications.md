@@ -15,6 +15,13 @@
 - `App\Http\Presenters\NotificationPresenter` owns the record → client mapping;
   both the controller and `HandleInertiaRequests` go through it.
 
+## Pagination & Querying
+
+- `App\Actions\Notifications\PaginateNotifications` handles notification-history querying: relation selection (all vs unread), chat-toggle exclusion, deterministic `created_at desc, id desc` ordering, count reuse, fixed 10-row pagination, and clamping of out-of-range pages to the last available page.
+- `App\Http\Presenters\NotificationPresenter::presentPage` maps the resulting `LengthAwarePaginator` to the `{data, meta}` shape consumed by Inertia.
+- `App\Actions\Notifications\LoadNotificationBell` handles visible notification bell querying: authenticated bell relation selection, chat-toggle exclusion, deterministic `created_at desc, id desc` ordering, the five-row limit, and visible unread counting.
+- `App\Http\Presenters\NotificationPresenter::presentBell` maps the resulting `LoadNotificationBellResult` to the `{items, unreadCount}` payload consumed by Inertia.
+
 ## Ordering
 
 - Notification ids are UUIDv4 (`Str::uuid()` in `NotificationSender`), NOT the
@@ -24,6 +31,7 @@
   'desc')` as a tie-breaker for deterministic paging; without it a row can repeat
   or vanish between pages. Tests that assert "newest first" must `travel()`
   between sends, since same-second inserts have no meaningful order.
+- Same-second notification ordering tests must derive the expected order by sorting the actual generated UUIDv4 IDs descending, or explicitly assign controlled IDs; they must never treat insertion order as UUID lexical order.
 
 ## Channel authorization
 

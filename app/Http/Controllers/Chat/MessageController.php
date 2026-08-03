@@ -2,19 +2,15 @@
 
 namespace App\Http\Controllers\Chat;
 
-use App\Actions\Chat\SendMessage;
-use App\Actions\Chat\StartConversation;
+use App\Actions\Chat\SubmitChatMessage;
 use App\Concerns\ResolvesAuthenticatedUser;
-use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\ChatPresenter;
 use App\Http\Requests\Chat\StoreMessageRequest;
-use App\Models\Chat\Conversation;
-use App\Models\User;
+use App\Http\Resources\ImageUploadResource;
+use App\Models\ImageUpload;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
-use Throwable;
+use Illuminate\Http\UploadedFile;
 
 class MessageController extends Controller
 {
@@ -23,76 +19,35 @@ class MessageController extends Controller
     /**
      * Send one message, opening the conversation when it is the pair's first.
      *
-     * Nothing is stored until the body validates, so browsing the recipient
-     * directory never leaves an empty conversation behind.
+     * A text message is stored immediately and answered with the message
+     * itself; a message carrying an image is only accepted, because the queue
+     * has to process the image before the message can exist.
      */
-    public function store(
-        StoreMessageRequest $request,
-        StartConversation $startConversation,
-        SendMessage $sendMessage,
-    ): JsonResponse {
+    public function store(StoreMessageRequest $request, SubmitChatMessage $submitChatMessage): JsonResponse
+    {
         $user = $this->authenticatedUser($request);
-
+        $image = $request->file('image');
         $conversationId = $request->validated('conversation_id');
-        $isFirstMessage = ! is_string($conversationId);
-        $conversation = $this->resolveConversation($request, $user, $startConversation);
+        $recipientId = $request->validated('recipient_id');
+        $body = $request->validated('body');
 
-        Gate::authorize('send', $conversation);
+        $result = $submitChatMessage->handle(
+            $user,
+            is_string($conversationId) ? $conversationId : null,
+            is_string($recipientId) ? $recipientId : null,
+            is_string($body) ? $body : null,
+            $image instanceof UploadedFile ? $image : null,
+        );
 
-        try {
-            $body = $request->validated('body');
-            $message = $sendMessage->handle(
-                $conversation,
-                $user,
-                is_string($body) ? $body : null,
-                $request->file('image'),
-            );
-        } catch (Throwable $throwable) {
-            if ($isFirstMessage && $conversation->messages()->doesntExist()) {
-                $conversation->delete();
-            }
+        $upload = $result->acceptedUpload();
 
-            throw $throwable;
+        if ($upload instanceof ImageUpload) {
+            return new ImageUploadResource($upload)->response()->setStatusCode(202);
         }
-
-        $conversation->load('participants.user')->setRelation('latestMessage', $message);
 
         return response()->json([
-            'conversation' => ChatPresenter::conversation($conversation, $user),
-            'message' => ChatPresenter::message($message),
+            'conversation' => ChatPresenter::conversation($result->conversation(), $user),
+            'message' => ChatPresenter::message($result->message()),
         ], 201);
-    }
-
-    /**
-     * Resolve the conversation the message belongs to.
-     */
-    private function resolveConversation(
-        StoreMessageRequest $request,
-        User $user,
-        StartConversation $startConversation,
-    ): Conversation {
-        $conversationId = $request->validated('conversation_id');
-
-        if (is_string($conversationId)) {
-            $conversation = Conversation::query()->with('participants.user')->findOrFail($conversationId);
-
-            /*
-             * Resolved before the send policy so a stranger's identifier answers
-             * 403 rather than revealing anything about the conversation.
-             */
-            Gate::authorize('view', $conversation);
-
-            return $conversation;
-        }
-
-        $recipient = User::query()->with('roles')->findOrFail((string) $request->validated('recipient_id'));
-
-        if ($recipient->is($user) || $recipient->status !== UserStatus::Active) {
-            throw ValidationException::withMessages([
-                'recipient_id' => __('chat.message.recipient_unavailable'),
-            ]);
-        }
-
-        return $startConversation->handle($user, $recipient);
     }
 }

@@ -9,6 +9,7 @@
 /public/hot-e2e
 /public/hot-vitest
 /public/storage
+/public/storage-e2e-*
 /storage/*.key
 /tests/Browser/Screenshots
 /storage/pail

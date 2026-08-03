@@ -6,12 +6,15 @@ use App\Events\Chat\ChatConversationRead;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Participant;
 use App\Models\User;
-use App\Notifications\ChatMessageNotification;
 use Carbon\CarbonInterface;
 use Illuminate\Notifications\DatabaseNotification;
 
-final class MarkConversationRead
+final readonly class MarkConversationRead
 {
+    public function __construct(
+        private LoadUnreadConversationNotifications $unreadConversationNotifications,
+    ) {}
+
     /**
      * Move the reader's marker to the newest message they actually saw.
      *
@@ -33,17 +36,10 @@ final class MarkConversationRead
             event(new ChatConversationRead($participant));
         }
 
-        $this->clearNotifications($reader, $conversation->id);
+        /* Marked read, never deleted: the row stays as the reader's history. */
+        $this->unreadConversationNotifications->handle($reader, $conversation->id)
+            ->each(fn (DatabaseNotification $notification) => $notification->markAsRead());
 
         return $participant;
-    }
-
-    private function clearNotifications(User $reader, string $conversationId): void
-    {
-        $reader->unreadNotifications()
-            ->where('type', ChatMessageNotification::class)
-            ->get()
-            ->filter(fn (DatabaseNotification $notification): bool => ($notification->data['conversation_id'] ?? null) === $conversationId)
-            ->each(fn (DatabaseNotification $notification) => $notification->markAsRead());
     }
 }

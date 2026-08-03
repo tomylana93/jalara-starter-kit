@@ -1,20 +1,50 @@
 import { router } from '@inertiajs/vue3';
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ImageUploadRecord } from '@/lib/imageUploads';
+import { ImageUploadError } from '@/lib/imageUploads';
 import ImageUploadField from './ImageUploadField.vue';
 
-type PostOptions = {
-    onCancelToken?: (token: { cancel: () => void }) => void;
-    onCancel?: () => void;
-    onProgress?: (event: {
-        progress?: number;
-        loaded: number;
-        total?: number;
-        percentage?: number;
-    }) => void;
-    onSuccess?: () => void;
-    onError?: (errors: Record<string, string>) => void;
-    onFinish?: () => void;
+/*
+ * The transport is mocked, not the state machine: these tests are about what
+ * the field shows as an upload moves through the queue.
+ */
+vi.mock('@/lib/imageUploads', async (importOriginal) => {
+    const actual = await importOriginal<object>();
+
+    return {
+        ...actual,
+        startImageUpload: vi.fn(),
+        pollImageUpload: vi.fn(),
+        cancelImageUpload: vi.fn(),
+    };
+});
+
+const { startImageUpload, pollImageUpload, cancelImageUpload } =
+    await import('@/lib/imageUploads');
+
+const record = (
+    overrides: Partial<ImageUploadRecord> = {},
+): ImageUploadRecord => ({
+    id: 'upload-1',
+    target: 'branding',
+    target_key: 'logo',
+    status: 'pending',
+    error_code: null,
+    created_at: null,
+    poll_url: '/media/image-uploads/upload-1',
+    cancel_url: '/media/image-uploads/upload-1',
+    url: null,
+    message: null,
+    conversation: null,
+    ...overrides,
+});
+
+/** Report transfer progress the way the real client would. */
+const reportProgress = (percentage: number): void => {
+    const options = vi.mocked(startImageUpload).mock.calls[0][2];
+
+    options?.onProgress?.(percentage);
 };
 
 const stubs = {
@@ -72,8 +102,6 @@ const selectFile = async (wrapper: ReturnType<typeof mountField>) => {
     await input.trigger('change');
 };
 
-let post: ReturnType<typeof vi.spyOn>;
-
 beforeEach(() => {
     vi.stubGlobal('URL', {
         ...URL,
@@ -88,15 +116,19 @@ beforeEach(() => {
         }),
     );
 
-    post = vi.spyOn(router, 'post').mockImplementation(() => undefined);
+    vi.mocked(startImageUpload).mockReset();
+    vi.mocked(pollImageUpload).mockReset();
+    vi.mocked(cancelImageUpload).mockReset();
+
+    /* Default: the transfer never settles, leaving the field mid-upload. */
+    vi.mocked(startImageUpload).mockReturnValue(new Promise(() => {}));
+    vi.mocked(pollImageUpload).mockReturnValue(new Promise(() => {}));
 });
 
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
 });
-
-const optionsOf = (): PostOptions => post.mock.calls[0][2] as PostOptions;
 
 describe('image upload field', () => {
     it('starts idle when nothing is stored', () => {
@@ -192,27 +224,184 @@ describe('image upload field', () => {
     });
 
     it('moves through uploading, processing and done', async () => {
+        /* Held open so the transfer stage is observable before it settles. */
+        let accept: (value: ImageUploadRecord) => void = () => {};
+        vi.mocked(startImageUpload).mockReturnValue(
+            new Promise((resolve) => {
+                accept = resolve;
+            }),
+        );
+        vi.mocked(pollImageUpload).mockResolvedValue(
+            record({ status: 'ready', url: '/storage/new-logo.webp' }),
+        );
+
         const wrapper = mountField();
 
         await selectFile(wrapper);
         expect(wrapper.attributes('data-state')).toBe('uploading');
         expect(wrapper.find('[role="status"]').exists()).toBe(true);
 
-        optionsOf().onProgress?.({ loaded: 40, total: 100 });
+        reportProgress(40);
         await wrapper.vm.$nextTick();
         expect(wrapper.attributes('data-state')).toBe('uploading');
         expect(
             wrapper.get('[role="progressbar"]').attributes('aria-valuenow'),
         ).toBe('40');
 
-        optionsOf().onProgress?.({ loaded: 100, total: 100 });
-        await wrapper.vm.$nextTick();
-        expect(wrapper.attributes('data-state')).toBe('processing');
+        accept(record());
+        await flushPromises();
 
-        optionsOf().onSuccess?.();
-        await wrapper.vm.$nextTick();
+        /* Accepted by the server: the wait is now on the queue, not the wire. */
         expect(wrapper.attributes('data-state')).toBe('done');
         expect(wrapper.find('[role="status"]').exists()).toBe(false);
+        expect(wrapper.get('img').attributes('src')).toBe(
+            '/storage/new-logo.webp',
+        );
+    });
+
+    it('shows the queue state while an accepted upload is processed', async () => {
+        vi.mocked(startImageUpload).mockResolvedValue(record());
+
+        const wrapper = mountField();
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        expect(wrapper.attributes('data-state')).toBe('processing');
+        expect(wrapper.text()).toContain('media.upload.status.pending');
+
+        /* Queue work has no measurable percentage, so no progress bar. */
+        expect(wrapper.find('[role="progressbar"]').exists()).toBe(false);
+    });
+
+    it('keeps the stored image while a replacement is processing', async () => {
+        vi.mocked(startImageUpload).mockResolvedValue(record());
+
+        const wrapper = mountField({ currentUrl: '/storage/logo.png' });
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        expect(wrapper.attributes('data-state')).toBe('processing');
+        /* The local preview stands in, and the stored image is untouched. */
+        expect(wrapper.get('img').attributes('src')).toBe('blob:preview');
+    });
+
+    it('restores the stored image when processing fails', async () => {
+        vi.mocked(startImageUpload).mockResolvedValue(record());
+        vi.mocked(pollImageUpload).mockResolvedValue(
+            record({ status: 'failed', error_code: 'processing_failed' }),
+        );
+
+        const wrapper = mountField({ currentUrl: '/storage/logo.png' });
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        expect(wrapper.attributes('data-state')).toBe('error');
+        expect(wrapper.text()).toContain(
+            'media.upload.error.processing_failed',
+        );
+    });
+
+    it('offers to check again when the client stops waiting', async () => {
+        vi.mocked(startImageUpload).mockResolvedValue(record());
+        vi.mocked(pollImageUpload).mockResolvedValue(null);
+
+        const wrapper = mountField();
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        expect(wrapper.attributes('data-state')).toBe('error');
+        expect(wrapper.text()).toContain('media.upload.message.timed_out');
+        expect(
+            findAction(wrapper, 'media.upload.button.check_again'),
+        ).toBeDefined();
+    });
+
+    it('follows the upload already holding the target on a conflict', async () => {
+        const existing = record({ id: 'upload-existing' });
+
+        vi.mocked(startImageUpload).mockRejectedValue(
+            new ImageUploadError(409, { data: existing }),
+        );
+
+        const wrapper = mountField();
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        expect(wrapper.text()).toContain('media.upload.message.conflict');
+        expect(vi.mocked(pollImageUpload).mock.calls[0][0]).toMatchObject({
+            id: 'upload-existing',
+        });
+    });
+
+    it('does not follow a conflict it was given no way to watch', async () => {
+        /* What another administrator's upload looks like from here. */
+        vi.mocked(startImageUpload).mockRejectedValue(
+            new ImageUploadError(409, {
+                message: 'media.upload.message.conflict_other_owner',
+            }),
+        );
+
+        const wrapper = mountField();
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        expect(wrapper.attributes('data-state')).toBe('error');
+        expect(wrapper.text()).toContain(
+            'media.upload.message.conflict_other_owner',
+        );
+
+        /* Polling a stranger's upload would only ever answer 403. */
+        expect(pollImageUpload).not.toHaveBeenCalled();
+        expect(
+            findAction(wrapper, 'media.upload.button.cancel'),
+        ).toBeUndefined();
+    });
+
+    it('resumes an upload handed back after a reload', async () => {
+        vi.mocked(pollImageUpload).mockResolvedValue(
+            record({ status: 'ready', url: '/storage/resumed.webp' }),
+        );
+
+        const wrapper = mountField({
+            resume: record({ status: 'processing' }),
+        });
+
+        await flushPromises();
+
+        expect(wrapper.attributes('data-state')).toBe('done');
+        expect(wrapper.get('img').attributes('src')).toBe(
+            '/storage/resumed.webp',
+        );
+    });
+
+    it('cancels an upload that has not been published yet', async () => {
+        vi.mocked(startImageUpload).mockResolvedValue(record());
+        vi.mocked(cancelImageUpload).mockResolvedValue(
+            record({ status: 'cancelled' }),
+        );
+
+        const wrapper = mountField({ currentUrl: '/storage/logo.png' });
+
+        await selectFile(wrapper);
+        await flushPromises();
+
+        await findAction(wrapper, 'media.upload.button.cancel')!.trigger(
+            'click',
+        );
+        await flushPromises();
+
+        expect(cancelImageUpload).toHaveBeenCalledWith(
+            '/media/image-uploads/upload-1',
+        );
+        /* Cancelling never discards what was already stored. */
+        expect(wrapper.attributes('data-state')).toBe('done');
+        expect(wrapper.get('img').attributes('src')).toBe('/storage/logo.png');
     });
 
     it('does not render passive saved or empty status text', () => {
@@ -224,7 +413,7 @@ describe('image upload field', () => {
         ).toBe(false);
     });
 
-    it('uses Inertia percentage when the total byte count is unavailable', async () => {
+    it('reports transfer progress as a percentage', async () => {
         const wrapper = mountField({ testId: 'branding-logo' });
 
         await selectFile(wrapper);
@@ -232,10 +421,7 @@ describe('image upload field', () => {
             wrapper.find('[data-test="branding-logo-progress"]').exists(),
         ).toBe(true);
 
-        optionsOf().onProgress?.({
-            loaded: 40,
-            percentage: 40,
-        });
+        reportProgress(40);
         await wrapper.vm.$nextTick();
 
         expect(
@@ -258,9 +444,14 @@ describe('image upload field', () => {
     it('enters the error state and surfaces the validation message', async () => {
         const wrapper = mountField({ testId: 'branding-logo' });
 
+        vi.mocked(startImageUpload).mockRejectedValue(
+            new ImageUploadError(422, {
+                errors: { image: ['The image must be square.'] },
+            }),
+        );
+
         await selectFile(wrapper);
-        optionsOf().onError?.({ image: 'The image must be square.' });
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         expect(wrapper.attributes('data-state')).toBe('error');
         expect(wrapper.text()).toContain('The image must be square.');
@@ -280,17 +471,21 @@ describe('image upload field', () => {
             findAction(wrapper, 'common.upload.action.retry'),
         ).toBeUndefined();
 
+        vi.mocked(startImageUpload).mockRejectedValue(
+            new ImageUploadError(422, { errors: { image: ['Too large.'] } }),
+        );
+
         await selectFile(wrapper);
-        optionsOf().onError?.({ image: 'Too large.' });
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         const retry = findAction(wrapper, 'common.upload.action.retry');
 
         expect(retry).toBeDefined();
 
+        vi.mocked(startImageUpload).mockReturnValue(new Promise(() => {}));
         await retry!.trigger('click');
 
-        expect(post).toHaveBeenCalledTimes(2);
+        expect(startImageUpload).toHaveBeenCalledTimes(2);
         expect(wrapper.attributes('data-state')).toBe('uploading');
     });
 
@@ -326,12 +521,15 @@ describe('image upload field', () => {
     it('revokes the previous object url when another file is chosen', async () => {
         const wrapper = mountField();
 
+        vi.mocked(startImageUpload).mockResolvedValue(record());
+        vi.mocked(pollImageUpload).mockResolvedValue(
+            record({ status: 'ready', url: '/storage/new.webp' }),
+        );
+
         await selectFile(wrapper);
 
         /* The control is locked mid-flight, so a replacement follows success. */
-        optionsOf().onSuccess?.();
-        optionsOf().onFinish?.();
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         await selectFile(wrapper);
 
@@ -339,19 +537,15 @@ describe('image upload field', () => {
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
     });
 
-    it('registers a cancel token so history movement can abort the upload', async () => {
+    it('hands the guard an abort signal for the transfer', async () => {
         const wrapper = mountField();
 
         await selectFile(wrapper);
 
-        expect(optionsOf().onCancelToken).toBeTypeOf('function');
+        const signal = vi.mocked(startImageUpload).mock.calls[0][2]?.signal;
 
-        const cancel = vi.fn();
-        optionsOf().onCancelToken?.({ cancel });
-        optionsOf().onCancel?.();
-        await wrapper.vm.$nextTick();
-
-        expect(wrapper.attributes('data-state')).toBe('error');
+        expect(signal).toBeInstanceOf(AbortSignal);
+        expect(signal?.aborted).toBe(false);
     });
 
     it('offers removal only when an image is stored', async () => {
@@ -445,9 +639,12 @@ describe('image upload field', () => {
             'common.upload.action.remove',
         ]);
 
+        vi.mocked(startImageUpload).mockRejectedValue(
+            new ImageUploadError(422, { errors: { image: ['Too large.'] } }),
+        );
+
         await selectFile(wrapper);
-        optionsOf().onError?.({ image: 'Too large.' });
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         expect(
             wrapper

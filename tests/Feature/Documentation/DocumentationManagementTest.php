@@ -411,3 +411,72 @@ it('runs both queries and returns both props on standard visit', function () {
 
     expect($hasCategoryQuery)->toBeTrue();
 });
+
+it('allocates automatic sequential collision suffixes and fills gaps', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+
+    Documentation::factory()->create(['slug' => 'panduan', 'title' => 'Panduan']);
+    Documentation::factory()->create(['slug' => 'panduan-2', 'title' => 'Panduan 2']);
+    Documentation::factory()->create(['slug' => 'panduan-4', 'title' => 'Panduan 4']);
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Panduan',
+            'slug' => '',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent(),
+        ])
+        ->assertRedirect(route('documentation.manage.index'));
+
+    $doc = Documentation::query()->where('title', 'Panduan')->whereNot('slug', 'panduan')->firstOrFail();
+    expect($doc->slug)->toBe('panduan-3');
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Panduan',
+            'slug' => '',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent(),
+        ])
+        ->assertRedirect(route('documentation.manage.index'));
+
+    expect(Documentation::query()->where('slug', 'panduan-5')->exists())->toBeTrue();
+});
+
+it('uses fallback when title is completely un-sluggable and slug is empty', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+
+    $this->actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => '!!!',
+            'slug' => '',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent(),
+        ])
+        ->assertRedirect(route('documentation.manage.index'));
+
+    $doc = Documentation::query()->where('title', '!!!')->firstOrFail();
+    expect($doc->slug)->toBe('documentation');
+});
+
+it('excludes the current draft from its own collision checks when updating', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $documentation = Documentation::factory()->create(['slug' => 'panduan', 'title' => 'Panduan', 'published_at' => null]);
+
+    $this->actingAs($admin)
+        ->put(route('documentation.manage.documents.update', $documentation), [
+            'documentation_category_id' => $documentation->documentation_category_id,
+            'title' => 'Panduan',
+            'slug' => '',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationContent(),
+        ])
+        ->assertRedirect(route('documentation.manage.index'));
+
+    expect($documentation->refresh()->slug)->toBe('panduan');
+});

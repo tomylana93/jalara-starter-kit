@@ -1,20 +1,29 @@
 <?php
 
+use App\Actions\Chat\SendMessage;
+use App\Actions\Media\FailImageUpload;
+use App\Actions\Media\ProcessQueuedImageUpload;
+use App\Enums\ImageUploadStatus;
 use App\Enums\Role;
+use App\Enums\UserStatus;
 use App\Events\Chat\ChatConversationRead;
 use App\Events\Chat\ChatMessageSent;
 use App\Http\Controllers\Chat\ChatController;
 use App\Jobs\Chat\DeliverChatMessageNotification;
+use App\Jobs\Media\ProcessChatImageUpload;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
 use App\Models\Chat\Reaction;
+use App\Models\ImageUpload;
 use App\Models\User;
 use App\Settings\ChatSettings;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -47,6 +56,42 @@ test('the chat page renders the first page of the inbox', function (): void {
             ->where('conversations.data.0.participant.name', $peer->name)
             ->where('conversations.data.0.unread_count', 1),
         );
+});
+
+test('the inbox reads every participant role in one query', function (): void {
+    $user = User::factory()->create();
+
+    $openConversationWith = function (User $peer) use ($user): void {
+        $conversation = Conversation::factory()->between($user, $peer)->create();
+
+        Message::factory()->create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $peer->id,
+            'body' => 'Hello',
+        ]);
+    };
+
+    $openConversationWith(userWithRole(Role::User));
+
+    $response = null;
+    $inbox = function () use ($user, &$response): void {
+        $response = actingAs($user)->getJson(route('chat.conversations.index'))->assertOk();
+    };
+
+    /* Warms the viewer's own role lookup, which is not part of the payload. */
+    $inbox();
+
+    $single = roleQueryCount($inbox);
+
+    expect($single)->toBe(1)
+        ->and($response->json('data.0.participant.role'))->toBe(Role::User->label());
+
+    $openConversationWith(userWithRole(Role::User));
+    $openConversationWith(userWithRole(Role::User));
+
+    /* Three counterparts cost what one did: the roles come back in one load. */
+    expect(roleQueryCount($inbox))->toBe($single)
+        ->and($response->json('data'))->toHaveCount(3);
 });
 
 test('the inbox never exposes a conversation the viewer is not part of', function (): void {
@@ -143,20 +188,115 @@ test('a message may contain one private image without text', function (): void {
     $sender = User::factory()->create();
     $recipient = User::factory()->create();
 
-    $response = actingAs($sender)
+    /*
+     * An image message is only accepted here; it is created once the queue has
+     * processed the image, so the job is run explicitly.
+     */
+    actingAs($sender)
         ->postJson(route('chat.messages.store'), [
             'recipient_id' => $recipient->id,
             'image' => UploadedFile::fake()->image('photo.png', 640, 480),
         ])
-        ->assertCreated()
-        ->assertJsonPath('message.body', null)
-        ->assertJsonPath('message.reactions', []);
+        ->assertStatus(202)
+        ->assertJsonPath('data.status', 'pending');
+
+    expect(Message::query()->exists())->toBeFalse();
+    Queue::assertPushed(ProcessChatImageUpload::class);
+
+    $upload = ImageUpload::query()->firstOrFail();
+    app()->call([new ProcessChatImageUpload($upload), 'handle']);
 
     $message = Message::query()->firstOrFail();
 
-    expect($response->json('message.image.url'))->toBe(route('chat.messages.image', $message))
-        ->and($message->image_mime_type)->toBe('image/png');
+    expect($message->body)->toBeNull()
+        ->and($message->image_mime_type)->toBe('image/png')
+        ->and($upload->refresh()->status)->toBe(ImageUploadStatus::Ready);
     Storage::disk('local')->assertExists((string) $message->image_path);
+});
+
+test('a message is announced only once the transaction holding it commits', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+
+    DB::transaction(function () use ($conversation, $sender): void {
+        app(SendMessage::class)->handle($conversation, $sender, 'still uncommitted');
+
+        /*
+         * The row exists but only inside this transaction. Announcing it here
+         * would show every client a message a rollback could still erase.
+         */
+        Event::assertNotDispatched(ChatMessageSent::class);
+        Queue::assertNotPushed(DeliverChatMessageNotification::class);
+    });
+
+    Event::assertDispatched(ChatMessageSent::class);
+    Queue::assertPushed(DeliverChatMessageNotification::class);
+});
+
+test('a failed image publication leaves no message, no conversation and no announcement', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('photo.png', 640, 480),
+        ])
+        ->assertStatus(202);
+
+    $upload = ImageUpload::query()->firstOrFail();
+
+    /* Fails after the row is written — the window a rollback has to cover. */
+    Message::created(function (): never {
+        throw new RuntimeException('the write went through, the job did not');
+    });
+
+    expect(fn (): mixed => app()->call([new ProcessChatImageUpload($upload), 'handle']))
+        ->toThrow(RuntimeException::class)
+        ->and(Message::query()->exists())->toBeFalse()
+        ->and(Conversation::query()->exists())->toBeFalse();
+
+    /* Nothing may be announced for a message that does not exist. */
+    Event::assertNotDispatched(ChatMessageSent::class);
+    Queue::assertNotPushed(DeliverChatMessageNotification::class);
+});
+
+test('an image message retried after a failure is created exactly once', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('photo.png', 640, 480),
+        ])
+        ->assertStatus(202);
+
+    $upload = ImageUpload::query()->firstOrFail();
+    $failing = true;
+
+    Message::created(function () use (&$failing): void {
+        throw_if($failing, RuntimeException::class, 'first attempt');
+    });
+
+    expect(fn (): mixed => app()->call([new ProcessChatImageUpload($upload), 'handle']))
+        ->toThrow(RuntimeException::class);
+
+    /* The retry the queue would make once the transient cause has cleared. */
+    $failing = false;
+    app()->call([new ProcessChatImageUpload($upload), 'handle']);
+
+    expect(Message::query()->count())->toBe(1)
+        ->and(Conversation::query()->count())->toBe(1)
+        ->and($upload->refresh()->status)->toBe(ImageUploadStatus::Ready);
+
+    Event::assertDispatchedTimes(ChatMessageSent::class, 1);
+    Queue::assertPushed(DeliverChatMessageNotification::class, 1);
 });
 
 test('a chat image obeys type size dimension and feature toggle rules', function (): void {
@@ -248,13 +388,38 @@ test('a peer can add replace and remove their single reaction', function (): voi
 
 test('the sender cannot open a conversation with themselves', function (): void {
     $user = User::factory()->create();
+    $user->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
 
-    actingAs($user)
-        ->postJson(route('chat.messages.store'), ['recipient_id' => $user->id, 'body' => 'Hello'])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors('recipient_id');
+    /* Warms the viewer's own role lookup, which the audit and middleware read. */
+    actingAs($user)->getJson(route('chat.conversations.index'))->assertOk();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($user)
+            ->postJson(route('chat.messages.store'), [
+                'recipient_id' => $user->id,
+                'body' => 'Hello',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('recipient_id');
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
 
     expect(Conversation::query()->count())->toBe(0);
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($user->id);
+    }
 });
 
 test('the recipient directory answers only Active users matched by name', function (): void {
@@ -498,4 +663,179 @@ test('a sender is throttled after thirty messages in a minute', function (): voi
 test('a guest cannot reach any chat surface', function (): void {
     get(route('chat.index'))->assertRedirect(route('login'));
     post(route('chat.messages.store'))->assertRedirect(route('login'));
+});
+
+test('authorized single conversation show returns counterpart role and loads both participant roles in one query', function (): void {
+    $user = userWithRole(Role::User);
+    $peer = userWithRole(Role::User);
+
+    $conversation = Conversation::factory()->between($user, $peer)->create();
+
+    // Warm the user's roles lookup (for authorization, etc.)
+    actingAs($user)->getJson(route('chat.conversations.show', $conversation))->assertOk();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $response = actingAs($user)
+            ->getJson(route('chat.conversations.show', $conversation))
+            ->assertOk();
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    // Check that role label is present
+    expect($response->json('conversation.participant.role'))->toBe(Role::User->label());
+
+    // Check that there is a query on model_has_roles containing both user and peer IDs.
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    expect($roleQueries)->toHaveCount(1);
+
+    $roleQuery = reset($roleQueries);
+    $bindings = $roleQuery ? $roleQuery['bindings'] : [];
+
+    expect($bindings)->toContain($user->id)
+        ->and($bindings)->toContain($peer->id);
+});
+
+test('an inactive recipient does not trigger a role query', function (): void {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->disabled()->create();
+    $recipient->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($sender)
+            ->postJson(route('chat.messages.store'), [
+                'recipient_id' => $recipient->id,
+                'body' => 'Hello',
+            ])
+            ->assertStatus(422);
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($recipient->id);
+    }
+});
+
+test('the chat page renders successfully with empty transcript when conversation identifier is absent', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->get(route('chat.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations')
+            ->where('messages.data', [])
+            ->where('activeConversation', null)
+        );
+});
+
+test('the chat page renders successfully with empty transcript when conversation identifier is malformed', function (): void {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->get(route('chat.index', ['conversation' => 'not-a-uuid']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations')
+            ->where('messages.data', [])
+            ->where('activeConversation', null)
+        );
+});
+
+test('the chat page renders successfully with empty transcript when conversation identifier is missing', function (): void {
+    $user = User::factory()->create();
+    $missingUuid = (string) Str::uuid();
+
+    actingAs($user)
+        ->get(route('chat.index', ['conversation' => $missingUuid]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('chat/Index')
+            ->has('conversations')
+            ->where('messages.data', [])
+            ->where('activeConversation', null)
+        );
+});
+
+test('first recipient chat publication does not load recipient roles', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+    $recipient->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('chat.png', 400, 400),
+            'body' => 'Queued Hello',
+        ])
+        ->assertAccepted();
+
+    $upload = ImageUpload::query()->where('user_id', $sender->id)->firstOrFail();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        app(ProcessQueuedImageUpload::class)->handle($upload);
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    expect($upload->refresh()->status)->toBe(ImageUploadStatus::Ready);
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($recipient->id);
+    }
+});
+
+test('chat image publication fails when recipient status is disabled', function (): void {
+    Storage::fake('local');
+
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    actingAs($sender)
+        ->postJson(route('chat.messages.store'), [
+            'recipient_id' => $recipient->id,
+            'image' => UploadedFile::fake()->image('chat.png', 400, 400),
+            'body' => 'Queued Hello',
+        ])
+        ->assertAccepted();
+
+    $upload = ImageUpload::query()->where('user_id', $sender->id)->firstOrFail();
+
+    $recipient->forceFill(['status' => UserStatus::Disabled])->save();
+
+    app(ProcessQueuedImageUpload::class)->handle($upload);
+
+    expect($upload->refresh()->status)->toBe(ImageUploadStatus::Failed)
+        ->and($upload->error_code)->toBe(FailImageUpload::REASON_UNAUTHORIZED);
 });

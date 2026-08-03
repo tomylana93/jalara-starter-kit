@@ -18,6 +18,9 @@ final class StartConversation
      * action, so an abandoned recipient search leaves nothing behind. The
      * canonical `participant_key` plus its unique index is what keeps two
      * simultaneous first messages from opening two conversations.
+     *
+     * Either way the participants come back with their roles, because the
+     * conversation is rendered straight after the message that opened it.
      */
     public function handle(User $sender, User $recipient): Conversation
     {

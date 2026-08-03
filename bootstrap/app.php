@@ -14,7 +14,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+$application = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -45,3 +45,19 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
+
+/*
+ * `Application::storagePath()` reads LARAVEL_STORAGE_PATH from `$_ENV` and
+ * `$_SERVER` only. With `variables_order=GPCS` the `php -S` child that
+ * `artisan serve` spawns exposes the inherited value through `getenv()` alone,
+ * so served requests would silently fall back to the default storage path while
+ * CLI processes honored the override. Bridging it here keeps every process on
+ * one root. Absent or empty, the default behavior is untouched.
+ */
+$storagePath = getenv('LARAVEL_STORAGE_PATH');
+
+if (is_string($storagePath) && $storagePath !== '') {
+    $application->useStoragePath($storagePath);
+}
+
+return $application;

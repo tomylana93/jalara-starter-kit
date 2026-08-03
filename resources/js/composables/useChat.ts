@@ -1,6 +1,13 @@
 import { echo } from '@laravel/echo-vue';
 import { computed, reactive, readonly } from 'vue';
 import { chatRequest, ChatRequestError } from '@/lib/chatClient';
+import type { ImageUploadRecord } from '@/lib/imageUploads';
+import {
+    activeImageUploads,
+    cancelImageUpload,
+    pollImageUpload,
+    uploadErrorKey,
+} from '@/lib/imageUploads';
 import {
     index as conversationIndex,
     read as conversationRead,
@@ -12,6 +19,7 @@ import {
     update as reactionUpdate,
 } from '@/routes/chat/messages/reaction';
 import { index as recipientIndex } from '@/routes/chat/recipients';
+import { index as imageUploadIndex } from '@/routes/media/image-uploads';
 import type {
     ChatConversation,
     ChatConversationPayload,
@@ -42,6 +50,16 @@ type ChatState = {
     loadingOlder: boolean;
     sending: boolean;
     uploadProgress: number | null;
+    /*
+     * Image messages the server has accepted but not published yet. A message
+     * does not exist until its image is processed, so this is all a surface has
+     * to show for one in the meantime.
+     *
+     * A list rather than a single record: several may legitimately be in flight
+     * at once, and the second must not erase what the first is showing or
+     * silently take over its cancellation.
+     */
+    pendingImageUploads: ImageUploadRecord[];
     drafts: Record<string, string>;
     connection: ConnectionState;
     error: string | null;
@@ -70,6 +88,7 @@ const state = reactive<ChatState>({
     loadingOlder: false,
     sending: false,
     uploadProgress: null,
+    pendingImageUploads: [],
     drafts: {},
     connection: 'connected',
     error: null,
@@ -417,22 +436,193 @@ const loadOlderMessages = async (conversationId: string): Promise<void> => {
     }
 };
 
+/** Merge a stored message and its conversation into the local view. */
+const applySentMessage = (
+    conversation: ChatConversation,
+    message: ChatMessage,
+): void => {
+    upsertConversation(conversation);
+    recordLive(message);
+
+    if (state.messages[conversation.id] !== undefined) {
+        state.messages[conversation.id] = [
+            ...state.messages[conversation.id],
+            message,
+        ];
+    }
+
+    state.activeId = conversation.id;
+    state.error = null;
+};
+
+/** Track, refresh, or drop one in-flight upload without disturbing the others. */
+const trackPending = (record: ImageUploadRecord): void => {
+    const index = state.pendingImageUploads.findIndex(
+        (item) => item.id === record.id,
+    );
+
+    if (index === -1) {
+        state.pendingImageUploads.push(record);
+
+        return;
+    }
+
+    state.pendingImageUploads[index] = record;
+};
+
+const forgetPending = (uploadId: string): void => {
+    state.pendingImageUploads = state.pendingImageUploads.filter(
+        (item) => item.id !== uploadId,
+    );
+};
+
+/**
+ * Follow an accepted image message until the queue publishes it.
+ *
+ * Resolves with the created message, or null when it did not get created —
+ * because processing failed, because it was cancelled, or because this client
+ * simply stopped waiting. Nothing here belongs to the request that started it:
+ * this runs in the background long after that request was answered.
+ */
+const awaitImageMessage = async (
+    accepted: ImageUploadRecord,
+): Promise<ChatMessage | null> => {
+    trackPending(accepted);
+
+    try {
+        const settled = await pollImageUpload(accepted, {
+            onUpdate: trackPending,
+        });
+
+        if (settled === null) {
+            /* Still running server-side; only this client gave up watching. */
+            state.error = 'media.upload.message.timed_out';
+
+            return null;
+        }
+
+        if (
+            settled.status !== 'ready' ||
+            settled.message === null ||
+            settled.conversation === null
+        ) {
+            state.error = uploadErrorKey(settled);
+
+            return null;
+        }
+
+        const message = settled.message as unknown as ChatMessage;
+        applySentMessage(
+            settled.conversation as unknown as ChatConversation,
+            message,
+        );
+
+        return message;
+    } finally {
+        forgetPending(accepted.id);
+    }
+};
+
+/**
+ * Abandon an image message that has not been published yet.
+ *
+ * Best effort: a job that finishes first still creates its message, and that
+ * message is kept rather than thrown away. With nothing named, the oldest
+ * pending upload is the one abandoned, which is the one a surface showing a
+ * single cancel control is asking about.
+ */
+const cancelPendingImage = async (uploadId?: string): Promise<void> => {
+    const pending =
+        uploadId === undefined
+            ? state.pendingImageUploads[0]
+            : state.pendingImageUploads.find((item) => item.id === uploadId);
+
+    if (!pending) {
+        return;
+    }
+
+    try {
+        const settled = await cancelImageUpload(pending.cancel_url);
+
+        if (
+            settled?.status === 'ready' &&
+            settled.message &&
+            settled.conversation
+        ) {
+            applySentMessage(
+                settled.conversation as unknown as ChatConversation,
+                settled.message as unknown as ChatMessage,
+            );
+        }
+    } catch {
+        /* The pending state is cleared either way. */
+    }
+
+    forgetPending(pending.id);
+};
+
+/**
+ * Pick up image messages that were still processing when the page was left.
+ *
+ * Anything already being watched is skipped, so a surface mounting a second
+ * time does not start a duplicate poll for the same upload.
+ */
+const restorePendingImage = async (): Promise<void> => {
+    try {
+        const active = await activeImageUploads(imageUploadIndex());
+        const unwatched = active.filter(
+            (upload) =>
+                upload.target === 'chat-image' &&
+                !state.pendingImageUploads.some(
+                    (item) => item.id === upload.id,
+                ),
+        );
+
+        await Promise.all(unwatched.map(awaitImageMessage));
+    } catch {
+        /* Recovery is a convenience; chat works without it. */
+    }
+};
+
+/**
+ * What a surface learns the moment the server has taken the message.
+ *
+ * A text message is stored synchronously and arrives complete. An image message
+ * is only *accepted*: `settled` is the background watcher that eventually says
+ * whether it became a message, and awaiting it is optional — a surface that
+ * only needs to clear its composer never has to.
+ */
+export type SendOutcome = {
+    accepted: boolean;
+    /** The stored message, for a text message only. */
+    message: ChatMessage | null;
+    /** Resolves when a queued image message is published, or null for text. */
+    settled: Promise<ChatMessage | null> | null;
+};
+
+const rejected: SendOutcome = { accepted: false, message: null, settled: null };
+
 /**
  * Send a message, opening the conversation when a recipient is named.
  *
  * Nothing is added locally before the server answers: a message only exists
  * once it is stored.
+ *
+ * This resolves when the transfer is done, never later. An image still has the
+ * queue ahead of it at that point, but that work is the server's — holding the
+ * composer or the navigation guard through it would block the user on something
+ * that no longer needs them present.
  */
 const sendMessage = async (payload: {
     body: string;
     image?: File | null;
     conversationId?: string | null;
     recipientId?: string | null;
-}): Promise<ChatMessage | null> => {
+}): Promise<SendOutcome> => {
     const body = payload.body.trim();
 
     if ((body === '' && !payload.image) || state.sending) {
-        return null;
+        return rejected;
     }
 
     state.sending = true;
@@ -455,31 +645,33 @@ const sendMessage = async (payload: {
             data.append('recipient_id', payload.recipientId);
         }
 
-        const response = await chatRequest<{
-            conversation: ChatConversation;
-            message: ChatMessage;
-        }>(messageStore(), data, undefined, (percentage) => {
+        const response = await chatRequest<
+            | { conversation: ChatConversation; message: ChatMessage }
+            | { data: ImageUploadRecord }
+        >(messageStore(), data, undefined, (percentage) => {
             state.uploadProgress = percentage;
         });
 
-        upsertConversation(response.conversation);
-        recordLive(response.message);
-
-        if (state.messages[response.conversation.id] !== undefined) {
-            state.messages[response.conversation.id] = [
-                ...state.messages[response.conversation.id],
-                response.message,
-            ];
+        /*
+         * A message carrying an image is only *accepted* here: it is created
+         * once the queue has processed the image. The watcher is started, not
+         * awaited, so this returns as soon as the bytes are in.
+         */
+        if ('data' in response) {
+            return {
+                accepted: true,
+                message: null,
+                settled: awaitImageMessage(response.data),
+            };
         }
 
-        state.activeId = response.conversation.id;
-        state.error = null;
+        applySentMessage(response.conversation, response.message);
 
-        return response.message;
+        return { accepted: true, message: response.message, settled: null };
     } catch (error) {
         state.error = messageFor(error);
 
-        return null;
+        return rejected;
     } finally {
         state.sending = false;
         state.uploadProgress = null;
@@ -725,6 +917,8 @@ export function useChat() {
         openConversation,
         loadOlderMessages,
         sendMessage,
+        cancelPendingImage,
+        restorePendingImage,
         markRead,
         searchRecipients,
         subscribeTo,

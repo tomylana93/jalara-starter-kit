@@ -5,10 +5,13 @@ namespace App\Actions\Documentation;
 use App\Enums\DocumentationStatus;
 use App\Models\Documentation;
 use App\Support\DocumentationContent;
-use Illuminate\Support\Str;
 
-final class SaveDocumentation
+final readonly class SaveDocumentation
 {
+    public function __construct(
+        private ResolveUniqueDocumentationSlug $resolveSlug,
+    ) {}
+
     /**
      * @param  array{documentation_category_id: string, title: string, slug?: string|null, status: string, content: array<string, mixed>}  $attributes
      */
@@ -16,7 +19,7 @@ final class SaveDocumentation
     {
         $documentation ??= new Documentation;
         $slug = $documentation->published_at === null
-            ? $this->uniqueSlug(($attributes['slug'] ?? null) ?: $attributes['title'], $documentation)
+            ? $this->resolveSlug->handle(($attributes['slug'] ?? null) ?: $attributes['title'], $documentation)
             : $documentation->slug;
         $status = DocumentationStatus::from($attributes['status']);
 
@@ -33,18 +36,5 @@ final class SaveDocumentation
         ])->save();
 
         return $documentation;
-    }
-
-    private function uniqueSlug(string $value, Documentation $documentation): string
-    {
-        $base = Str::slug($value) ?: 'documentation';
-        $slug = $base;
-        $suffix = 2;
-
-        while (Documentation::query()->where('slug', $slug)->when($documentation->exists, fn ($query) => $query->whereKeyNot($documentation->getKey()))->exists()) {
-            $slug = $base.'-'.$suffix++;
-        }
-
-        return $slug;
     }
 }

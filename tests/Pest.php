@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Settings\AuthenticationSettings;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
 
@@ -122,6 +123,28 @@ function userWithRole(Role $role): User
     $user->assignRole(Spatie\Permission\Models\Role::findOrCreate($role->value, 'web'));
 
     return $user;
+}
+
+/**
+ * How often the given request asked the database for role assignments.
+ *
+ * A payload that renders a role per user is only free of an N+1 when this stays
+ * flat as the number of users in the response grows.
+ */
+function roleQueryCount(Closure $request): int
+{
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $request();
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    return count(array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles'),
+    ));
 }
 
 /**

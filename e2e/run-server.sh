@@ -2,13 +2,19 @@
 
 set -euo pipefail
 
-mkdir -p storage/framework/testing
-touch storage/framework/testing/playwright.sqlite
+# playwright.config.ts always supplies this, so the server, the workers, and the
+# outer runner agree on which storage root owns (and later removes) every file
+# this run creates.
+: "${LARAVEL_STORAGE_PATH:?LARAVEL_STORAGE_PATH must be set by playwright.config.ts}"
+
+testing_dir="${LARAVEL_STORAGE_PATH}/framework/testing"
+mkdir -p "${testing_dir}"
+touch "${testing_dir}/playwright.sqlite"
 
 php artisan migrate:fresh --force --no-interaction
 php artisan auth:init-superadmin --reset-password --no-interaction
 
-pid_file="storage/framework/testing/playwright-server.pid"
+pid_file="${testing_dir}/playwright-server.pid"
 echo "$$" > "${pid_file}"
 
 # Realtime notifications need the WebSocket server plus a worker to drain the

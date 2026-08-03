@@ -26,6 +26,12 @@ type Props = {
     sending?: boolean;
     imageUploadsEnabled?: boolean;
     uploadProgress?: number | null;
+    /**
+     * The image has been handed over and is being processed. Distinct from
+     * `sending`: the bytes are gone, so there is no percentage left to show and
+     * the wait is on the queue rather than the connection.
+     */
+    processing?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -33,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
     sending: false,
     imageUploadsEnabled: true,
     uploadProgress: null,
+    processing: false,
 });
 
 const emit = defineEmits<{
@@ -41,6 +48,8 @@ const emit = defineEmits<{
         payload: { body: string; image: File | null },
         complete: (succeeded: boolean) => void,
     ];
+    /** Abandon an image that has been accepted but not published. */
+    cancelUpload: [];
 }>();
 
 const { t } = useTranslations();
@@ -123,7 +132,13 @@ onBeforeUnmount(revokePreview);
         <Attachment
             v-if="image && previewUrl"
             size="sm"
-            :state="props.sending ? 'uploading' : 'idle'"
+            :state="
+                props.processing
+                    ? 'processing'
+                    : props.sending
+                      ? 'uploading'
+                      : 'idle'
+            "
             class="mb-2 w-full"
             data-test="chat-image-draft"
         >
@@ -133,12 +148,18 @@ onBeforeUnmount(revokePreview);
             <AttachmentContent class="min-w-0 flex-1">
                 <AttachmentTitle>
                     {{
-                        props.sending
-                            ? t('chat.label.uploading')
-                            : t('chat.label.image')
+                        props.processing
+                            ? t('media.upload.status.processing')
+                            : props.sending
+                              ? t('chat.label.uploading')
+                              : t('chat.label.image')
                     }}
                 </AttachmentTitle>
-                <div v-if="props.sending" class="mt-1 flex items-center gap-2">
+                <!-- Only the transfer has a percentage; queue work does not. -->
+                <div
+                    v-if="props.sending && !props.processing"
+                    class="mt-1 flex items-center gap-2"
+                >
                     <Progress
                         class="h-1.5 flex-1"
                         :model-value="props.uploadProgress ?? 0"
@@ -148,13 +169,20 @@ onBeforeUnmount(revokePreview);
                     </span>
                 </div>
             </AttachmentContent>
-            <AttachmentActions v-if="!props.sending">
+            <AttachmentActions v-if="!props.sending || props.processing">
                 <AttachmentAction
                     type="button"
                     size="icon-xs"
                     variant="ghost"
-                    :aria-label="t('chat.button.remove_image')"
-                    @click="removeImage"
+                    :aria-label="
+                        props.processing
+                            ? t('media.upload.button.cancel')
+                            : t('chat.button.remove_image')
+                    "
+                    data-test="chat-image-draft-action"
+                    @click="
+                        props.processing ? emit('cancelUpload') : removeImage()
+                    "
                 >
                     <X />
                 </AttachmentAction>

@@ -16,9 +16,11 @@
 
 ## Notification context without presence
 
-- `SendMessage` dispatches `DeliverChatMessageNotification` (queued). Two
-  independent checks silence it, and neither is presence (nothing is broadcast,
-  no other user can observe either):
+- `SendMessage` dispatches `DeliverChatMessageNotification` (queued), which is
+  transport only: recipient selection, suppression, replacement, and sending
+  live in `NotifyChatMessageRecipient` and stay callable without a worker.
+  Two independent checks silence it, and neither is presence (nothing is
+  broadcast, no other user can observe either):
   - `TrackChatPageContext` - a cache record the Chat *page* refreshes while it
     is open (TTL 90s per context, client refresh 60s, cleared on unmount). It
     suppresses *every* chat notification for that user, because the page shows
@@ -40,10 +42,32 @@
     widget deliberately does not mark read, so its notification survives.
 - Exactly one active notification per conversation: the job deletes the
   recipient's existing unread chat notification before sending the new one.
-  Filtering is done in PHP over the small unread set, not a JSON path on the
-  `data` text column.
+- `App\Actions\Chat\LoadUnreadConversationNotifications` is the single owner of
+  selecting a user's unread `ChatMessageNotification` records for one
+  conversation: constrain by notification `type` in SQL, then filter the exact
+  `data.conversation_id` in PHP, because `notifications.data` is a text column
+  with no JSON index. Its two callers keep deliberately different terminal
+  semantics: `NotifyChatMessageRecipient` deletes the matches before sending the
+  replacement (no read history is retained), while `MarkConversationRead` marks
+  them read and preserves the rows.
 - The chat toggle hides chat notifications from the bell and the notification
   page (`ChatMessageNotification::excludeFrom()`); rows are never deleted.
+
+## Presentation graph
+
+- Every response path that hands participant users to `ChatPresenter::profile`,
+  `conversation`, or `participants` must eager-load `user.roles`: the role label
+  delegates to `User::primaryRole()` over the preloaded `participants.user.roles` graph and must never select a role from incidental relationship ordering. Policy-only resolution loads `participants.user` first and adds the presentation-only `roles` (and reactions) after authorization passes, so a stranger's identifier never costs a presentation query.
+
+## Page loading & Querying
+
+- `App\Actions\Chat\LoadChatPage` handles orchestrating the page load: active-conversation resolution, authorization-sensitive graph loading (roles and reactions loaded only after authorization), inbox pagination, bulk unread counts, and transcript pagination.
+- It returns untransformed paginators within `LoadChatPageResult`, while `ChatController` keeps `through()` presentation mapping in local variables because mapped `LengthAwarePaginator` template types cannot safely cross a declared result boundary due to Larastan constraints.
+- `App\Actions\Chat\LoadSharedChatState` handles resolving the shared chat layout state: safe chat-setting resolution and aggregate navigation unread calculation. Guests and chat-disabled requests return `enabled=false`, `imageUploadsEnabled=false`, and `unreadCount=0` without querying conversation messages.
+- HTTP submission is one action: `SubmitChatMessage` owns target resolution,
+  authorization, first-conversation compensation, and the image branch, and
+  returns `SubmitChatMessageResult` (sent message vs accepted upload) so the
+  controller keeps the status codes.
 
 ## Images and reactions
 
@@ -52,6 +76,15 @@
   endpoint or the separately audited Super Admin endpoint may serve them, with
   private/no-store caching. File creation is compensated if the message
   transaction fails.
+- `App\Actions\Chat\ServeChatMessageImage` is the only owner of private image
+  delivery: fixed `local` disk, 404 on a null or missing path, `Content-Type`
+  from `image_mime_type` falling back to `application/octet-stream`, forced
+  `inline` + `nosniff`, and private/no-store caching. It never authorizes.
+  Controllers own the ordering, and it is security-relevant: participant
+  authorization runs before any file probe, so an absent file can never become
+  an existence oracle for an outsider; the audit endpoint authorizes and records
+  its permanent access *before* serving, so an authorized missing-file audit
+  attempt is logged and then 404s.
 - Reactions use the fixed 12-emoji `Reaction::ALLOWED` set. Each user has at
   most one reaction per message; only the peer may react (never the message
   sender). Add/replace/remove broadcasts realtime state but does not generate a

@@ -44,6 +44,37 @@ it('reactivates an expired suspension for an existing session', function () {
         ->and($user->suspended_until)->toBeNull();
 });
 
+it('does not reactivate a future-dated suspension for an existing session and logs them out', function () {
+    $user = User::factory()->suspended(now()->addDay())->create();
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirectToRoute('login')
+        ->assertSessionHasErrors('email');
+
+    assertGuest();
+
+    expect($user->refresh()->status)->toBe(UserStatus::Suspended)
+        ->and($user->suspended_until)->not->toBeNull();
+});
+
+it('does not reactivate a manual suspension (null suspended_until) for an existing session and logs them out', function () {
+    $user = User::factory()->create([
+        'status' => UserStatus::Suspended,
+        'suspended_until' => null,
+    ]);
+
+    actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirectToRoute('login')
+        ->assertSessionHasErrors('email');
+
+    assertGuest();
+
+    expect($user->refresh()->status)->toBe(UserStatus::Suspended)
+        ->and($user->suspended_until)->toBeNull();
+});
+
 it('redirects forced password changes to the security flow', function () {
     $user = User::factory()->mustChangePassword()->create();
 

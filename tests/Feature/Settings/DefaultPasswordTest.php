@@ -123,7 +123,18 @@ it('rejects a policy the stored default password would not satisfy', function ()
     ]));
 
     expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->keys())->toContain('passwordPolicy');
+        ->and($validator->errors()->first('passwordPolicy'))->toBe(__('setting.user_provisioning.default_password.policy_conflict'));
+});
+
+it('fails with enum validation and does not trigger stored policy conflict on invalid policy input', function () {
+    storeDefaultPassword('simplepass');
+
+    $validator = defaultPasswordValidator(UpdateAuthenticationSettingsRequest::class, authenticationPayload([
+        'passwordPolicy' => 'invalid-policy-name',
+    ]));
+
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->first('passwordPolicy'))->not->toBe(__('setting.user_provisioning.default_password.policy_conflict'));
 });
 
 it('accepts a policy the stored default password satisfies', function () {

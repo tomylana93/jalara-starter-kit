@@ -22,6 +22,8 @@ type Props = {
     error?: string | null;
     imageUploadsEnabled?: boolean;
     uploadProgress?: number | null;
+    /** An accepted image is still being processed by the queue. */
+    processing?: boolean;
     draftKey: string;
 };
 
@@ -34,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
     error: null,
     imageUploadsEnabled: true,
     uploadProgress: null,
+    processing: false,
 });
 
 const emit = defineEmits<{
@@ -41,6 +44,7 @@ const emit = defineEmits<{
         payload: { body: string; image: File | null },
         complete: (succeeded: boolean) => void,
     ];
+    cancelUpload: [];
     loadOlder: [];
     seen: [messageId: string];
     react: [message: ChatMessage, emoji: string | null];
@@ -141,7 +145,9 @@ const canSend = computed(() => participant.value?.available === true);
                 :sending="props.sending"
                 :image-uploads-enabled="props.imageUploadsEnabled"
                 :upload-progress="props.uploadProgress"
+                :processing="props.processing"
                 @send="(payload, complete) => emit('send', payload, complete)"
+                @cancel-upload="emit('cancelUpload')"
             />
         </template>
     </div>

@@ -10,6 +10,10 @@
 - Put database-free object contracts in `tests/Unit`; bind `Tests\TestCase` only when the service container is needed.
 - Prefer stable public outcomes over collaborator wiring, internal call sequences, or class-shape assertions.
 - PHPStan level 7 analyses `tests/` and loads stubs from `tests/PHPStan/`. `Settings.stub` corrects `Spatie\LaravelSettings\Settings::fill/save/refresh`, which vendor declares `: self`; without it every `app(XSettings::class)->refresh()->property` chain reports `property.notFound` (~104 errors). Add a stub there for a genuine vendor typing gap; never a baseline or ignore.
+- `laravel/pao` must stay at `>= 1.1.3`. PAO 1.1.2 repeated Collision's
+  `--no-output` flag, so `php artisan test` exited 1 while reporting
+  `result: passed`; 1.1.3 fixes the duplicate flag and focused
+  `php artisan test --compact` runs green with PAO enabled.
 - `$this->artisan()` returns `PendingCommand|int`. Narrow it through the `pendingCommand()` helper in `tests/Pest.php` before fluent command assertions; `inertiaRows()` does the same for untyped `viewData('page')` props feeding `collect()`.
 - Rector runs the Pest 5 coding-style set over `tests/`. Five rules stay in `withSkip` because they churn or weaken assertions; see the inline reasons in `rector.php` before re-enabling any.
 - The repo has no two-factor support: no `two_factor_*` columns, and `fortify.features` omits it. Do not write tests against Fortify 2FA.

@@ -102,28 +102,60 @@ it('shares the five newest notifications and the unread count with the bell', fu
     $user = User::factory()->create();
 
     /* Distinct timestamps, so "newest first" is an observable ordering. */
-    foreach (range(1, 7) as $index) {
+    foreach (range(1, 4) as $index) {
         travel(1)->seconds();
         sendNotification($user, "Title {$index}", "Message {$index}");
     }
 
+    /* Send three more notifications in the same second to test id desc tie-breaker. */
+    travel(1)->seconds();
+    sendNotification($user, 'Title 5', 'Message 5');
+    sendNotification($user, 'Title 6', 'Message 6');
+    sendNotification($user, 'Title 7', 'Message 7');
+
     travelBack();
+
+    $sortedTied = $user->notifications()
+        ->get()
+        ->filter(fn ($notification) => in_array($notification->data['title'] ?? null, ['Title 5', 'Title 6', 'Title 7'], true))
+        ->sortByDesc('id')
+        ->values();
 
     actingAs($user)
         ->get(route('dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->has('notificationBell.items', 5)
             ->where('notificationBell.unreadCount', 7)
-            ->where('notificationBell.items.0.title', 'Title 7')
+            ->where('notificationBell.items.0.id', $sortedTied[0]->id)
+            ->where('notificationBell.items.1.id', $sortedTied[1]->id)
+            ->where('notificationBell.items.2.id', $sortedTied[2]->id)
+            ->where('notificationBell.items.3.title', 'Title 4')
+            ->where('notificationBell.items.4.title', 'Title 3')
         );
 });
 
 it('shares an empty bell state with guests without querying', function () {
-    get(route('login'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('notificationBell.items', [])
-            ->where('notificationBell.unreadCount', 0)
-        );
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        get(route('login'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('notificationBell.items', [])
+                ->where('notificationBell.unreadCount', 0)
+            );
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $notificationQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'notifications')
+    );
+
+    expect($notificationQueries)->toBeEmpty();
 });
 
 it('paginates the notification page ten at a time, newest first', function () {
@@ -156,6 +188,16 @@ it('paginates the notification page ten at a time, newest first', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('notifications.data', 2)
             ->where('notifications.meta.page', 2)
+        );
+
+    actingAs($user)
+        ->get(route('notifications.index', ['page' => 5]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notifications.data', 2)
+            ->where('notifications.meta.page', 2)
+            ->where('notifications.meta.lastPage', 2)
+            ->where('notifications.meta.from', 11)
+            ->where('notifications.meta.to', 12)
         );
 });
 

@@ -8,11 +8,8 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 
 final class SendMessage
@@ -22,27 +19,25 @@ final class SendMessage
      *
      * The broadcast and the notification job only run once the row is
      * committed, so a client never renders a message the database rejected.
+     *
+     * An image arrives already processed and stored on the private disk — the
+     * queue owns that step — and is removed again if this transaction fails, so
+     * a rejected message never leaves a file behind.
+     *
+     * "Committed" is meant literally. When the queue calls this it does so
+     * inside its own transaction, and a broadcast sent from in there would
+     * reach every client seconds before a rollback erased the message they were
+     * shown. Deferring both side effects to commit also makes a retried job
+     * harmless: the attempt that rolled back never announced anything, so the
+     * recipient sees exactly one message and gets exactly one notification.
      */
     public function handle(
         Conversation $conversation,
         User $sender,
         ?string $body,
-        ?UploadedFile $image = null,
+        ?string $imagePath = null,
+        ?string $imageMimeType = null,
     ): Message {
-        $imagePath = null;
-        $imageMimeType = null;
-
-        if ($image instanceof UploadedFile) {
-            $imageMimeType = $image->getMimeType();
-            $imagePath = $image->storeAs(
-                'chat/'.$conversation->id,
-                Str::uuid().'.'.$image->extension(),
-                'local',
-            );
-
-            throw_unless(is_string($imagePath), RuntimeException::class, 'The chat image could not be stored.');
-        }
-
         try {
             $message = DB::transaction(function () use ($conversation, $sender, $body, $imagePath, $imageMimeType): Message {
                 $message = new Message;
@@ -80,8 +75,10 @@ final class SendMessage
         $message->setRelation('sender', $sender);
         $message->setRelation('reactions', collect());
 
-        event(new ChatMessageSent($message));
-        dispatch(new DeliverChatMessageNotification($message));
+        DB::afterCommit(function () use ($message): void {
+            event(new ChatMessageSent($message));
+            dispatch(new DeliverChatMessageNotification($message));
+        });
 
         return $message;
     }

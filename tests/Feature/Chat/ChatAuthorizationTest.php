@@ -8,6 +8,7 @@ use App\Models\Chat\Message;
 use App\Models\User;
 use App\Settings\ChatSettings;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -54,9 +55,28 @@ test('a non participant cannot read a conversation', function (): void {
         'sender_id' => $first->id,
     ]);
 
-    actingAs($outsider)
-        ->getJson(route('chat.conversations.show', $conversation))
-        ->assertForbidden();
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($outsider)
+            ->getJson(route('chat.conversations.show', $conversation))
+            ->assertForbidden();
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($first->id)
+            ->and($query['bindings'])->not->toContain($second->id);
+    }
 
     actingAs($outsider)
         ->postJson(route('chat.conversations.read', $conversation), [
@@ -98,13 +118,39 @@ test('only participants can open a private chat image', function (): void {
     $response = actingAs($second)
         ->get(route('chat.messages.image', $message))
         ->assertOk()
+        ->assertHeader('Content-Type', 'image/png')
+        ->assertHeader('Content-Disposition', 'inline')
         ->assertHeader('X-Content-Type-Options', 'nosniff');
 
     expect($response->headers->get('Cache-Control'))
         ->toContain('private')
-        ->toContain('no-store');
+        ->toContain('no-store')
+        ->and($response->streamedContent())->toBe('image');
 
     actingAs($outsider)->get(route('chat.messages.image', $message))->assertForbidden();
+});
+
+test('authorization decides a private chat image before its file is looked for', function (): void {
+    Storage::fake('local');
+
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $outsider = User::factory()->create();
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    /* The row points at a file that was never written. */
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    /*
+     * The outsider is refused before the file is probed, so a missing image can
+     * never answer the question the policy already refused.
+     */
+    actingAs($outsider)->get(route('chat.messages.image', $message))->assertForbidden();
+
+    actingAs($second)->get(route('chat.messages.image', $message))->assertNotFound();
 });
 
 test('a sender cannot react to their own message and invalid emoji is rejected', function (): void {
@@ -244,4 +290,46 @@ test('every user chat surface is closed while chat is switched off', function ()
 
 test('a guest cannot post a message', function (): void {
     post(route('chat.messages.store'))->assertRedirect(route('login'));
+});
+
+test('an outsider deep link to an existing conversation is forbidden and performs no presentation query for roles or reactions', function (): void {
+    $outsider = User::factory()->create();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($first, $second)->create();
+    Message::factory()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($outsider)
+            ->get(route('chat.index', ['conversation' => $conversation->id]))
+            ->assertForbidden();
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $roleQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'model_has_roles')
+    );
+
+    foreach ($roleQueries as $query) {
+        expect($query['bindings'])->not->toContain($first->id)
+            ->and($query['bindings'])->not->toContain($second->id);
+    }
+
+    $reactionQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'chat_message_reactions')
+    );
+
+    expect($reactionQueries)->toBeEmpty();
 });

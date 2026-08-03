@@ -2,8 +2,10 @@
 
 namespace App\Http\Presenters;
 
+use App\Actions\Notifications\LoadNotificationBellResult;
 use App\Notifications\RealtimeTestNotification;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
@@ -43,6 +45,30 @@ final class NotificationPresenter
     }
 
     /**
+     * Format a notification bell result into the payload expected by the client.
+     *
+     * @return array{
+     *     items: list<array{
+     *         id: string,
+     *         type: string,
+     *         title: string,
+     *         message: string,
+     *         url: string|null,
+     *         read_at: string|null,
+     *         created_at: string|null,
+     *     }>,
+     *     unreadCount: int,
+     * }
+     */
+    public static function presentBell(LoadNotificationBellResult $result): array
+    {
+        return [
+            'items' => self::presentMany($result->items),
+            'unreadCount' => $result->unreadCount,
+        ];
+    }
+
+    /**
      * @param  Collection<int, DatabaseNotification>  $notifications
      * @return list<array{
      *     id: string,
@@ -57,6 +83,50 @@ final class NotificationPresenter
     public static function presentMany(Collection $notifications): array
     {
         return array_values($notifications->map(self::present(...))->all());
+    }
+
+    /**
+     * Format a notification paginator into the payload expected by the client.
+     *
+     * @param  LengthAwarePaginator<int, DatabaseNotification>  $paginator
+     * @return array{
+     *     data: list<array{
+     *         id: string,
+     *         type: string,
+     *         title: string,
+     *         message: string,
+     *         url: string|null,
+     *         read_at: string|null,
+     *         created_at: string|null,
+     *     }>,
+     *     meta: array{
+     *         page: int,
+     *         perPage: int,
+     *         total: int,
+     *         lastPage: int,
+     *         from: int|null,
+     *         to: int|null,
+     *     }
+     * }
+     */
+    public static function presentPage(LengthAwarePaginator $paginator): array
+    {
+        $page = $paginator->currentPage();
+        $count = count($paginator->items());
+        $perPage = $paginator->perPage();
+        $from = $count === 0 ? null : (($page - 1) * $perPage) + 1;
+
+        return [
+            'data' => self::presentMany($paginator->getCollection()),
+            'meta' => [
+                'page' => $page,
+                'perPage' => $perPage,
+                'total' => $paginator->total(),
+                'lastPage' => $paginator->lastPage(),
+                'from' => $from,
+                'to' => $from === null ? null : ($from + $count) - 1,
+            ],
+        ];
     }
 
     /**

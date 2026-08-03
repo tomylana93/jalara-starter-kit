@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import BrandingSettingsController from '@/actions/App/Http/Controllers/Settings/BrandingSettingsController';
 import ImageUploadField from '@/components/ImageUploadField.vue';
@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
 import { useBranding } from '@/composables/useBranding';
+import { useResumableUploads } from '@/composables/useResumableUploads';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/branding';
@@ -75,6 +76,22 @@ const { t } = useTranslations();
  * in step with every other branded surface after an upload.
  */
 const { branding } = useBranding();
+
+/*
+ * Branding images are published by the queue, so a page returning to itself
+ * asks for whatever was still in flight and hands each field its own.
+ */
+const { find } = useResumableUploads();
+const resumableLogo = find('branding', 'logo');
+const resumableLogoDark = find('branding', 'logo-dark');
+const resumableIcon = find('branding', 'icon');
+const resumableIconDark = find('branding', 'icon-dark');
+const resumableAuthBackground = find('branding', 'auth-background');
+
+/* The stored URLs live in a shared prop, so a published asset is re-read. */
+const refreshBranding = (): void => {
+    router.reload();
+};
 
 /**
  * Radio cards carry the group's error state themselves, so an invalid choice is
@@ -467,6 +484,8 @@ const fontPair = ref(props.settings.fontPair);
                         :upload-url="assetStore('logo').url"
                         test-id="branding-logo"
                         :delete-url="assetDestroy('logo').url"
+                        :resume="resumableLogo"
+                        @ready="refreshBranding"
                         shape="wide"
                         :ratio="3"
                     />
@@ -477,6 +496,8 @@ const fontPair = ref(props.settings.fontPair);
                         :upload-url="assetStore('logo-dark').url"
                         test-id="branding-logo-dark"
                         :delete-url="assetDestroy('logo-dark').url"
+                        :resume="resumableLogoDark"
+                        @ready="refreshBranding"
                         shape="wide"
                         :ratio="3"
                     />
@@ -487,6 +508,8 @@ const fontPair = ref(props.settings.fontPair);
                         :upload-url="assetStore('icon').url"
                         test-id="branding-icon"
                         :delete-url="assetDestroy('icon').url"
+                        :resume="resumableIcon"
+                        @ready="refreshBranding"
                         shape="wide"
                         :ratio="3"
                     />
@@ -497,6 +520,8 @@ const fontPair = ref(props.settings.fontPair);
                         :upload-url="assetStore('icon-dark').url"
                         test-id="branding-icon-dark"
                         :delete-url="assetDestroy('icon-dark').url"
+                        :resume="resumableIconDark"
+                        @ready="refreshBranding"
                         shape="wide"
                         :ratio="3"
                     />
@@ -513,6 +538,8 @@ const fontPair = ref(props.settings.fontPair);
                         :upload-url="assetStore('auth-background').url"
                         test-id="branding-auth-background"
                         :delete-url="assetDestroy('auth-background').url"
+                        :resume="resumableAuthBackground"
+                        @ready="refreshBranding"
                         shape="wide"
                         :ratio="16 / 9"
                     />

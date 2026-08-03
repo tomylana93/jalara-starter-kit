@@ -56,7 +56,7 @@ class Conversation extends Model
     {
         return static::query()
             ->whereHas('participants', fn (Builder $query) => $query->where('user_id', $user->id))
-            ->with(['participants.user', 'latestMessage.reactions'])
+            ->with(['participants.user.roles', 'latestMessage.reactions'])
             ->latest('last_message_at')
             ->orderByDesc('id');
     }

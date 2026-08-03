@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Chat\NotifyChatMessageRecipient;
 use App\Actions\Chat\TrackChatPageContext;
 use App\Events\Chat\ChatMessageSent;
 use App\Jobs\Chat\DeliverChatMessageNotification;
@@ -10,6 +11,8 @@ use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
@@ -38,11 +41,13 @@ function chatMessageFrom(Conversation $conversation, User $sender, string $body 
 
 /**
  * Run the delivery decision the queue worker would run.
+ *
+ * The decision belongs to the action, so it is exercised directly; the job is
+ * only the transport, covered by its own case below.
  */
 function deliverChatMessage(Message $message): void
 {
-    new DeliverChatMessageNotification($message)
-        ->handle(app(ChatSettings::class), app(TrackChatPageContext::class));
+    app(NotifyChatMessageRecipient::class)->handle($message);
 }
 
 /**
@@ -82,18 +87,49 @@ test('a waiting message creates one notification that carries no preview', funct
         ->and($notification->data['url'])->toContain($conversation->id);
 });
 
-test('one active notification per conversation is kept and updated', function (): void {
+test('the queued job delivers through the notification action', function (): void {
     $sender = User::factory()->create();
     $recipient = User::factory()->create();
 
     $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $message = chatMessageFrom($conversation, $sender);
 
-    foreach (range(1, 3) as $index) {
-        $message = chatMessageFrom($conversation, $sender, 'Message '.$index);
-        deliverChatMessage($message);
-    }
+    /* Resolved the way a worker resolves it: the job carries nothing but the message. */
+    app()->call([new DeliverChatMessageNotification($message), 'handle']);
 
     expect($recipient->fresh()->unreadNotifications()->count())->toBe(1);
+});
+
+test('one active notification per conversation is kept and updated', function (): void {
+    $sender = User::factory()->create();
+    $other = User::factory()->create();
+    $recipient = User::factory()->create();
+
+    $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $untouched = Conversation::factory()->between($other, $recipient)->create();
+
+    deliverChatMessage(chatMessageFrom($untouched, $other));
+    $untouchedId = $recipient->fresh()->notifications()->firstOrFail()->id;
+
+    $supersededIds = [];
+
+    foreach (range(1, 3) as $index) {
+        deliverChatMessage(chatMessageFrom($conversation, $sender, 'Message '.$index));
+
+        $supersededIds[] = $recipient->fresh()->unreadNotifications()->get()
+            ->firstOrFail(fn (DatabaseNotification $notification): bool => $notification->data['conversation_id'] === $conversation->id)
+            ->id;
+    }
+
+    $active = array_pop($supersededIds);
+
+    /* Replacement deletes the superseded rows outright; it does not keep them as read history. */
+    expect(DatabaseNotification::query()->whereIn('id', $supersededIds)->count())->toBe(0);
+
+    $stored = $recipient->fresh()->notifications()->get();
+
+    expect($stored->pluck('id')->all())->toEqualCanonicalizing([$active, $untouchedId])
+        ->and($stored->whereNotNull('read_at'))->toBeEmpty();
 });
 
 test('no notification is created when the recipient already read the message', function (): void {
@@ -262,14 +298,12 @@ test('the widget only silences the direct message it is showing', function (): v
         ->where('user_id', $recipient->id)
         ->update(['last_read_at' => $shownMessage->created_at]);
 
-    new DeliverChatMessageNotification($shownMessage)
-        ->handle(app(ChatSettings::class), app(TrackChatPageContext::class));
+    deliverChatMessage($shownMessage);
 
     /* A different conversation is not on screen, so it still announces itself. */
     $background = Conversation::factory()->between($other, $recipient)->create();
 
-    new DeliverChatMessageNotification(chatMessageFrom($background, $other))
-        ->handle(app(ChatSettings::class), app(TrackChatPageContext::class));
+    deliverChatMessage(chatMessageFrom($background, $other));
 
     $unread = $recipient->fresh()->unreadNotifications()->get();
 
@@ -313,20 +347,30 @@ test('no notification is created while chat is switched off', function (): void 
 
 test('reading the conversation marks its notification as read', function (): void {
     $sender = User::factory()->create();
+    $other = User::factory()->create();
     $recipient = User::factory()->create();
 
     $conversation = Conversation::factory()->between($sender, $recipient)->create();
+    $untouched = Conversation::factory()->between($other, $recipient)->create();
+
     $message = chatMessageFrom($conversation, $sender);
 
     deliverChatMessage($message);
+    deliverChatMessage(chatMessageFrom($untouched, $other));
 
-    expect($recipient->fresh()->unreadNotifications()->count())->toBe(1);
+    expect($recipient->fresh()->unreadNotifications()->count())->toBe(2);
 
     actingAs($recipient)
         ->postJson(route('chat.conversations.read', $conversation), ['message_id' => $message->id])
         ->assertOk();
 
-    expect($recipient->fresh()->unreadNotifications()->count())->toBe(0);
+    $stored = $recipient->fresh()->notifications()->get()
+        ->keyBy(fn (DatabaseNotification $notification): string => (string) $notification->data['conversation_id']);
+
+    /* Reading keeps the row and stamps it; only the other conversation stays unread. */
+    expect($stored)->toHaveCount(2)
+        ->and($stored[$conversation->id]->read_at)->not->toBeNull()
+        ->and($stored[$untouched->id]->read_at)->toBeNull();
 });
 
 test('chat notifications are hidden while chat is switched off', function (): void {
@@ -370,22 +414,64 @@ test('the shared chat state reports availability and the aggregate unread total'
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('chat.enabled', true)
+            ->where('chat.imageUploadsEnabled', true)
             ->where('chat.unreadCount', 2),
         );
 
     app(ChatSettings::class)->chatEnabled = false;
 
-    actingAs($user)
-        ->get(route('dashboard'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->where('chat.enabled', false)
-            ->where('chat.unreadCount', 0),
-        );
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('chat.enabled', false)
+                ->where('chat.imageUploadsEnabled', false)
+                ->where('chat.unreadCount', 0),
+            );
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $chatQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'chat_messages')
+            || str_contains((string) $query['query'], 'chat_participants')
+            || str_contains((string) $query['query'], 'chat_conversations')
+    );
+
+    expect($chatQueries)->toBeEmpty();
 });
 
-test('a guest sees no chat state', function (): void {
-    get(route('login'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('chat.unreadCount', 0));
+test('a guest sees no chat state and does not query chat data', function (): void {
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('chat.enabled', false)
+                ->where('chat.imageUploadsEnabled', false)
+                ->where('chat.unreadCount', 0)
+            );
+
+        $queries = DB::getQueryLog();
+    } finally {
+        DB::disableQueryLog();
+    }
+
+    $chatQueries = array_filter(
+        $queries,
+        fn (array $query): bool => str_contains((string) $query['query'], 'chat_messages')
+            || str_contains((string) $query['query'], 'chat_participants')
+            || str_contains((string) $query['query'], 'chat_conversations')
+    );
+
+    expect($chatQueries)->toBeEmpty();
 });

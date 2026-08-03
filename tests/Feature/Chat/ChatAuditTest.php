@@ -9,6 +9,7 @@ use App\Models\Chat\Participant;
 use App\Models\Chat\Reaction;
 use App\Models\User;
 use App\Settings\ChatSettings;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -42,6 +43,40 @@ test('a Super Admin can list every conversation', function (): void {
             ->where('conversations.data.0.message_count', 3)
             ->has('conversations.data.0.participants', 2),
         );
+});
+
+test('the audit list reads every participant role in one query', function (): void {
+    $auditor = chatAuditor();
+
+    $openConversation = fn (): Conversation => Conversation::factory()
+        ->between(userWithRole(Role::User), userWithRole(Role::User))
+        ->create();
+
+    $openConversation();
+
+    $response = null;
+    $list = function () use ($auditor, &$response): void {
+        $response = actingAs($auditor)->get(route('chat.audit.index'))->assertOk();
+    };
+
+    /* Warms the auditor's own role lookup, which the audit policy reads. */
+    $list();
+
+    $single = roleQueryCount($list);
+
+    expect($single)->toBe(1);
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('conversations.data.0.participants.0.role', Role::User->label()),
+    );
+
+    $openConversation();
+    $openConversation();
+
+    /* Six participants cost what two did: the audit list never walks them. */
+    expect(roleQueryCount($list))->toBe($single);
+
+    $response->assertInertia(fn (Assert $page) => $page->has('conversations.data', 3));
 });
 
 test('opening a conversation records permanent access metadata', function (): void {
@@ -108,12 +143,38 @@ test('an auditor can view an image and its current reaction read only', function
 
     $response = actingAs($auditor)
         ->get(route('chat.audit.messages.image', $message))
-        ->assertOk();
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png')
+        ->assertHeader('Content-Disposition', 'inline')
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
 
     expect($response->headers->get('Cache-Control'))
         ->toContain('private')
         ->toContain('no-store')
+        ->and($response->streamedContent())->toBe('image')
         ->and(AuditLog::query()->count())->toBe(2);
+});
+
+test('an audited image attempt is recorded even when the file is gone', function (): void {
+    Storage::fake('local');
+
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+    $conversation = Conversation::factory()->between($first, $second)->create();
+
+    /* The row survives, the file does not. */
+    $message = Message::factory()->withImage()->create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $first->id,
+    ]);
+
+    actingAs($auditor)
+        ->get(route('chat.audit.messages.image', $message))
+        ->assertNotFound();
+
+    /* Access is permanent: the auditor asked, so the attempt is on the record. */
+    expect(AuditLog::query()->count())->toBe(1);
 });
 
 test('an audit never touches the participants receipts or notifications', function (): void {
@@ -259,4 +320,28 @@ test('the audit surface stays open while chat is switched off', function (): voi
     actingAs($auditor)->get(route('chat.audit.show', $conversation))->assertOk();
 
     expect(AuditLog::query()->count())->toBe(1);
+});
+
+test('the audit list presents a multi-role participant using enum priority', function (): void {
+    $auditor = chatAuditor();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    // Assign User first, then SuperAdmin to verify priority doesn't depend on assignment order
+    $first->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::User->value, 'web'));
+    $first->assignRole(Spatie\Permission\Models\Role::findOrCreate(Role::SuperAdmin->value, 'web'));
+
+    Conversation::factory()->between($first, $second)->create();
+
+    actingAs($auditor)
+        ->get(route('chat.audit.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('conversations.data.0.participants', 2)
+            ->where('conversations.data.0.participants', function (Collection $participants) use ($first): bool {
+                $p = $participants->firstWhere('id', $first->id);
+
+                return $p && $p['role'] === Role::SuperAdmin->label();
+            })
+        );
 });

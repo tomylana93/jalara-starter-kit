@@ -6,7 +6,7 @@
 - Inertia pages are returned with `Inertia::render('Path/Component', props)`; mutations conventionally redirect with `to_route()` and may publish toast data via `Inertia::flash('toast', ...)`.
 - Fortify owns authentication backend behavior; custom actions live in `app/Actions/Fortify`, reusable auth validation rules in `app/Concerns`, and configuration/bootstrap in `app/Providers/FortifyServiceProvider.php`.
 - Failed logins are throttled by the configured security limits per normalized email + IP; they never mutate or suspend the user account. `UserStatus::Suspended` remains an explicit account state, with optional expiry handling.
-- A past `suspended_until` auto-reactivates the account (`EnforceUserAccess`, `AuthenticateUser`). Any code setting a status must therefore null `suspended_until`, or a stale expiry silently lifts the new suspension.
+- `User::reactivateExpiredSuspension()` is the single owner of automatic suspension expiry. It persists `Suspended` → `Active` and clears `suspended_until` only for a non-null past expiry. `AuthenticateUser` may call it only after valid credentials, while `EnforceUserAccess` calls it before blocking an existing session; manual and future-dated suspensions remain blocked. Any code setting a status must therefore null `suspended_until`, or a stale expiry silently lifts the new suspension.
 - Reusable search/sort/pagination contract for list screens: `mem:backend/tables`.
 - Notification payload contract, UUIDv4 notification ids and their ordering
   tie-breaker, broadcast channel authorization pitfalls, and the shared bell prop
@@ -15,6 +15,8 @@
 - Reference/bootstrap data command ownership, dry-run, and secret-handling invariants: `mem:backend/data_initialization`.
 - Typed application settings (persistence, runtime application, maintenance/verification middleware, settings endpoints): `mem:backend/settings`.
 - Direct-message schema, the notification-context rule, the chat feature toggle, the audit surface, and the Larastan paginator constraint: `mem:backend/chat`.
+- Queued image-upload lifecycle (202 intake contract, active-target locking, adaptive format/downscale rules, republication authorization, and the orphan sweep): `mem:backend/media_uploads`.
 - Models live in `app/Models`; use factories from `database/factories` in tests.
+- `User::primaryRole()` is the sole deterministic resolver for all displayed primary roles, including chat, master-data table, edit, and export presentation; it returns the first loaded role in `Role::cases()` privilege order (Super Admin, Admin, User). Callers must preload `roles`, and HTTP presentation-only role loading occurs only after authorization.
 - Feature tests live in `tests/Feature`; feature tests automatically extend `Tests\TestCase` and use `RefreshDatabase` via `tests/Pest.php`. Unit tests live in `tests/Unit`.
 - Create framework artifacts with `php artisan make:*` and `--no-interaction`; inspect schema before migrations/models and prefer Eloquent/resources for APIs.
