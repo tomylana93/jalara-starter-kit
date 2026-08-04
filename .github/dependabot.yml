@@ -14,3 +14,32 @@ updates:
       github-actions:
         patterns:
           - '*'
+
+  # Application dependencies need a remediation path, not only a detector. The
+  # `audit` job in `tests.yml` blocks a pull request that introduces a vulnerable
+  # package, but it can never raise the version that fixes one; these entries do.
+  - package-ecosystem: 'composer'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      composer:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      npm:
+        patterns:
+          - '*'
