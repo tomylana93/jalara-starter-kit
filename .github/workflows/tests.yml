@@ -40,7 +40,12 @@ jobs:
   ci:
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Sized against a bad day, not against the gate. The gate itself runs in
+    # about four minutes, but a single cache miss on the Playwright browsers
+    # once pushed a legitimate run to 887s — thirteen seconds short of a
+    # fifteen-minute limit. A timeout that fires on a slow download reads as a
+    # broken test suite and, on `main`, silently stops releases.
+    timeout-minutes: 20
     env:
       APP_ENV: testing
       DB_DATABASE: ':memory:'
@@ -90,12 +95,25 @@ jobs:
       - name: Generate Wayfinder routes
         run: php artisan wayfinder:generate --with-form --no-interaction
 
+      # The browser binaries change only when Playwright itself changes, so the
+      # key is its resolved version. Keying on the lock file hash instead made
+      # every unrelated dependency bump miss the cache, redownload the browsers,
+      # and store another copy: eleven 269 MB entries accumulated in a single
+      # morning, and one of those misses took 10m53s against a 22s baseline.
+      - name: Resolve the Playwright version
+        id: playwright
+        if: env.RUN_FULL == 'true'
+        run: |
+          version="$(node -p "require('@playwright/test/package.json').version")"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "Playwright ${version}"
+
       - name: Cache the Playwright browsers
         if: env.RUN_FULL == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
 
       # Only the full gate runs Playwright, so the browser download stays out of
       # the routine feedback loop. The command still runs on a cache hit: it
