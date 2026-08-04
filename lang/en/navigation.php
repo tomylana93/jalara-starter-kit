@@ -16,6 +16,10 @@ return [
         'documentation' => 'Documentation',
     ],
 
+    'breadcrumb' => [
+        'expand' => 'Show the hidden breadcrumb levels',
+    ],
+
     'menu' => [
         'navigation' => 'Navigation menu',
         'description' => 'Links to the main pages of the application.',

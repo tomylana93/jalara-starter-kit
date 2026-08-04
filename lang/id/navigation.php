@@ -16,6 +16,10 @@ return [
         'documentation' => 'Dokumentasi',
     ],
 
+    'breadcrumb' => [
+        'expand' => 'Tampilkan level breadcrumb yang tersembunyi',
+    ],
+
     'menu' => [
         'navigation' => 'Menu navigasi',
         'description' => 'Tautan ke halaman utama aplikasi.',
