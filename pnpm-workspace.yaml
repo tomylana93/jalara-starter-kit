@@ -5,18 +5,17 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 
-auditConfig:
-  # GHSA currently lists only v5.0.8, although the same CVE-2026-14257
-  # maxLength fix is backported in the pinned v1.1.17 and v2.1.3 releases.
-  ignoreGhsas:
-    - GHSA-mh99-v99m-4gvg
-
 minimumReleaseAgeExclude:
-  - brace-expansion@1.1.17
+  - brace-expansion@1.1.18
+  - brace-expansion@2.1.4
+  - brace-expansion@5.0.9
+  - fast-uri@3.1.5
 
 overrides:
-  'brace-expansion@1.1.16': 1.1.17
-  'brace-expansion@2.1.2': 2.1.3
+  'brace-expansion@1': 1.1.18
+  'brace-expansion@2': 2.1.4
+  'brace-expansion@5': 5.0.9
+  'fast-uri@3': 3.1.5
   'decode-uri-component@0.2.0': 0.2.2
   'glob@11.0.0': 11.1.0
   'ini@1.3.4': 1.3.8
