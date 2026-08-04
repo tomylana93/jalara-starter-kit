@@ -375,6 +375,50 @@ config.global.stubs = {
         template:
             '<button type="button" role="menuitemradio" v-bind="$attrs" @click="$emit(\'select\')"><slot /></button>',
     },
+    /*
+     * The context menu only mounts its content once a real pointer opens it and
+     * measures the surface through floating-ui, neither of which jsdom has. The
+     * stubs keep the item structure and the `select` event so a test can assert
+     * what the menu offers and drive the command behind an entry.
+     */
+    ContextMenu: { template: '<div><slot /></div>' },
+    ContextMenuTrigger: { template: '<div><slot /></div>' },
+    ContextMenuContent: { template: '<div><slot /></div>' },
+    ContextMenuGroup: { template: '<div><slot /></div>' },
+    ContextMenuSub: { template: '<div><slot /></div>' },
+    ContextMenuSubContent: { template: '<div><slot /></div>' },
+    ContextMenuSubTrigger: {
+        inheritAttrs: false,
+        template: '<div role="menuitem" v-bind="$attrs"><slot /></div>',
+    },
+    ContextMenuSeparator: { template: '<hr />' },
+    ContextMenuItem: {
+        /* The real primitive emits `select` when the item is activated. */
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<div role="menuitem" v-bind="$attrs" @click="$emit(\'select\')"><slot /></div>',
+    },
+    ContextMenuCheckboxItem: {
+        props: ['modelValue'],
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="menuitemcheckbox" :aria-checked="String(Boolean(modelValue))" v-bind="$attrs" @click="$emit(\'select\')"><slot /></button>',
+    },
+    ContextMenuRadioGroup: {
+        name: 'ContextMenuRadioGroup',
+        props: ['modelValue'],
+        template:
+            '<div role="radiogroup" :data-value="modelValue"><slot /></div>',
+    },
+    ContextMenuRadioItem: {
+        props: ['value'],
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="menuitemradio" v-bind="$attrs" @click="$emit(\'select\')"><slot /></button>',
+    },
     Separator: true,
     Badge: { template: '<span><slot /></span>' },
     AlertDialog: { template: '<div><slot /></div>' },
