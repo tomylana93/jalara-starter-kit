@@ -24,6 +24,17 @@
             "command": "serena-hooks remind --client=claude-code"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-serena-manual.py\"",
+            "statusMessage": "Checking Serena manual was read",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionEnd": [
