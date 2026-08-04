@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.1.1...v0.2.0) (2026-08-04)
+
+
+### Features
+
+* **hooks:** add precondition to check if Serena's manual has been read ([6c115fe](https://github.com/tomylana93/jalara-starter-kit/commit/6c115fe6e1b06ba4160189071caa83894f17aaf7))
+
 ## [0.1.1](https://github.com/tomylana93/jalara-starter-kit/compare/v0.1.0...v0.1.1) (2026-08-04)
 
 
