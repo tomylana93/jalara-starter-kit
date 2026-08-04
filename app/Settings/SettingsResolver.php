@@ -10,10 +10,11 @@ use Spatie\LaravelSettings\Settings;
  * Resolves settings classes defensively so the application can still boot
  * before the settings table and its migrations have been run.
  *
- * Only the deployment window - a missing table or a group whose properties
- * have not been migrated yet - is tolerated. Every other failure (connection
- * errors, corrupted payloads, decryption or cast errors) is thrown so it
- * cannot silently degrade into a default value.
+ * Only the deployment window - a SQLite file that has not been created yet, a
+ * missing table, or a group whose properties have not been migrated yet - is
+ * tolerated. Every other failure (connection errors, corrupted payloads,
+ * decryption or cast errors) is thrown so it cannot silently degrade into a
+ * default value.
  */
 final class SettingsResolver
 {
@@ -34,6 +35,10 @@ final class SettingsResolver
             return true;
         }
 
+        if (! self::databaseReachable()) {
+            return false;
+        }
+
         $available = Schema::hasTable(config('settings.repositories.database.table', 'settings_properties'));
 
         if ($available) {
@@ -41,6 +46,37 @@ final class SettingsResolver
         }
 
         return $available;
+    }
+
+    /**
+     * Determine whether a file-backed SQLite database has been created yet.
+     *
+     * The Laravel installer boots the application - to discover packages and
+     * to generate the application key - before it creates and migrates the
+     * SQLite file. Probing the schema then fails to open the database, which
+     * belongs to the same pre-migration window as a missing table rather than
+     * to a genuine connection error. Every other driver, an explicit database
+     * URL, and in-memory SQLite still reach the connection as before.
+     */
+    private static function databaseReachable(): bool
+    {
+        $connection = config('database.default');
+
+        if (config("database.connections.{$connection}.driver") !== 'sqlite') {
+            return true;
+        }
+
+        if (config("database.connections.{$connection}.url") !== null) {
+            return true;
+        }
+
+        $database = config("database.connections.{$connection}.database");
+
+        if (! is_string($database) || $database === '' || $database === ':memory:') {
+            return true;
+        }
+
+        return is_file($database);
     }
 
     /**

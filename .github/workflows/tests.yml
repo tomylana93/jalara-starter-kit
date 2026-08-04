@@ -54,3 +54,122 @@ jobs:
 
       - name: Enforce coverage threshold
         run: composer run coverage:check
+
+  # Reproduces every material stage of the installation command documented in
+  # the README:
+  #
+  #   laravel new my-app --using=<repo URL> --database=sqlite --pnpm \
+  #     --no-boost --no-interaction
+  #
+  # The application is exported into an empty directory and booted by Composer
+  # before any environment file, SQLite file, or migrated schema exists. The
+  # export stands in for `npx tiged <url>`, which would otherwise fetch the
+  # default branch instead of the code under review. `--no-interaction` and
+  # `--no-boost` are reproduced by omission: they only suppress the installer's
+  # Pest and Boost scaffolding, which must never run against this starter kit.
+  #
+  # This job deliberately sets no APP_ENV, because the production fallback
+  # during the pre-environment window is exactly what it has to cover.
+  installer:
+    name: installer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with:
+          version: '11'
+
+      - name: Export the starter kit into an empty directory
+        run: |
+          mkdir -p "${RUNNER_TEMP}/jalara-app"
+          git archive HEAD | tar -x -C "${RUNNER_TEMP}/jalara-app"
+
+      - name: Install dependencies without an environment file
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Initialize the application
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: |
+          composer run post-root-package-install
+          php artisan key:generate --no-interaction
+
+      - name: Run the starter kit installer hooks
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: |
+          php -r '
+            $composer = json_decode(file_get_contents("composer.json"), true);
+            $hooks = $composer["extra"]["laravel"]["installer"]["post-create-project"] ?? [];
+            foreach ($hooks as $hook) {
+                $command = preg_replace("/^@php /", PHP_BINARY . " ", $hook);
+                fwrite(STDOUT, "> {$command}\n");
+                passthru($command, $status);
+                if ($status !== 0) {
+                    exit($status);
+                }
+            }
+          '
+
+      - name: Migrate the SQLite database
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --no-interaction
+
+      # `--pnpm` makes the installer delete every other package manager's lock
+      # file and rewrite the `dev`, `dev:ssr`, and `setup` Composer scripts.
+      # Both must leave Jalara's locked pnpm setup exactly as committed.
+      - name: Verify the pnpm package manager contract
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: |
+          test -f pnpm-lock.yaml
+          test ! -f package-lock.json
+          test ! -f yarn.lock
+          test ! -f bun.lockb
+          php -r '
+            $scripts = json_decode(file_get_contents("composer.json"), true)["scripts"];
+            foreach (["dev", "dev:ssr", "setup"] as $key) {
+                if (! array_key_exists($key, $scripts)) {
+                    continue;
+                }
+                $rewritten = str_replace(
+                    ["npm", "npx", "ppnpm"],
+                    ["pnpm", "pnpm dlx", "pnpm"],
+                    $scripts[$key],
+                );
+                if ($rewritten !== $scripts[$key]) {
+                    fwrite(STDERR, "The [{$key}] script is rewritten by the installer under --pnpm:\n");
+                    fwrite(STDERR, json_encode($rewritten, JSON_PRETTY_PRINT) . "\n");
+                    exit(1);
+                }
+            }
+            fwrite(STDOUT, "Composer scripts survive the --pnpm rewrite unchanged.\n");
+          '
+
+      - name: Install and build the frontend with pnpm
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Verify the application boots
+        working-directory: ${{ runner.temp }}/jalara-app
+        run: php artisan about --only=environment
