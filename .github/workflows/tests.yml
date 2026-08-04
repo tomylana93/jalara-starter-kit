@@ -95,30 +95,16 @@ jobs:
       - name: Generate Wayfinder routes
         run: php artisan wayfinder:generate --with-form --no-interaction
 
-      # The browser binaries change only when Playwright itself changes, so the
-      # key is its resolved version. Keying on the lock file hash instead made
-      # every unrelated dependency bump miss the cache, redownload the browsers,
-      # and store another copy: eleven 269 MB entries accumulated in a single
-      # morning, and one of those misses took 10m53s against a 22s baseline.
-      - name: Resolve the Playwright version
-        id: playwright
-        if: env.RUN_FULL == 'true'
-        run: |
-          version="$(node -p "require('@playwright/test/package.json').version")"
-          echo "version=${version}" >> "${GITHUB_OUTPUT}"
-          echo "Playwright ${version}"
-
-      - name: Cache the Playwright browsers
-        if: env.RUN_FULL == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
-
-      # Only the full gate runs Playwright, so the browser download stays out of
-      # the routine feedback loop. The command still runs on a cache hit: it
-      # skips the download but installs the system libraries, which are not part
-      # of the cached directory.
+      # Only the full gate runs Playwright, so this stays out of the routine
+      # feedback loop.
+      #
+      # Deliberately uncached. `~/.cache/ms-playwright` was cached here and
+      # measured on `main`: 22s with a cold cache, 22s with a warm one, plus 5s
+      # to restore 269 MB. Almost all of the time is `--with-deps` installing
+      # system libraries through apt, which no cache covers; the browser download
+      # it does skip is the cheap part. Dropping `--with-deps` would make a cache
+      # worth having, but it bets on which libraries the runner image happens to
+      # ship and fails as an unexplained Chromium crash.
       - name: Install Chromium
         if: env.RUN_FULL == 'true'
         run: pnpm exec playwright install --with-deps chromium
