@@ -5,6 +5,8 @@ use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
+use function Pest\Laravel\artisan;
+
 beforeEach(function () {
     config(['superadmin' => [
         'name' => 'Root Operator',
@@ -17,14 +19,14 @@ beforeEach(function () {
 });
 
 it('creates restores and enforces the sole super admin role', function () {
-    pendingCommand($this->artisan('auth:init-superadmin'))->assertSuccessful();
+    pendingCommand(artisan('auth:init-superadmin'))->assertSuccessful();
     $user = User::query()->where('is_system', true)->sole();
     $originalPassword = $user->password;
     $user->forceFill(['status' => UserStatus::Disabled])->save();
     $user->assignRole(Role::User->value);
 
     config(['superadmin.name' => 'Updated Root', 'superadmin.password' => 'ignored-password']);
-    pendingCommand($this->artisan('auth:init-superadmin'))->assertSuccessful();
+    pendingCommand(artisan('auth:init-superadmin'))->assertSuccessful();
 
     expect($user->refresh()->name)->toBe('Updated Root')
         ->and($user->status)->toBe(UserStatus::Active)
@@ -33,10 +35,10 @@ it('creates restores and enforces the sole super admin role', function () {
 });
 
 it('resets the super admin password only when requested', function () {
-    pendingCommand($this->artisan('auth:init-superadmin'))->assertSuccessful();
+    pendingCommand(artisan('auth:init-superadmin'))->assertSuccessful();
     config(['superadmin.password' => 'replacement-password']);
 
-    pendingCommand($this->artisan('auth:init-superadmin', ['--reset-password' => true]))->assertSuccessful();
+    pendingCommand(artisan('auth:init-superadmin', ['--reset-password' => true]))->assertSuccessful();
 
     expect(Hash::check('replacement-password', User::query()->where('is_system', true)->sole()->password))->toBeTrue();
 });
@@ -51,7 +53,7 @@ it('fails without changes for invalid config email conflicts and multiple system
     }
 
     $before = User::query()->count();
-    pendingCommand($this->artisan('auth:init-superadmin'))->assertFailed();
+    pendingCommand(artisan('auth:init-superadmin'))->assertFailed();
 
     expect(User::query()->count())->toBe($before)
         ->and(User::query()->where('is_system', true)->whereHas('roles')->count())->toBe(0);

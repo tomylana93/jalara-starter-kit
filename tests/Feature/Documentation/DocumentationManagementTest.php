@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
+use function Pest\Laravel\actingAs;
+
 /**
  * @return array<string, mixed>
  */
@@ -19,7 +21,7 @@ function documentationContent(string $text = 'Reset the password'): array
 it('allows only super administrators to manage documentation', function () {
     $category = DocumentationCategory::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    actingAs(User::factory()->create())
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Account guide',
@@ -28,7 +30,7 @@ it('allows only super administrators to manage documentation', function () {
         ])
         ->assertForbidden();
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->get(route('documentation.manage.index'))
         ->assertSuccessful();
 });
@@ -37,7 +39,7 @@ it('stores validated tiptap json with an automatic slug and searchable text', fu
     $admin = userWithRole(Role::SuperAdmin);
     $category = DocumentationCategory::factory()->create();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Account guide',
@@ -58,7 +60,7 @@ it('regenerates the slug of a draft submitted without one', function () {
     $admin = userWithRole(Role::SuperAdmin);
     $documentation = Documentation::factory()->create(['slug' => 'old-title', 'published_at' => null]);
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
             'title' => 'Fresh title',
@@ -76,7 +78,7 @@ it('rejects a custom slug that normalizes onto an existing one', function () {
     Documentation::factory()->create(['slug' => 'reset-password']);
     $category = DocumentationCategory::factory()->create();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Account guide',
@@ -91,7 +93,7 @@ it('rejects a custom slug that normalizes to nothing', function () {
     $admin = userWithRole(Role::SuperAdmin);
     $category = DocumentationCategory::factory()->create();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Account guide',
@@ -109,7 +111,7 @@ it('rejects unsafe links and locks a slug after first publication', function () 
     $documentation = Documentation::factory()->published()->create(['slug' => 'stable-slug']);
 
     $unsafe = ['type' => 'doc', 'content' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Bad', 'marks' => [['type' => 'link', 'attrs' => ['href' => 'javascript:alert(1)']]]]]]]];
-    $this->actingAs($admin)
+    actingAs($admin)
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
             'title' => $documentation->title,
@@ -125,11 +127,11 @@ it('blocks deleting a used category and permanently deletes a document', functio
     $documentation = Documentation::factory()->create();
     $category = $documentation->category;
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->delete(route('documentation.manage.categories.destroy', $category))
         ->assertSessionHasErrors('category');
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->delete(route('documentation.manage.documents.destroy', $documentation))
         ->assertRedirect(route('documentation.manage.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The documentation has been deleted.']);
@@ -144,7 +146,7 @@ it('lists documents by category position and then document position', function (
     Documentation::factory()->create(['documentation_category_id' => $first->id, 'position' => 2, 'title' => 'First category, second document']);
     Documentation::factory()->create(['documentation_category_id' => $first->id, 'position' => 1, 'title' => 'First category, first document']);
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->get(route('documentation.manage.index'))
         ->assertInertia(fn ($page) => $page
             ->where('documentations.data.0.title', 'First category, first document')
@@ -159,7 +161,7 @@ it('accepts internal paths and HTTP(S) links but rejects protocol-relative ones'
     $linked = fn (string $href): array => ['type' => 'doc', 'content' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Link', 'marks' => [['type' => 'link', 'attrs' => ['href' => $href]]]]]]]];
 
     foreach (['/internal-guide', 'http://example.test/guide', 'https://example.test/guide'] as $index => $href) {
-        $this->actingAs($admin)
+        actingAs($admin)
             ->post(route('documentation.manage.documents.store'), [
                 'documentation_category_id' => $category->id,
                 'title' => 'Accepted link '.$index,
@@ -169,7 +171,7 @@ it('accepts internal paths and HTTP(S) links but rejects protocol-relative ones'
             ->assertSessionHasNoErrors();
     }
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Rejected link',
@@ -184,7 +186,7 @@ it('rejects malformed nodes whose marks or content are not arrays', function () 
     $category = DocumentationCategory::factory()->create();
 
     foreach ([['marks' => 'oops'], ['content' => 'oops']] as $index => $malformed) {
-        $this->actingAs($admin)
+        actingAs($admin)
             ->post(route('documentation.manage.documents.store'), [
                 'documentation_category_id' => $category->id,
                 'title' => 'Malformed '.$index,
@@ -198,7 +200,7 @@ it('rejects malformed nodes whose marks or content are not arrays', function () 
 it('returns the author to the management list with a toast after an update', function () {
     $documentation = Documentation::factory()->create(['title' => 'Old title']);
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
             'title' => 'New title',
@@ -216,7 +218,7 @@ it('keeps a rejected submission on the editor instead of redirecting to the list
     $documentation = Documentation::factory()->create(['title' => 'Old title']);
     $editor = route('documentation.manage.documents.edit', $documentation);
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->from($editor)
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
@@ -234,21 +236,21 @@ it('keeps a rejected submission on the editor instead of redirecting to the list
 it('reports every category mutation with a toast but keeps reordering silent', function () {
     $admin = userWithRole(Role::SuperAdmin);
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.categories.store'), ['name' => 'Account'])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been created.']);
 
     $category = DocumentationCategory::query()->sole();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->put(route('documentation.manage.categories.update', $category), ['name' => 'Account & security'])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been updated.']);
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.categories.move', [$category, 'up']))
         ->assertSessionMissing('toast');
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->delete(route('documentation.manage.categories.destroy', $category))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been deleted.']);
 
@@ -258,7 +260,7 @@ it('reports every category mutation with a toast but keeps reordering silent', f
 it('appends a new category to the end of the manual ordering', function () {
     DocumentationCategory::factory()->create(['position' => 4]);
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->post(route('documentation.manage.categories.store'), ['name' => 'Terakhir']);
 
     expect(DocumentationCategory::query()->where('name', 'Terakhir')->sole()->position)->toBe(5);
@@ -271,7 +273,7 @@ it('swaps a document with its neighbour inside the same category only', function
     $second = Documentation::factory()->create(['documentation_category_id' => $category->id, 'position' => 2]);
     $elsewhere = Documentation::factory()->create(['documentation_category_id' => $other->id, 'position' => 1]);
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->post(route('documentation.manage.documents.move', [$second, 'up']))
         ->assertSessionMissing('toast');
 
@@ -290,7 +292,7 @@ it('paginates the management list ten rows at a time', function () {
 
     $admin = userWithRole(Role::SuperAdmin);
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->get(route('documentation.manage.index'))
         ->assertInertia(fn ($page) => $page
             ->has('documentations.data', 10)
@@ -300,7 +302,7 @@ it('paginates the management list ten rows at a time', function () {
             ->where('documentations.meta.lastPage', 2)
             ->where('documentations.data.0.title', 'Document 01'));
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->get(route('documentation.manage.index', ['page' => 2]))
         ->assertInertia(fn ($page) => $page
             ->has('documentations.data', 2)
@@ -308,7 +310,7 @@ it('paginates the management list ten rows at a time', function () {
             ->where('documentations.data.0.title', 'Document 11'));
 
     /* A page past the end settles on the last page that exists. */
-    $this->actingAs($admin)
+    actingAs($admin)
         ->get(route('documentation.manage.index', ['page' => 99]))
         ->assertInertia(fn ($page) => $page->where('documentations.meta.page', 2));
 });
@@ -316,7 +318,7 @@ it('paginates the management list ten rows at a time', function () {
 it('sends explicit payloads instead of raw documentation models', function () {
     $documentation = Documentation::factory()->published()->create();
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->get(route('documentation.manage.index'))
         ->assertInertia(fn ($page) => $page
             ->has('documentations.data.0', fn ($row) => $row
@@ -328,7 +330,7 @@ it('sends explicit payloads instead of raw documentation models', function () {
             ->has('categories.0', fn ($category) => $category
                 ->hasAll(['id', 'name', 'position', 'documentations_count'])));
 
-    $this->actingAs(userWithRole(Role::SuperAdmin))
+    actingAs(userWithRole(Role::SuperAdmin))
         ->get(route('documentation.manage.documents.edit', $documentation))
         ->assertInertia(fn ($page) => $page
             ->has('documentation', fn ($value) => $value
@@ -347,9 +349,9 @@ it('denies the management pages to a super administrator the policy refuses', fu
 
     Gate::before(fn (): bool => false);
 
-    $this->actingAs($admin)->get(route('documentation.manage.index'))->assertForbidden();
-    $this->actingAs($admin)->get(route('documentation.manage.create'))->assertForbidden();
-    $this->actingAs($admin)->get(route('documentation.manage.documents.edit', $documentation))->assertForbidden();
+    actingAs($admin)->get(route('documentation.manage.index'))->assertForbidden();
+    actingAs($admin)->get(route('documentation.manage.create'))->assertForbidden();
+    actingAs($admin)->get(route('documentation.manage.documents.edit', $documentation))->assertForbidden();
 });
 
 it('does not run the categories query when only documentations are requested', function () {
@@ -359,7 +361,7 @@ it('does not run the categories query when only documentations are requested', f
 
     DB::enableQueryLog();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->withHeaders([
             'X-Inertia-Partial-Component' => 'documentation/manage/Index',
             'X-Inertia-Partial-Data' => 'documentations',
@@ -391,7 +393,7 @@ it('runs both queries and returns both props on standard visit', function () {
 
     DB::enableQueryLog();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->get(route('documentation.manage.index'))
         ->assertInertia(fn ($page) => $page
             ->has('documentations')
@@ -420,7 +422,7 @@ it('allocates automatic sequential collision suffixes and fills gaps', function 
     Documentation::factory()->create(['slug' => 'guide-2', 'title' => 'Guide 2']);
     Documentation::factory()->create(['slug' => 'guide-4', 'title' => 'Guide 4']);
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Guide',
@@ -433,7 +435,7 @@ it('allocates automatic sequential collision suffixes and fills gaps', function 
     $doc = Documentation::query()->where('title', 'Guide')->whereNot('slug', 'guide')->firstOrFail();
     expect($doc->slug)->toBe('guide-3');
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => 'Guide',
@@ -450,7 +452,7 @@ it('uses fallback when title is completely un-sluggable and slug is empty', func
     $admin = userWithRole(Role::SuperAdmin);
     $category = DocumentationCategory::factory()->create();
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
             'title' => '!!!',
@@ -468,7 +470,7 @@ it('excludes the current draft from its own collision checks when updating', fun
     $admin = userWithRole(Role::SuperAdmin);
     $documentation = Documentation::factory()->create(['slug' => 'guide', 'title' => 'Guide', 'published_at' => null]);
 
-    $this->actingAs($admin)
+    actingAs($admin)
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
             'title' => 'Guide',

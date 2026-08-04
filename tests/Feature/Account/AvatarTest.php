@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
+use function Pest\Laravel\post;
 
 beforeEach(function () {
     Storage::fake('public');
@@ -101,8 +103,8 @@ it('only ever changes the authenticated user avatar', function () {
 });
 
 it('requires authentication', function () {
-    $this->post(route('account.profile.avatar.store'))->assertRedirect(route('login'));
-    $this->delete(route('account.profile.avatar.destroy'))->assertRedirect(route('login'));
+    post(route('account.profile.avatar.store'))->assertRedirect(route('login'));
+    delete(route('account.profile.avatar.destroy'))->assertRedirect(route('login'));
 });
 
 it('shares the avatar url and never the stored path', function () {

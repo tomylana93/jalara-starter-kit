@@ -5,13 +5,16 @@ use App\Models\DocumentationCategory;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+
 it('shows only published documentation inside the authenticated app', function () {
     $user = User::factory()->create();
     $category = DocumentationCategory::factory()->create(['position' => 1]);
     $published = Documentation::factory()->for($category, 'category')->published()->create(['title' => 'Published guide', 'position' => 1]);
     Documentation::factory()->for($category, 'category')->create(['title' => 'Private draft', 'position' => 2]);
 
-    $this->actingAs($user)
+    actingAs($user)
         ->get(route('documentation.index'))
         ->assertSuccessful()
         ->assertInertia(fn (Assert $page) => $page
@@ -26,10 +29,10 @@ it('returns published content and hides drafts', function () {
     $published = Documentation::factory()->published()->create();
     $draft = Documentation::factory()->create();
 
-    $this->actingAs($user)->get(route('documentation.show', $published))->assertSuccessful();
-    $this->actingAs($user)->get(route('documentation.show', $draft))->assertNotFound();
+    actingAs($user)->get(route('documentation.show', $published))->assertSuccessful();
+    actingAs($user)->get(route('documentation.show', $draft))->assertNotFound();
 });
 
 it('keeps documentation behind authentication', function () {
-    $this->get(route('documentation.index'))->assertRedirect(route('login'));
+    get(route('documentation.index'))->assertRedirect(route('login'));
 });

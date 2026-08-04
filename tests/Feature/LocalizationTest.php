@@ -3,6 +3,8 @@
 use Illuminate\Support\Arr;
 use Inertia\Testing\AssertableInertia as Assert;
 
+use function Pest\Laravel\get;
+
 /**
  * @return array<int, string>
  */
@@ -59,7 +61,7 @@ it('loads Indonesian language lines through the translator', function (): void {
 it('shares the active and fallback locales with Inertia', function (): void {
     app()->setLocale('id');
 
-    $this->get(route('login'))
+    get(route('login'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('locale', 'id')
             ->where('fallbackLocale', 'en'),

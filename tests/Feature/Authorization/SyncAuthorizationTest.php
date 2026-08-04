@@ -6,9 +6,11 @@ use App\Enums\Role as RoleEnum;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+use function Pest\Laravel\artisan;
+
 it('creates and maps the authorization catalog idempotently', function () {
-    pendingCommand($this->artisan('auth:sync-authorization'))->assertSuccessful();
-    pendingCommand($this->artisan('auth:sync-authorization'))->assertSuccessful();
+    pendingCommand(artisan('auth:sync-authorization'))->assertSuccessful();
+    pendingCommand(artisan('auth:sync-authorization'))->assertSuccessful();
 
     expect(Role::query()->where('guard_name', 'web')->pluck('name')->sort()->values()->all())
         ->toBe(collect(app(AuthorizationCatalog::class)->roles())->pluck('value')->sort()->values()->all())
@@ -22,7 +24,7 @@ it('reports dry-run changes without mutating records', function () {
     Role::findOrCreate('obsolete', 'web');
     Permission::findOrCreate('obsolete permission', 'web');
 
-    pendingCommand($this->artisan('auth:sync-authorization', ['--dry-run' => true]))
+    pendingCommand(artisan('auth:sync-authorization', ['--dry-run' => true]))
         ->expectsOutputToContain('Dry run')
         ->expectsOutputToContain('obsolete')
         ->assertSuccessful();
@@ -37,7 +39,7 @@ it('prunes web catalog drift and preserves other guards', function () {
     Role::findOrCreate('api-role', 'api');
     Permission::findOrCreate('api-permission', 'api');
 
-    pendingCommand($this->artisan('auth:sync-authorization'))->assertSuccessful();
+    pendingCommand(artisan('auth:sync-authorization'))->assertSuccessful();
 
     expect(Role::query()->where('name', 'obsolete')->exists())->toBeFalse()
         ->and(Permission::query()->where('name', 'obsolete permission')->exists())->toBeFalse()

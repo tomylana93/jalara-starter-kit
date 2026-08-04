@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Storage;
 
+use function Pest\Laravel\artisan;
+
 beforeEach(function (): void {
     Storage::fake('public');
     Storage::fake('local');
@@ -24,7 +26,7 @@ function agedCommandFile(string $disk, string $path, string $contents = 'x'): st
 it('reports orphans without deleting anything by default', function (): void {
     $orphan = agedCommandFile('public', 'avatars/old/orphan.png');
 
-    pendingCommand($this->artisan('images:prune-orphans'))
+    pendingCommand(artisan('images:prune-orphans'))
         ->expectsOutputToContain(__('console.prune_orphan_images.mode.dry_run', ['hours' => 24]))
         ->assertSuccessful();
 
@@ -38,7 +40,7 @@ it('forwards its options to the sweep', function (): void {
         now()->subHours(2)->getTimestamp(),
     );
 
-    pendingCommand($this->artisan('images:prune-orphans', ['--delete' => true, '--older-than' => 1]))
+    pendingCommand(artisan('images:prune-orphans', ['--delete' => true, '--older-than' => 1]))
         ->expectsOutputToContain(__('console.prune_orphan_images.mode.delete', ['hours' => 1]))
         ->assertSuccessful();
 
@@ -48,7 +50,7 @@ it('forwards its options to the sweep', function (): void {
 it('reports the counts it acted on per disk', function (): void {
     agedCommandFile('public', 'avatars/old/orphan.png');
 
-    pendingCommand($this->artisan('images:prune-orphans', ['--delete' => true]))
+    pendingCommand(artisan('images:prune-orphans', ['--delete' => true]))
         ->expectsOutputToContain(__('console.prune_orphan_images.disk', [
             'disk' => 'public',
             'candidates' => 1,

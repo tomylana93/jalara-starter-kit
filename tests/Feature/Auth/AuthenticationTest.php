@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\RateLimiter;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\assertAuthenticated;
 use function Pest\Laravel\assertGuest;
+use function Pest\Laravel\freezeTime;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
+use function Pest\Laravel\withServerVariables;
 
 it('renders the login screen', function () {
     $response = get(route('login'));
@@ -101,7 +103,7 @@ it('uses a generic message for unknown accounts and invalid passwords', function
 ]);
 
 it('throttles an email and IP without suspending the account', function () {
-    $this->freezeTime();
+    freezeTime();
 
     $user = User::factory()->create();
 
@@ -121,7 +123,7 @@ it('throttles an email and IP without suspending the account', function () {
         ->and($user->status)->toBe(UserStatus::Active)
         ->and($user->suspended_until)->toBeNull();
 
-    $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10'])
+    withServerVariables(['REMOTE_ADDR' => '192.0.2.10'])
         ->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'password',

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
+use function Pest\Laravel\post;
 
 beforeEach(function () {
     Storage::fake('public');
@@ -140,8 +142,8 @@ it('requires the manage settings permission', function () {
 });
 
 it('requires authentication', function () {
-    $this->post(route('settings.branding.asset.store', 'logo'))->assertRedirect(route('login'));
-    $this->delete(route('settings.branding.asset.destroy', 'logo'))->assertRedirect(route('login'));
+    post(route('settings.branding.asset.store', 'logo'))->assertRedirect(route('login'));
+    delete(route('settings.branding.asset.destroy', 'logo'))->assertRedirect(route('login'));
 });
 
 it('shares public urls and never the stored paths', function () {
