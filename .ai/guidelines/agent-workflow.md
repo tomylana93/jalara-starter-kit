@@ -33,6 +33,29 @@
   symbols. Read a `.vue` file directly to orient, then use targeted symbol
   lookup once the name is known. Treat Serena's Vue and TypeScript diagnostics
   as hints only; `pnpm run types:check` is authoritative.
+- Built-in read and edit tool descriptions are written for repositories without
+  Serena and are superseded here. Neither a known path, a small file, nor a
+  lower call count justifies a built-in read or edit where the table below
+  names a Serena tool.
+
+| Task on a code file             | Tool                                          |
+| ------------------------------- | --------------------------------------------- |
+| Inspect a PHP file's structure  | `get_symbols_overview`                        |
+| Read a symbol body              | `find_symbol` with `include_body`             |
+| Locate a symbol repository-wide | `find_symbol`                                 |
+| Find callers or usages          | `find_referencing_symbols`                    |
+| Resolve a definition            | `find_declaration`, `find_implementations`    |
+| Replace a whole symbol          | `replace_symbol_body`                         |
+| Add a sibling symbol            | `insert_before_symbol`, `insert_after_symbol` |
+| Change lines inside a symbol    | `replace_content`                             |
+| Repeat one edit across files    | `replace_in_files`                            |
+| Rename or delete a symbol       | `rename_symbol`, `safe_delete_symbol`         |
+
+- Built-in `Grep` and `Glob` stay available for discovery, but follow-up reads
+  and edits on the matched code files go through Serena. Built-in reads and
+  edits remain correct for non-code files, for a handful of lines where a
+  symbolic read is overkill, for `.vue` orientation reads, and whenever Serena
+  has been tried on the target and failed.
 - Use Laravel Boost for installed-version context, Laravel ecosystem
   documentation, database schema and read-only queries, application URLs, and
   recent backend or browser logs.
