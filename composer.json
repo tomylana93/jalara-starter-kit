@@ -103,7 +103,6 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "@audit:check",
             "pnpm run lint:check",
             "pnpm run format:check",
             "pnpm run types:check",
@@ -112,7 +111,6 @@
         ],
         "ci:full": [
             "Composer\\Config::disableProcessTimeout",
-            "@audit:check",
             "pnpm run lint:check",
             "pnpm run format:check",
             "pnpm run types:check",

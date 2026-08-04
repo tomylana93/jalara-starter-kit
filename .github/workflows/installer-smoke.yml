@@ -1,0 +1,123 @@
+name: installer smoke
+
+# Runs the installation command exactly as the README documents it, against the
+# real Laravel installer and the real default branch.
+#
+# The `installer` job in `tests.yml` reproduces the installer's stages by hand so
+# it can test the commit under review instead of the default branch. That makes
+# it fast and precise, but it validates the contract as this repository
+# understands it — including a hand-copied version of the installer's `--pnpm`
+# script rewrite. If the installer changes that logic, the simulation stays green
+# while real installations break. This workflow is what notices.
+#
+# It lives in its own file on purpose. A scheduled run inside `tests.yml` would
+# reach `release-please.yml` through its `workflow_run` trigger and put release
+# automation on a cron, and `RUN_FULL` does not recognise the `schedule` event so
+# the run would take the fast gate anyway. Keeping it separate also means the
+# non-hermetic failures this job invites — an upstream installer bug, a registry
+# outage — can never colour the `tests` gate or block a release.
+#
+# GitHub disables scheduled workflows after 60 days without repository activity.
+on:
+  schedule:
+    - cron: '17 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: laravel new
+    if: github.repository == 'tomylana93/jalara-starter-kit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: '11'
+
+      - name: Install the Laravel installer
+        run: |
+          composer global require laravel/installer --no-interaction
+          echo "$(composer config --global home)/vendor/bin" >> "${GITHUB_PATH}"
+
+      - name: Report the installer version under test
+        run: laravel --version
+
+      - name: Install the starter kit with the documented command
+        working-directory: ${{ runner.temp }}
+        run: |
+          laravel new jalara-smoke \
+            --using=https://github.com/tomylana93/jalara-starter-kit \
+            --database=sqlite \
+            --pnpm \
+            --no-boost \
+            --no-interaction
+
+      # These assertions mirror the `installer` job in `tests.yml`. They have to
+      # stay in step: divergence between the simulation and the real installer is
+      # the only thing this workflow exists to detect.
+      - name: Verify the pnpm package manager contract
+        working-directory: ${{ runner.temp }}/jalara-smoke
+        run: |
+          test -f pnpm-lock.yaml
+          test ! -f package-lock.json
+          test ! -f yarn.lock
+          test ! -f bun.lockb
+          php -r '
+            $scripts = json_decode(file_get_contents("composer.json"), true)["scripts"];
+            foreach (["dev", "dev:ssr", "setup"] as $key) {
+                if (! array_key_exists($key, $scripts)) {
+                    continue;
+                }
+                $rewritten = str_replace(
+                    ["npm", "npx", "ppnpm"],
+                    ["pnpm", "pnpm dlx", "pnpm"],
+                    $scripts[$key],
+                );
+                if ($rewritten !== $scripts[$key]) {
+                    fwrite(STDERR, "The [{$key}] script was rewritten by the real installer:\n");
+                    fwrite(STDERR, json_encode($scripts[$key], JSON_PRETTY_PRINT) . "\n");
+                    exit(1);
+                }
+            }
+            fwrite(STDOUT, "Composer scripts survive the --pnpm rewrite unchanged.\n");
+          '
+
+      - name: Verify the environment and database were initialized
+        working-directory: ${{ runner.temp }}/jalara-smoke
+        run: |
+          test -f .env
+          test -f database/database.sqlite
+          php artisan migrate:status --no-interaction
+
+      - name: Build the frontend
+        working-directory: ${{ runner.temp }}/jalara-smoke
+        run: pnpm run build
+
+      - name: Verify the application boots
+        working-directory: ${{ runner.temp }}/jalara-smoke
+        run: php artisan about --only=environment
+
+      - name: Run the installed test suite
+        working-directory: ${{ runner.temp }}/jalara-smoke
+        run: php artisan test --compact

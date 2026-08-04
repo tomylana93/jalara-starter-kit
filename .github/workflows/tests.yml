@@ -11,7 +11,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-      - converted_to_draft
       - edited
 
 permissions:
@@ -19,8 +18,14 @@ permissions:
 
 # Superseded runs for the same branch or pull request are pointless work: only
 # the newest revision can still be merged.
+#
+# The group keys on the source branch rather than the pull request number so
+# that the `push` and `pull_request` runs a single push produces land in the
+# same group and cancel each other. The `synchronize` event is a consequence of
+# the push, so the pull request run is always the later of the two and is the
+# one that survives.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 # The tiering rule for the whole workflow. Draft pull requests and pushes to an
@@ -30,8 +35,12 @@ env:
   RUN_FULL: ${{ (github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}
 
 jobs:
+  # `edited` fires on title, body, and base branch changes. Only the commit
+  # contract job has anything to say about those, so the expensive jobs opt out.
   ci:
+    if: github.event.action != 'edited'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       APP_ENV: testing
       DB_DATABASE: ':memory:'
@@ -60,14 +69,38 @@ jobs:
         with:
           version: '11'
 
+      # Rector and PHPStan are the two most expensive stages of both gates and
+      # both keep a result cache. Left unconfigured they write to the runner's
+      # temporary directory, which is always empty, so every run reanalyses the
+      # whole tree. The key carries `composer.lock` and both tool configs: any
+      # rule set, tool version, or configuration change produces a new key and a
+      # cold cache, which is what keeps a stale cache from passing code the
+      # checks should have flagged.
+      - name: Cache the static analysis results
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache
+          key: ${{ runner.os }}-php8.5-analysis-${{ hashFiles('composer.lock', 'rector.php', 'phpstan.neon') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-analysis-
+
       - name: Setup Application
         run: composer run ci:setup
 
       - name: Generate Wayfinder routes
         run: php artisan wayfinder:generate --with-form --no-interaction
 
+      - name: Cache the Playwright browsers
+        if: env.RUN_FULL == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+
       # Only the full gate runs Playwright, so the browser download stays out of
-      # the routine feedback loop.
+      # the routine feedback loop. The command still runs on a cache hit: it
+      # skips the download but installs the system libraries, which are not part
+      # of the cached directory.
       - name: Install Chromium
         if: env.RUN_FULL == 'true'
         run: pnpm exec playwright install --with-deps chromium
@@ -87,6 +120,7 @@ jobs:
     name: conventional commits
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Checkout code
@@ -127,6 +161,50 @@ jobs:
 
           echo 'Every pull request title and non-merge commit follows the convention.'
 
+  # Advisory databases are a third-party input: a newly published advisory turns
+  # a previously green revision red without a line of code changing. That belongs
+  # nowhere near the release path, because `release-please.yml` keys on the
+  # conclusion of this workflow on `main` and would stop releasing without ever
+  # saying why. Restricting the job to pull requests keeps the property that
+  # actually matters — a pull request that *introduces* a vulnerable dependency
+  # is blocked, which is the one case Dependabot cannot catch, since its
+  # dependency graph is built from the default branch.
+  #
+  # Both audits read a lock file and nothing else, so the job installs no
+  # dependencies. Keeping them out of `ci:check` also makes that gate hermetic,
+  # so a poor connection can no longer fail it for reasons that are not code.
+  audit:
+    name: dependency audit
+    if: github.event_name == 'pull_request' && github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: '11'
+
+      - name: Audit the locked dependencies
+        run: composer run audit:check
+
   # Reproduces every material stage of the installation command documented in
   # the README:
   #
@@ -146,13 +224,20 @@ jobs:
   # The scenario only describes the public starter kit, so private descendants
   # skip it. It runs as an independent parallel full-tier job to minimize overall CI wall
   # time and preserve the hosted <=5-minute target.
+  #
+  # Because the stages are reproduced by hand, this job validates the installer
+  # contract as this repository understands it, not the installer binary. The
+  # scheduled `installer-smoke.yml` covers that gap by running the documented
+  # command against the real installer.
   installer:
     name: installer
     if: >-
+      github.event.action != 'edited' &&
       github.repository == 'tomylana93/jalara-starter-kit' &&
       ((github.event_name == 'push' && github.ref_name == 'main') ||
        (github.event_name == 'pull_request' && github.event.pull_request.draft == false))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code

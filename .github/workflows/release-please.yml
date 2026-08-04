@@ -2,6 +2,10 @@ name: release
 
 # Runs only after the full `tests` gate has finished successfully on `main`, so
 # no changelog, tag, or release is ever produced from unverified code.
+#
+# `workflow_dispatch` is the manual escape hatch: without it the only way to
+# recover a missed release — an expired token, a failed gate, automation that
+# was still switched off — is to push another commit to `main`.
 on:
   workflow_run:
     workflows:
@@ -10,9 +14,17 @@ on:
       - main
     types:
       - completed
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# Merges into `main` land close enough together for two release runs to overlap.
+# Cancelling is the wrong answer here: an interrupted run can leave the release
+# pull request half written, so later runs queue instead.
+concurrency:
+  group: release-please-main
+  cancel-in-progress: false
 
 jobs:
   release-please:
@@ -20,10 +32,17 @@ jobs:
     # until they set the `RELEASE_ENABLED` repository variable to `true` and add
     # a fine-grained `RELEASE_PLEASE_TOKEN` with Contents, Pull requests, and
     # Issues read/write access.
+    #
+    # The event check keeps releases following pushes to `main` and nothing
+    # else, so any trigger later added to `tests` cannot reach this workflow by
+    # accident.
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push')) &&
       vars.RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       # `secrets` is unavailable in a job-level `if`, so the token guard lives
