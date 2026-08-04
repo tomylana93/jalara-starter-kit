@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.2.0...v0.3.0) (2026-08-04)
+
+
+### Features
+
+* **hooks:** gate built-in code reads and edits behind Serena ([7d4c617](https://github.com/tomylana93/jalara-starter-kit/commit/7d4c617aa4269e45c824806e0967507c7369a915))
+* **hooks:** gate built-in code reads and edits behind Serena ([a265ca9](https://github.com/tomylana93/jalara-starter-kit/commit/a265ca91914635f96069ed70cd917452f2e91f0a))
+
 ## [0.2.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.1.1...v0.2.0) (2026-08-04)
 
 
