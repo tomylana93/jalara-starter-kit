@@ -78,7 +78,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         throw_if(
-            app()->isProduction() && ! in_array(DB::getDefaultConnection(), ['mysql', 'mariadb', 'pgsql'], true),
+            $this->isConfiguredProduction() && ! in_array(DB::getDefaultConnection(), ['mysql', 'mariadb', 'pgsql'], true),
             LogicException::class,
             __('system.exception.production_database'),
         );
@@ -88,5 +88,21 @@ class AppServiceProvider extends ServiceProvider
             ->rule()
             ?? PasswordPolicy::Strict->rule(),
         );
+    }
+
+    /**
+     * Determine whether this is a production application that has been configured.
+     *
+     * Composer boots the application through `package:discover` while
+     * installing dependencies, which happens before the Laravel installer
+     * copies `.env` into place. That boot has no application key and only
+     * falls back to the production environment because `APP_ENV` is unset, so
+     * it must not be mistaken for a real production deployment. A configured
+     * production application always carries an application key, whether it
+     * comes from `.env` or from the server environment.
+     */
+    protected function isConfiguredProduction(): bool
+    {
+        return app()->isProduction() && (string) config('app.key') !== '';
     }
 }

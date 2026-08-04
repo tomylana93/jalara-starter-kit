@@ -5,12 +5,15 @@ use App\Enums\Locale;
 use App\Enums\PasswordPolicy;
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use App\Providers\SettingsServiceProvider;
 use App\Settings\AuthenticationSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\MailSettings;
 use App\Settings\SecuritySettings;
 use App\Settings\SettingsResolver;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rules\Password;
 
@@ -21,6 +24,38 @@ use function Pest\Laravel\post;
 function bootSettingsRuntime(): void
 {
     new SettingsServiceProvider(app())->boot();
+}
+
+/**
+ * Run the given assertions against a file-backed SQLite default connection.
+ *
+ * The probe uses its own connection name so the in-memory connection holding
+ * the test transaction is never reconfigured or purged.
+ */
+function withSqliteDatabaseFile(string $database, Closure $assertions): void
+{
+    $default = config('database.default');
+
+    config([
+        'database.connections.settings_probe' => [
+            'driver' => 'sqlite',
+            'url' => null,
+            'database' => $database,
+            'prefix' => '',
+            'foreign_key_constraints' => false,
+        ],
+        'database.default' => 'settings_probe',
+    ]);
+
+    SettingsResolver::flush();
+
+    try {
+        $assertions();
+    } finally {
+        config(['database.default' => $default]);
+        DB::purge('settings_probe');
+        SettingsResolver::flush();
+    }
 }
 
 it('applies the application name, locale, and session lifetime at boot', function () {
@@ -70,6 +105,41 @@ it('falls back to configuration when the settings table is missing', function ()
         ->and(config('session.lifetime'))->toBe(99)
         ->and(Password::defaults()->toPasswordRulesString())
         ->toBe(PasswordPolicy::Strict->rule()->toPasswordRulesString());
+});
+
+it('treats a SQLite file that has not been created yet as the pre-migration window', function () {
+    withSqliteDatabaseFile(storage_path('framework/testing/not-created-yet.sqlite'), function (): void {
+        expect(SettingsResolver::available())->toBeFalse()
+            ->and(SettingsResolver::tryResolve(GeneralSettings::class))->toBeNull();
+    });
+});
+
+it('still surfaces a genuine database failure once the SQLite file exists', function () {
+    $corrupted = storage_path('framework/testing/corrupted.sqlite');
+    file_put_contents($corrupted, 'this is not a SQLite database');
+
+    try {
+        withSqliteDatabaseFile($corrupted, function (): void {
+            expect(fn (): bool => SettingsResolver::available())->toThrow(QueryException::class);
+        });
+    } finally {
+        unlink($corrupted);
+    }
+});
+
+it('rejects an unsupported database driver in a configured production application', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+    config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+
+    expect(fn () => new AppServiceProvider(app())->boot())
+        ->toThrow(LogicException::class, __('system.exception.production_database'));
+});
+
+it('tolerates the pre-install boot that has no application key yet', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+    config(['app.key' => null]);
+
+    expect(fn () => new AppServiceProvider(app())->boot())->not->toThrow(LogicException::class);
 });
 
 it('resolves the password rules from the active policy preset', function (PasswordPolicy $policy) {
