@@ -5,11 +5,11 @@ use App\Models\User;
 
 it('searches only published documentation and prioritizes title matches', function () {
     $user = User::factory()->create();
-    $titleMatch = Documentation::factory()->published()->create(['title' => 'Panduan akun', 'searchable_text' => 'Profil']);
-    Documentation::factory()->published()->create(['title' => 'Panduan umum', 'searchable_text' => 'Kelola akun']);
-    Documentation::factory()->create(['title' => 'Akun rahasia', 'searchable_text' => 'akun']);
+    $titleMatch = Documentation::factory()->published()->create(['title' => 'Account guide', 'searchable_text' => 'Profile']);
+    Documentation::factory()->published()->create(['title' => 'General guide', 'searchable_text' => 'Manage the account']);
+    Documentation::factory()->create(['title' => 'Secret account', 'searchable_text' => 'account']);
 
-    $response = $this->actingAs($user)->getJson(route('documentation.search', ['query' => 'akun']));
+    $response = $this->actingAs($user)->getJson(route('documentation.search', ['query' => 'account']));
 
     $response->assertSuccessful()
         ->assertJsonCount(2, 'data')

@@ -3,16 +3,16 @@ import { expect, test } from '@playwright/test';
 test('creates, publishes, reads, and finds internal documentation', async ({
     page,
 }) => {
-    const title = 'Panduan Playwright';
+    const title = 'Playwright Guide';
     const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' });
 
     await page.goto('/documentation/manage');
     await expect(breadcrumb).toContainText('Documentation');
     await expect(breadcrumb).toContainText('Manage documentation');
 
-    await page.locator('#category-name').fill('Pengujian');
+    await page.locator('#category-name').fill('Testing');
     await page.getByRole('button', { name: 'Add category' }).click();
-    await expect(page.getByText('Pengujian', { exact: true })).toBeVisible();
+    await expect(page.getByText('Testing', { exact: true })).toBeVisible();
 
     await page.locator('[data-test="create-documentation"]').click();
     await expect(page).toHaveURL(/\/documentation\/manage\/create$/);
@@ -22,12 +22,12 @@ test('creates, publishes, reads, and finds internal documentation', async ({
     await page.locator('[data-test="documentation-category-trigger"]').click();
     await page
         .locator('[data-test="documentation-category-option"]')
-        .filter({ hasText: 'Pengujian' })
+        .filter({ hasText: 'Testing' })
         .click();
     await page.locator('[data-test="documentation-status-trigger"]').click();
     await page.locator('[data-test="documentation-status-published"]').click();
     const editor = page.locator('[data-test="rich-text-editor"] [contenteditable="true"]');
-    await editor.fill('Dokumen ini dapat ditemukan melalui pencarian global.');
+    await editor.fill('This document can be found through the global search.');
     await editor.focus();
 
     // Select all text to format it
@@ -61,19 +61,19 @@ test('creates, publishes, reads, and finds internal documentation', async ({
         hasText: title,
     });
     await expect(row).toBeVisible();
-    await expect(row).toContainText('Pengujian');
+    await expect(row).toContainText('Testing');
     await expect(row).toContainText('Published');
 
     await page.goto('/documentation');
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await page
-        .locator('a[href="/documentation/panduan-playwright"]')
+        .locator('a[href="/documentation/playwright-guide"]')
         .click();
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(breadcrumb).toContainText(title);
     await expect(
         page.getByText(
-            'Dokumen ini dapat ditemukan melalui pencarian global.',
+            'This document can be found through the global search.',
             { exact: true },
         ),
     ).toBeVisible();
@@ -86,5 +86,5 @@ test('creates, publishes, reads, and finds internal documentation', async ({
         .getByText(title, { exact: true })
         .click();
 
-    await expect(page).toHaveURL(/\/documentation\/panduan-playwright$/);
+    await expect(page).toHaveURL(/\/documentation\/playwright-guide$/);
 });

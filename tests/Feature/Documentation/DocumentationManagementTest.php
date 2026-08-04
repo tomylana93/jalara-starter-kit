@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 /**
  * @return array<string, mixed>
  */
-function documentationContent(string $text = 'Reset kata sandi'): array
+function documentationContent(string $text = 'Reset the password'): array
 {
     return ['type' => 'doc', 'content' => [['type' => 'heading', 'attrs' => ['level' => 2], 'content' => [['type' => 'text', 'text' => $text]]]]];
 }
@@ -40,35 +40,35 @@ it('stores validated tiptap json with an automatic slug and searchable text', fu
     $this->actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
-            'title' => 'Panduan Akun',
+            'title' => 'Account guide',
             'slug' => '',
             'status' => DocumentationStatus::Published->value,
-            'content' => documentationContent('Cara mengubah profil'),
+            'content' => documentationContent('How to change the profile'),
         ])
         ->assertRedirect(route('documentation.manage.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The documentation has been created.']);
 
     $documentation = Documentation::query()->sole();
-    expect($documentation->slug)->toBe('panduan-akun')
-        ->and($documentation->searchable_text)->toBe('Cara mengubah profil')
+    expect($documentation->slug)->toBe('account-guide')
+        ->and($documentation->searchable_text)->toBe('How to change the profile')
         ->and($documentation->published_at)->not->toBeNull();
 });
 
 it('regenerates the slug of a draft submitted without one', function () {
     $admin = userWithRole(Role::SuperAdmin);
-    $documentation = Documentation::factory()->create(['slug' => 'judul-lama', 'published_at' => null]);
+    $documentation = Documentation::factory()->create(['slug' => 'old-title', 'published_at' => null]);
 
     $this->actingAs($admin)
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
-            'title' => 'Judul Baru',
+            'title' => 'Fresh title',
             'slug' => '',
             'status' => DocumentationStatus::Draft->value,
-            'content' => documentationContent('Isi dokumen'),
+            'content' => documentationContent('Document body'),
         ])
         ->assertRedirect(route('documentation.manage.index'));
 
-    expect($documentation->refresh()->slug)->toBe('judul-baru');
+    expect($documentation->refresh()->slug)->toBe('fresh-title');
 });
 
 it('rejects a custom slug that normalizes onto an existing one', function () {
@@ -79,10 +79,10 @@ it('rejects a custom slug that normalizes onto an existing one', function () {
     $this->actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
-            'title' => 'Panduan Akun',
+            'title' => 'Account guide',
             'slug' => 'Reset_Password',
             'status' => DocumentationStatus::Draft->value,
-            'content' => documentationContent('Isi dokumen'),
+            'content' => documentationContent('Document body'),
         ])
         ->assertSessionHasErrors('slug');
 });
@@ -94,10 +94,10 @@ it('rejects a custom slug that normalizes to nothing', function () {
     $this->actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
-            'title' => 'Panduan Akun',
+            'title' => 'Account guide',
             'slug' => '!!!',
             'status' => DocumentationStatus::Draft->value,
-            'content' => documentationContent('Isi dokumen'),
+            'content' => documentationContent('Document body'),
         ])
         ->assertSessionHasErrors('slug');
 
@@ -204,7 +204,7 @@ it('returns the author to the management list with a toast after an update', fun
             'title' => 'New title',
             'slug' => (string) $documentation->slug,
             'status' => DocumentationStatus::Draft->value,
-            'content' => documentationContent('Isi baru'),
+            'content' => documentationContent('Updated body'),
         ])
         ->assertRedirect(route('documentation.manage.index'))
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The documentation has been updated.']);
@@ -235,13 +235,13 @@ it('reports every category mutation with a toast but keeps reordering silent', f
     $admin = userWithRole(Role::SuperAdmin);
 
     $this->actingAs($admin)
-        ->post(route('documentation.manage.categories.store'), ['name' => 'Akun'])
+        ->post(route('documentation.manage.categories.store'), ['name' => 'Account'])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been created.']);
 
     $category = DocumentationCategory::query()->sole();
 
     $this->actingAs($admin)
-        ->put(route('documentation.manage.categories.update', $category), ['name' => 'Akun & Keamanan'])
+        ->put(route('documentation.manage.categories.update', $category), ['name' => 'Account & security'])
         ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'The category has been updated.']);
 
     $this->actingAs($admin)
@@ -416,34 +416,34 @@ it('allocates automatic sequential collision suffixes and fills gaps', function 
     $admin = userWithRole(Role::SuperAdmin);
     $category = DocumentationCategory::factory()->create();
 
-    Documentation::factory()->create(['slug' => 'panduan', 'title' => 'Panduan']);
-    Documentation::factory()->create(['slug' => 'panduan-2', 'title' => 'Panduan 2']);
-    Documentation::factory()->create(['slug' => 'panduan-4', 'title' => 'Panduan 4']);
+    Documentation::factory()->create(['slug' => 'guide', 'title' => 'Guide']);
+    Documentation::factory()->create(['slug' => 'guide-2', 'title' => 'Guide 2']);
+    Documentation::factory()->create(['slug' => 'guide-4', 'title' => 'Guide 4']);
 
     $this->actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
-            'title' => 'Panduan',
+            'title' => 'Guide',
             'slug' => '',
             'status' => DocumentationStatus::Draft->value,
             'content' => documentationContent(),
         ])
         ->assertRedirect(route('documentation.manage.index'));
 
-    $doc = Documentation::query()->where('title', 'Panduan')->whereNot('slug', 'panduan')->firstOrFail();
-    expect($doc->slug)->toBe('panduan-3');
+    $doc = Documentation::query()->where('title', 'Guide')->whereNot('slug', 'guide')->firstOrFail();
+    expect($doc->slug)->toBe('guide-3');
 
     $this->actingAs($admin)
         ->post(route('documentation.manage.documents.store'), [
             'documentation_category_id' => $category->id,
-            'title' => 'Panduan',
+            'title' => 'Guide',
             'slug' => '',
             'status' => DocumentationStatus::Draft->value,
             'content' => documentationContent(),
         ])
         ->assertRedirect(route('documentation.manage.index'));
 
-    expect(Documentation::query()->where('slug', 'panduan-5')->exists())->toBeTrue();
+    expect(Documentation::query()->where('slug', 'guide-5')->exists())->toBeTrue();
 });
 
 it('uses fallback when title is completely un-sluggable and slug is empty', function () {
@@ -466,17 +466,17 @@ it('uses fallback when title is completely un-sluggable and slug is empty', func
 
 it('excludes the current draft from its own collision checks when updating', function () {
     $admin = userWithRole(Role::SuperAdmin);
-    $documentation = Documentation::factory()->create(['slug' => 'panduan', 'title' => 'Panduan', 'published_at' => null]);
+    $documentation = Documentation::factory()->create(['slug' => 'guide', 'title' => 'Guide', 'published_at' => null]);
 
     $this->actingAs($admin)
         ->put(route('documentation.manage.documents.update', $documentation), [
             'documentation_category_id' => $documentation->documentation_category_id,
-            'title' => 'Panduan',
+            'title' => 'Guide',
             'slug' => '',
             'status' => DocumentationStatus::Draft->value,
             'content' => documentationContent(),
         ])
         ->assertRedirect(route('documentation.manage.index'));
 
-    expect($documentation->refresh()->slug)->toBe('panduan');
+    expect($documentation->refresh()->slug)->toBe('guide');
 });
