@@ -4,7 +4,6 @@
     "packages": {
         ".": {
             "release-type": "simple",
-            "package-name": "jalara-starter-kit",
             "changelog-path": "CHANGELOG.md",
             "extra-files": [
                 {
