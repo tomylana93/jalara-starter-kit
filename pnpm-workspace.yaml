@@ -6,6 +6,11 @@ allowBuilds:
   vue-demi: true
 
 minimumReleaseAgeExclude:
+  # TEMPORARY — REMOVE AFTER 2026-08-04T15:06:33Z.
+  # Waives the 24-hour release-age policy so the npm dependency bump in #20 can
+  # be verified and merged before undici@8.10.0 ages out on its own. This is the
+  # exact window the policy exists to cover, so the entry must not outlive it.
+  - undici@8.10.0
   - brace-expansion@1.1.18
   - brace-expansion@2.1.4
   - brace-expansion@5.0.9
