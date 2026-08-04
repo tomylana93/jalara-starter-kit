@@ -8,6 +8,8 @@
 - Release type `simple` is chosen because its `version.txt` updater uses `createIfMissing: false`: with no `version.txt` committed, nothing extra is generated and `version.json` is the only runtime version file, updated through the generic JSON extra-file updater.
 - `config('app.version')` parses `version.json` defensively (falls back to `0.0.0`) and `HandleInertiaRequests::share` publishes it as the `version` shared prop; `AppFooter` renders it as plain `v<version>` text above the branding footer text and stays visible when that text is absent.
 - Automation is opt-in: it stays inert unless the repository variable `RELEASE_ENABLED` is `true` and the fine-grained `RELEASE_PLEASE_TOKEN` secret (Contents, Pull requests, Issues read/write) exists. The token guard is a step, because `secrets` is unavailable in a job-level `if`.
+- A single root `simple` manifest release is componentless: do not set `package-name` in `release-please-config.json`. A configured package component does not match the componentless `release-please--branches--main` branch and can leave a merged release PR at `autorelease: pending` without publishing.
+- Treat a successful Release Please workflow as complete only after the expected Git tag and non-draft GitHub Release exist and the merged release PR has `autorelease: tagged`; a successful job may still have logically aborted publication.
 - Pull-request descriptions contain exactly Summary, Testing, and Release impact.
 - `.gitignore` excludes `/.vscode/*` but re-includes `!/.vscode/settings.json`; excluding the directory itself would make the negation unreachable.
 - CI tiering and gate composition: `mem:suggested_commands`.
