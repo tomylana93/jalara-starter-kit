@@ -29,6 +29,27 @@ it('gives the mobile navigation sheet an accessible name and description', () =>
     );
 });
 
+it('groups the desktop navigation and exposes the documentation link', () => {
+    const wrapper = mount(AppHeader);
+
+    const groups = wrapper
+        .findAll('[data-test="desktop-navigation-group"]')
+        .map((trigger) => trigger.text());
+
+    expect(groups).toEqual([
+        expect.stringContaining('navigation.group.main_menu'),
+        expect.stringContaining('navigation.group.admin'),
+    ]);
+
+    const links = wrapper
+        .findAll('[data-test="desktop-navigation-link"]')
+        .map((link) => link.text());
+
+    expect(links).toEqual([
+        expect.stringContaining('navigation.main.documentation'),
+    ]);
+});
+
 it('hides the header avatar action on mobile', () => {
     const wrapper = mount(AppHeader);
 
