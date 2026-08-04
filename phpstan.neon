@@ -4,6 +4,10 @@ includes:
     - vendor/pestphp/pest-plugin-phpstan/extension.neon
 
 parameters:
+    # The default result cache lives in the system temporary directory, which is
+    # empty on every CI runner. A project directory lets CI restore it.
+    tmpDir: .cache/phpstan
+
     paths:
         - app/
         - bootstrap/app.php

@@ -27,6 +27,9 @@ use RectorLaravel\Set\LaravelSetList;
 use RectorLaravel\Set\LaravelSetProvider;
 
 return RectorConfig::configure()
+    /* Without an explicit directory the result cache lands in the system temporary
+     * directory, which is empty on every CI runner. */
+    ->withCache(cacheDirectory: __DIR__.'/.cache/rector')
     ->withSetProviders(LaravelSetProvider::class)
     ->withSets([
         LaravelSetList::LARAVEL_ARRAYACCESS_TO_METHOD_CALL,

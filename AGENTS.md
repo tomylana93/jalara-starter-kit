@@ -32,6 +32,11 @@
   diagnostics, precise refactoring, and project memory. Prefer its symbolic,
   search, and diagnostic tools before shell-based full-file reads; use full-file
   reads only for small known targets or non-code files.
+- Serena's symbolic overview is accurate for PHP but unreliable for single-file
+  Vue components, where it exposes template nodes instead of `script setup`
+  symbols. Read a `.vue` file directly to orient, then use targeted symbol
+  lookup once the name is known. Treat Serena's Vue and TypeScript diagnostics
+  as hints only; `pnpm run types:check` is authoritative.
 - Use Laravel Boost for installed-version context, Laravel ecosystem
   documentation, database schema and read-only queries, application URLs, and
   recent backend or browser logs.

@@ -1,4 +1,8 @@
 {
+  "env": {
+    "ENABLE_TOOL_SEARCH": "false"
+  },
+  "disableClaudeAiConnectors": true,
   "hooks": {
     "SessionStart": [
       {
@@ -22,11 +26,13 @@
         ]
       },
       {
-        "matcher": "mcp__serena__*",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "serena-hooks auto-approve --client=claude-code"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-serena-manual.py\"",
+            "statusMessage": "Checking Serena manual was read",
+            "timeout": 10
           }
         ]
       }
