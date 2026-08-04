@@ -7,7 +7,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
 type Props = {
@@ -29,16 +28,7 @@ defineProps<Props>();
                         class="text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
                         as-child
                     >
-                        <a
-                            v-if="item.external"
-                            :href="toUrl(item.href)"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <component :is="item.icon" />
-                            <span>{{ item.title }}</span>
-                        </a>
-                        <Link v-else :href="item.href">
+                        <Link :href="item.href">
                             <component :is="item.icon" />
                             <span>{{ item.title }}</span>
                         </Link>

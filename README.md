@@ -17,6 +17,7 @@ A professional and production-ready Laravel application starter kit. Jalara prov
   <img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
   <a href="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/tests.yml"><img src="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/tests.yml/badge.svg?branch=main" alt="tests"></a>
+  <a href="https://github.com/tomylana93/jalara-starter-kit/releases/latest"><img src="https://img.shields.io/github/v/release/tomylana93/jalara-starter-kit?style=flat-square&label=release&color=blue" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"></a>
 </p>
 
@@ -156,6 +157,41 @@ To maintain code standards, we utilize:
 - **Larastan & Rector** for static analysis and automated refactoring of backend PHP code.
 - **Pint** for PHP code formatting.
 - **ESLint & Prettier** for frontend code linting and formatting.
+
+## Contributing & Releases
+
+The full conventions live in [`.ai/guidelines/release-workflow.md`](.ai/guidelines/release-workflow.md); the summary below is what a contributor needs day to day.
+
+### Branching and CI
+
+Work happens on `dev`, and `main` receives it through a pull request that is merged with a merge commit.
+
+Continuous integration is tiered so routine feedback stays fast:
+
+| Context | Gate | Contents |
+| --- | --- | --- |
+| Draft pull request, push to an ordinary branch | `composer run ci:check` | Frontend lint, format, types, and Vitest; PHP Rector, Pint, Larastan, and Pest |
+| Ready pull request, push to `main` | `composer run ci:full` | Everything above plus 80% coverage enforcement and the Playwright journeys (the public starter-kit installer check runs in parallel on GitHub Actions) |
+
+Both commands run locally too. Superseded runs for the same branch or pull request are cancelled automatically.
+
+### Commit and pull-request conventions
+
+Every non-merge commit and every pull-request title uses an English Conventional Commit with an optional scope — `<type>(<optional scope>): <description>` — using one of `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, or `revert`. English is mandatory authoring guidance; CI programmatically validates Conventional Commit structure, allowed types, and scopes, not natural-language detection. Merge commits are exempt, and a CI job enforces the rest. Release Please reads these messages to decide the next version and to write the changelog.
+
+Pull-request descriptions contain three sections: **Summary**, **Testing**, and **Release impact**.
+
+### Releases
+
+Releases are automated with [Release Please](https://github.com/googleapis/release-please). It targets `main`, runs only after the full gate has succeeded there, starts at `0.1.0`, and follows standard SemVer. It maintains `CHANGELOG.md`, the version manifest, the Git tag, the GitHub Release, and `version.json` — the runtime version the application footer renders as `v<version>`.
+
+Publishing a release means merging the release pull request that Release Please opens.
+
+Release automation is opt-in, so a fork or private descendant stays silent until it is enabled:
+
+1. Create a fine-grained personal access token scoped to the repository with **Contents**, **Pull requests**, and **Issues** read/write access.
+2. Add it as the repository secret `RELEASE_PLEASE_TOKEN`.
+3. Add the repository variable `RELEASE_ENABLED` with the value `true`.
 
 ## License
 

@@ -1,0 +1,50 @@
+name: release
+
+# Runs only after the full `tests` gate has finished successfully on `main`, so
+# no changelog, tag, or release is ever produced from unverified code.
+on:
+  workflow_run:
+    workflows:
+      - tests
+    branches:
+      - main
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    # Release automation is opt-in. Descendants of this starter kit keep it off
+    # until they set the `RELEASE_ENABLED` repository variable to `true` and add
+    # a fine-grained `RELEASE_PLEASE_TOKEN` with Contents, Pull requests, and
+    # Issues read/write access.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      vars.RELEASE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      # `secrets` is unavailable in a job-level `if`, so the token guard lives
+      # here instead of failing the run with an authentication error.
+      - name: Verify the release token is configured
+        id: token
+        env:
+          RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          if [ -z "${RELEASE_PLEASE_TOKEN}" ]; then
+            echo '::warning::RELEASE_PLEASE_TOKEN is not configured; skipping release automation.'
+            echo 'configured=false' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'configured=true' >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Create or update the release pull request
+        if: steps.token.outputs.configured == 'true'
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main

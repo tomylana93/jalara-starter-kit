@@ -14,7 +14,6 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useAppNavigation } from '@/composables/useAppNavigation';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { useTranslations } from '@/composables/useTranslations';
-import { toUrl } from '@/lib/utils';
 
 const emit = defineEmits<{
     close: [];
@@ -76,36 +75,20 @@ const { t } = useTranslations();
             </nav>
 
             <div class="mt-auto flex flex-col gap-1 pt-6">
-                <template v-for="item in footerItems" :key="item.title">
-                    <a
-                        v-if="item.external"
-                        :href="toUrl(item.href)"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        @click="emit('close')"
-                    >
-                        <component
-                            v-if="item.icon"
-                            :is="item.icon"
-                            class="size-4"
-                        />
-                        <span>{{ item.title }}</span>
-                    </a>
-                    <Link
-                        v-else
-                        :href="item.href"
-                        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        @click="emit('close')"
-                    >
-                        <component
-                            v-if="item.icon"
-                            :is="item.icon"
-                            class="size-4"
-                        />
-                        <span>{{ item.title }}</span>
-                    </Link>
-                </template>
+                <Link
+                    v-for="item in footerItems"
+                    :key="item.title"
+                    :href="item.href"
+                    class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    @click="emit('close')"
+                >
+                    <component
+                        v-if="item.icon"
+                        :is="item.icon"
+                        class="size-4"
+                    />
+                    <span>{{ item.title }}</span>
+                </Link>
             </div>
         </div>
 

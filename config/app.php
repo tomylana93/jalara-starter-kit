@@ -30,6 +30,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | The released version of this application, maintained by Release Please in
+    | "version.json" at the project root. The value resolves defensively so the
+    | application still boots when that file is missing or malformed, which is
+    | the case for a descendant that never opted into release automation.
+    |
+    */
+
+    'version' => (static function (): string {
+        $manifest = dirname(__DIR__).'/version.json';
+
+        if (! is_file($manifest)) {
+            return '0.0.0';
+        }
+
+        $decoded = json_decode((string) file_get_contents($manifest), true);
+        $version = is_array($decoded) ? ($decoded['version'] ?? null) : null;
+
+        return is_string($version) && $version !== '' ? $version : '0.0.0';
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

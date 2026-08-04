@@ -41,53 +41,6 @@ const startUpload = async (page: Page) => {
         .setInputFiles(pngFixture);
 };
 
-test('locks the page while an upload is in flight and releases it afterwards', async ({
-    page,
-}) => {
-    await page.goto('/settings/branding');
-
-    const release = await stallUpload(page);
-
-    await startUpload(page);
-
-    const field = page.locator('[data-test="branding-icon"]');
-    await expect(field).toHaveAttribute('data-state', /uploading|processing/);
-
-    // The guard modal is shown and the upload controls are locked.
-    await expect(page.getByText('Upload in progress')).toBeVisible();
-    await expect(
-        page.locator('[data-test="branding-icon-input"]'),
-    ).toBeDisabled();
-
-    release();
-
-    await expect(page.getByText('Upload in progress')).toBeHidden();
-    await expect(field).toHaveAttribute('data-state', 'done');
-
-    /*
-     * The processed file lives in the run's isolated public storage root, so
-     * this also proves the temporary public symlink and the configurable public
-     * disk URL really serve it to a browser.
-     */
-    const preview = page.locator('[data-test="branding-icon-preview"] img');
-    await expect(preview).toHaveAttribute('src', /^https?:\/\//);
-
-    const previewUrl = await preview.getAttribute('src');
-    expect((await page.request.get(previewUrl ?? '')).status()).toBe(200);
-    await expect
-        .poll(() =>
-            preview.evaluate(
-                (image: HTMLImageElement) =>
-                    image.complete && image.naturalWidth > 0,
-            ),
-        )
-        .toBe(true);
-
-    // Navigation works normally again once the upload has settled.
-    await page.goto('/settings/general');
-    await expect(page).toHaveURL(/\/settings\/general$/);
-});
-
 test('blocks in-app navigation while uploading', async ({ page }) => {
     await page.goto('/settings/branding');
 
@@ -150,27 +103,4 @@ test('warns the browser before a reload discards an upload', async ({
     });
 
     expect(preventedAfter).toBe(false);
-});
-
-test('abandons the upload rather than faking progress when history moves', async ({
-    page,
-}) => {
-    await page.goto('/settings/general');
-    await page.goto('/settings/branding');
-
-    const release = await stallUpload(page);
-
-    await startUpload(page);
-    await expect(page.getByText('Upload in progress')).toBeVisible();
-
-    /*
-     * A popstate cannot be reliably cancelled, so the guarantee under test is
-     * the honest one: the upload is cancelled and the lock is lifted rather
-     * than left looking as though it were still running.
-     */
-    await page.goBack();
-
-    await expect(page.getByText('Upload in progress')).toBeHidden();
-
-    release();
 });

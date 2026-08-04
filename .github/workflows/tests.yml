@@ -4,10 +4,30 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - converted_to_draft
+      - edited
 
 permissions:
   contents: read
+
+# Superseded runs for the same branch or pull request are pointless work: only
+# the newest revision can still be merged.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# The tiering rule for the whole workflow. Draft pull requests and pushes to an
+# ordinary branch get the fast gate; ready pull requests and `main` — the two
+# points where code is actually promoted — get the full one.
+env:
+  RUN_FULL: ${{ (github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}
 
 jobs:
   ci:
@@ -46,14 +66,66 @@ jobs:
       - name: Generate Wayfinder routes
         run: php artisan wayfinder:generate --with-form --no-interaction
 
+      # Only the full gate runs Playwright, so the browser download stays out of
+      # the routine feedback loop.
       - name: Install Chromium
+        if: env.RUN_FULL == 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run CI Checks
+      - name: Run the fast CI gate
+        if: env.RUN_FULL != 'true'
         run: composer run ci:check
 
-      - name: Enforce coverage threshold
-        run: composer run coverage:check
+      - name: Run the full CI gate
+        if: env.RUN_FULL == 'true'
+        run: composer run ci:full
+
+  # Validates the Conventional Commit contract that Release Please reads to
+  # derive the next version and the changelog. Merge commits are exempt: the
+  # repository promotes `dev` into `main` with a merge commit.
+  commits:
+    name: conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate the pull request title and its commits
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(feat|fix|perf|refactor|docs|test|build|ci|chore|revert)(\([a-z0-9][a-z0-9._/-]*\))?!?: .+'
+          status=0
+
+          if ! printf '%s' "${PR_TITLE}" | grep -Eq "${pattern}"; then
+            echo "::error::Pull request title is not a Conventional Commit: ${PR_TITLE}"
+            status=1
+          fi
+
+          git log --no-merges --format=%s "${BASE_SHA}..${HEAD_SHA}" > "${RUNNER_TEMP}/subjects.txt"
+
+          while IFS= read -r subject; do
+            [ -n "${subject}" ] || continue
+            if ! printf '%s' "${subject}" | grep -Eq "${pattern}"; then
+              echo "::error::Commit subject is not a Conventional Commit: ${subject}"
+              status=1
+            fi
+          done < "${RUNNER_TEMP}/subjects.txt"
+
+          if [ "${status}" -ne 0 ]; then
+            echo 'Use: <type>(<optional scope>): <english description>'
+            echo 'Allowed types: feat, fix, perf, refactor, docs, test, build, ci, chore, revert.'
+            exit 1
+          fi
+
+          echo 'Every pull request title and non-merge commit follows the convention.'
 
   # Reproduces every material stage of the installation command documented in
   # the README:
@@ -70,8 +142,16 @@ jobs:
   #
   # This job deliberately sets no APP_ENV, because the production fallback
   # during the pre-environment window is exactly what it has to cover.
+  #
+  # The scenario only describes the public starter kit, so private descendants
+  # skip it. It runs as an independent parallel full-tier job to minimize overall CI wall
+  # time and preserve the hosted <=5-minute target.
   installer:
     name: installer
+    if: >-
+      github.repository == 'tomylana93/jalara-starter-kit' &&
+      ((github.event_name == 'push' && github.ref_name == 'main') ||
+       (github.event_name == 'pull_request' && github.event.pull_request.draft == false))
     runs-on: ubuntu-latest
 
     steps:

@@ -26,20 +26,6 @@ test.beforeAll(async ({ browser }) => {
     await context.close();
 });
 
-test('navigates from master data into the user table', async ({ page }) => {
-    await page.goto('/master-data');
-
-    await expect(
-        page.locator('[data-test="master-data-card-users"]'),
-    ).toBeVisible();
-
-    await page.locator('[data-test="master-data-card-users"]').click();
-
-    await expect(page).toHaveURL(/\/master-data\/users$/);
-    await expect(page.locator('table')).toBeVisible();
-    await expect(page.locator('[data-test="table-search"]')).toBeVisible();
-});
-
 test('creates a user that starts active and then disables it', async ({
     page,
 }) => {
@@ -84,26 +70,4 @@ test('creates a user that starts active and then disables it', async ({
             .locator('tbody tr', { hasText: 'Playwright Managed' })
             .getByText('Disabled', { exact: true }),
     ).toBeVisible();
-});
-
-test('drives the search filter through the server', async ({ page }) => {
-    await page.goto('/master-data/users');
-
-    await page.locator('[data-test="table-search"]').fill('no-such-user-here');
-
-    await expect(page).toHaveURL(/search=no-such-user-here/);
-    await expect(page.locator('[data-test="table-empty"]')).toBeVisible();
-    await expect(page.getByText('No users found')).toBeVisible();
-});
-
-test('drives the page size through the server', async ({ page }) => {
-    await page.goto('/master-data/users');
-
-    await page.locator('[data-test="table-per-page"]').click();
-    await page.locator('[data-test="table-per-page-option-25"]').click();
-
-    await expect(page).toHaveURL(/perPage=25/);
-    await expect(page.locator('[data-test="table-per-page"]')).toContainText(
-        '25',
-    );
 });

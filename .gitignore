@@ -39,5 +39,8 @@ yarn-error.log
 /.gemini
 /.idea
 /.nova
-/.vscode
+# `settings.json` is tracked on purpose: it points the editor's commit-message
+# and pull-request generators at the repository's release conventions.
+/.vscode/*
+!/.vscode/settings.json
 /.zed
