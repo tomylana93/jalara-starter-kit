@@ -40,7 +40,12 @@ jobs:
   ci:
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Sized against a bad day, not against the gate. The gate itself runs in
+    # about four minutes, but a single cache miss on the Playwright browsers
+    # once pushed a legitimate run to 887s — thirteen seconds short of a
+    # fifteen-minute limit. A timeout that fires on a slow download reads as a
+    # broken test suite and, on `main`, silently stops releases.
+    timeout-minutes: 20
     env:
       APP_ENV: testing
       DB_DATABASE: ':memory:'
