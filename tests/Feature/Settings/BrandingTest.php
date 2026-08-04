@@ -162,6 +162,19 @@ it('shares the footer text with the layouts', function () {
     );
 });
 
+it('shares the released application version alongside the footer text', function () {
+    updateBranding(['footerText' => null]);
+
+    get(route('login'))->assertInertia(fn (Assert $page) => $page
+        ->where('version', config('app.version'))
+        ->where('branding.footerText', null),
+    );
+
+    expect(config('app.version'))->toBe(
+        json_decode((string) file_get_contents(base_path('version.json')), true)['version'],
+    );
+});
+
 it('renders the default branding attributes before the settings are persisted', function () {
     get(route('login'))
         ->assertSee('data-color-theme="neutral"', false)

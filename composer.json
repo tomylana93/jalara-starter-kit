@@ -108,29 +108,31 @@
             "pnpm run format:check",
             "pnpm run types:check",
             "pnpm run test:unit",
-            "@test",
+            "@test"
+        ],
+        "ci:full": [
+            "Composer\\Config::disableProcessTimeout",
+            "@audit:check",
+            "pnpm run lint:check",
+            "pnpm run format:check",
+            "pnpm run types:check",
+            "pnpm run test:unit",
+            "@static:check",
+            "@coverage:check",
             "pnpm run test:e2e"
         ],
         "types:check": [
             "phpstan analyse --memory-limit=1G --no-progress --error-format=json"
         ],
-        "test": [
+        "static:check": [
             "@php artisan config:clear --ansi",
             "@rector:check",
             "@lint:check",
-            "@types:check",
+            "@types:check"
+        ],
+        "test": [
+            "@static:check",
             "pest"
-        ],
-        "test:tia": [
-            "Composer\\Config::disableProcessTimeout",
-            "pest --tia"
-        ],
-        "test:tia:fresh": [
-            "Composer\\Config::disableProcessTimeout",
-            "pest --tia --fresh"
-        ],
-        "test:tia:baseline": [
-            "pest --baseline"
         ],
         "agents:update": [
             "@php artisan boost:update --no-interaction"

@@ -1,0 +1,20 @@
+{
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+    "bootstrap-sha": "de8e57123d469ec15c8fd3a89f48a3da7fc0e23f",
+    "packages": {
+        ".": {
+            "release-type": "simple",
+            "package-name": "jalara-starter-kit",
+            "changelog-path": "CHANGELOG.md",
+            "extra-files": [
+                {
+                    "type": "json",
+                    "path": "version.json",
+                    "jsonpath": "$.version"
+                }
+            ]
+        }
+    },
+    "include-component-in-tag": false,
+    "separate-pull-requests": false
+}

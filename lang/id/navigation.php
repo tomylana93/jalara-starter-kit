@@ -16,10 +16,6 @@ return [
         'documentation' => 'Dokumentasi',
     ],
 
-    'external' => [
-        'repository' => 'Repository',
-    ],
-
     'menu' => [
         'navigation' => 'Menu navigasi',
         'description' => 'Tautan ke halaman utama aplikasi.',

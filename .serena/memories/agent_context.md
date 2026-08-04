@@ -1,6 +1,6 @@
 # Agent Context Infrastructure
 
-- Custom Boost source-of-truth: `.ai/guidelines/` for always-loaded rules; `.ai/skills/` for on-demand procedures.
+- Custom Boost source-of-truth: `.ai/guidelines/` for always-loaded rules; `.ai/skills/` for on-demand procedures. `.ai/guidelines/release-workflow.md` owns commit, pull-request, and release conventions, and `.vscode/settings.json` points the editor's commit-message and pull-request generators at it.
 - Generated, tracked outputs: `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/`. Regenerate with `composer run agents:update`; do not maintain custom changes only in generated files.
 - `boost.json` selects supported agents and Boost-provided resources. Non-Boost MCP client configuration remains client-specific and must not be assumed identical across agents.
 - Serena project bootstrap/configuration: `.serena/project.yml`; durable project memory graph: `.serena/memories/`.

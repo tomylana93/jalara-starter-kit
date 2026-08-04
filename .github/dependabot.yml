@@ -1,12 +1,16 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     cooldown:
       default-days: 5
+    # Dependabot's own commits and pull request titles have to satisfy the same
+    # Conventional Commit gate. We specify the exact prefix to avoid deps-dev variation.
+    commit-message:
+      prefix: 'chore(deps)'
     groups:
       github-actions:
         patterns:
-          - "*"
+          - '*'

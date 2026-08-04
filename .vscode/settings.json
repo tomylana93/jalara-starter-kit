@@ -1,0 +1,15 @@
+{
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "file": ".ai/guidelines/release-workflow.md"
+        }
+    ],
+    "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
+        {
+            "file": ".ai/guidelines/release-workflow.md"
+        },
+        {
+            "text": "Write the description with exactly three level-two sections, in this order: Summary, Testing, Release impact."
+        }
+    ]
+}

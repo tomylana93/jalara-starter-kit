@@ -22,6 +22,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             description: string | null;
+            version: string;
             locale: string;
             fallbackLocale: string;
             auth: Auth;

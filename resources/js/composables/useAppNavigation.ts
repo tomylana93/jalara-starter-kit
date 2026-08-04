@@ -2,7 +2,6 @@ import { usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
     Database,
-    FolderGit2,
     LayoutGrid,
     MessagesSquare,
     Settings,
@@ -102,26 +101,16 @@ export function useAppNavigation() {
             href: documentationIndex(),
             icon: BookOpen,
         },
-        {
-            title: t('navigation.external.repository'),
-            href: 'https://github.com/tomylana93/jalara-starter-kit',
-            icon: FolderGit2,
-            external: true,
-        },
     ]);
-    const externalItems = computed<NavItem[]>(() =>
-        footerItems.value.filter((item) => item.external),
-    );
     const commandItems = computed<NavItem[]>(() => [
         ...mainItems.value,
-        ...footerItems.value.filter((item) => !item.external),
+        ...footerItems.value,
     ]);
 
     return {
         mainItems,
         mainGroups,
         footerItems,
-        externalItems,
         commandItems,
     };
 }

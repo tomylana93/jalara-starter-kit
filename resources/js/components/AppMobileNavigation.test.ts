@@ -15,26 +15,20 @@ describe('AppMobileNavigation', () => {
         inertiaPageUrl.value = '/dashboard';
     });
 
-    it('renders the complete navigation with active and safe external links', () => {
+    it('renders the complete navigation without any external link', () => {
         const wrapper = mount(AppMobileNavigation);
 
         expect(wrapper.text()).toContain('navigation.main.dashboard');
         expect(wrapper.text()).toContain('navigation.main.settings');
         expect(wrapper.text()).not.toContain('navigation.group.main_menu');
         expect(wrapper.text()).not.toContain('navigation.group.admin');
-        expect(wrapper.text()).toContain('navigation.external.repository');
+        expect(wrapper.text()).not.toContain('navigation.external.repository');
         expect(wrapper.text()).toContain('navigation.main.documentation');
         expect(wrapper.text()).toContain('Ada Lovelace');
         expect(wrapper.get('[aria-current="page"]').text()).toContain(
             'navigation.main.dashboard',
         );
-
-        const externalLinks = wrapper.findAll('a[target="_blank"]');
-
-        expect(externalLinks).toHaveLength(1);
-        externalLinks.forEach((link) => {
-            expect(link.attributes('rel')).toBe('noopener noreferrer');
-        });
+        expect(wrapper.findAll('a[target="_blank"]')).toHaveLength(0);
         expect(wrapper.findComponent(UserMenuContent).exists()).toBe(true);
     });
 
@@ -46,16 +40,11 @@ describe('AppMobileNavigation', () => {
             event.preventDefault(),
         );
         await mainLink.trigger('click');
-        const externalLink = wrapper.get('a[target="_blank"]');
-        externalLink.element.addEventListener('click', (event) =>
-            event.preventDefault(),
-        );
-        await externalLink.trigger('click');
         wrapper.findComponent(UserMenuContent).vm.$emit('navigate');
         await wrapper
             .get('[data-test="mobile-navigation-close"]')
             .trigger('click');
 
-        expect(wrapper.emitted('close')).toHaveLength(4);
+        expect(wrapper.emitted('close')).toHaveLength(3);
     });
 });

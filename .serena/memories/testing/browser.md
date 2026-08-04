@@ -1,6 +1,7 @@
 # Playwright E2E
 
 - E2E specs live under `e2e/` and run with `pnpm test:e2e`; Playwright builds assets, provisions Chromium, starts Laravel, and uses one worker.
+- The canonical suite is exactly seven journeys: chat direct-message creation, documentation publish/read/search, user create-then-disable, realtime bell notification, branding persistence across light/dark auth layouts, upload navigation blocking, and the upload reload warning. Playwright runs in the full gate only; installer validation runs only in `tomylana93/jalara-starter-kit`.
 - Use the isolated SQLite database at `storage/framework/testing/playwright.sqlite`, file sessions, and testing environment values. Global setup recreates migrations and initializes the non-production superadmin from process environment.
 - Authentication is a setup project that writes `e2e/.auth/superadmin.json`; Chromium settings specs consume that storage state. Never commit credentials or auth state.
 - Keep E2E to critical user journeys and observable browser output. Do not add testing endpoints or duplicate detailed Feature-test ownership.

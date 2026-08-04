@@ -35,6 +35,7 @@ export const inertiaPageProps = {
     errors: {} as Record<string, string>,
     name: undefined as string | undefined,
     description: null as string | null,
+    version: '0.1.0',
     can: {
         manageSettings: true,
         viewUsers: true,

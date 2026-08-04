@@ -1,4 +1,3 @@
-import { FolderGit2 } from '@lucide/vue';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toUrl } from '@/lib/utils';
 import { inertiaPageProps } from '@/test/setup';
@@ -123,27 +122,25 @@ describe('useAppNavigation', () => {
         );
     });
 
-    it('provides internal documentation and the external repository in the footer', () => {
-        const { footerItems, externalItems } = useAppNavigation();
+    it('provides internal documentation as the only footer entry', () => {
+        const { footerItems, commandItems } = useAppNavigation();
 
         expect(
             footerItems.value.map((item) => ({
                 title: item.title,
                 href: toUrl(item.href),
-                external: Boolean(item.external),
             })),
         ).toEqual([
             {
                 title: 'navigation.main.documentation',
                 href: '/documentation',
-                external: false,
-            },
-            {
-                title: 'navigation.external.repository',
-                href: 'https://github.com/tomylana93/jalara-starter-kit',
-                external: true,
             },
         ]);
-        expect(externalItems.value[0]?.icon).toBe(FolderGit2);
+        expect(footerItems.value.map((item) => toUrl(item.href))).not.toContain(
+            'https://github.com/tomylana93/jalara-starter-kit',
+        );
+        expect(commandItems.value.map((item) => item.title)).toContain(
+            'navigation.main.documentation',
+        );
     });
 });

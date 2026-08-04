@@ -78,6 +78,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'description' => config('app.description'),
+            /* Release Please owns this value; every layout renders it as-is. */
+            'version' => config('app.version'),
             'locale' => app()->getLocale(),
             'fallbackLocale' => config('app.fallback_locale'),
             'branding' => BrandingPresenter::present(),
