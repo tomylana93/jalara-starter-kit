@@ -39,7 +39,28 @@ updates:
       default-days: 5
     commit-message:
       prefix: 'chore(deps)'
+    ignore:
+      # TypeScript 7.0 ships without a public compiler API. Vue tooling and
+      # typescript-eslint both depend on that API, so the upgrade breaks
+      # `eslint .` and `vite build` outright rather than needing configuration
+      # work. Microsoft expects the API to return in 7.1; typescript-eslint has
+      # no released support and calls the port months from stable.
+      #
+      # Lift this once BOTH hold:
+      #   - TypeScript >= 7.1 restores the public compiler API
+      #   - typescript-eslint ships a release that accepts TypeScript 7
+      #     (https://github.com/typescript-eslint/typescript-eslint/issues/10940)
+      - dependency-name: 'typescript'
+        update-types:
+          - 'version-update:semver-major'
+    # Majors are deliberately left ungrouped so each arrives in its own pull
+    # request. A single group covering everything let one breaking upgrade hold
+    # ten unrelated updates hostage and made the failure hard to attribute.
     groups:
-      npm:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - 'minor'
+          - 'patch'
         patterns:
           - '*'
