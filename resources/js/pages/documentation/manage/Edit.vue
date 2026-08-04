@@ -182,6 +182,7 @@ onBeforeUnmount(() => {
                         }}</Label>
                         <Select v-model="form.documentation_category_id"
                             ><SelectTrigger
+                                class="w-full"
                                 data-test="documentation-category-trigger"
                                 ><SelectValue
                                     :placeholder="
@@ -211,6 +212,7 @@ onBeforeUnmount(() => {
                         }}</Label>
                         <Select v-model="form.status"
                             ><SelectTrigger
+                                class="w-full"
                                 data-test="documentation-status-trigger"
                                 ><SelectValue /></SelectTrigger
                             ><SelectContent
