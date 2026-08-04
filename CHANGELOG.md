@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/tomylana93/jalara-starter-kit/compare/v0.1.0...v0.1.1) (2026-08-04)
+
+
+### Bug Fixes
+
+* **release:** support root manifest publication ([3c7a3f9](https://github.com/tomylana93/jalara-starter-kit/commit/3c7a3f95e08f81d01d79698fef8af074ab48336a))
+* **release:** support root manifest publication ([e24931d](https://github.com/tomylana93/jalara-starter-kit/commit/e24931dedd2df003fa564a3fd11b935de3e0628d))
+
 ## 0.1.0 (2026-08-04)
 
 
