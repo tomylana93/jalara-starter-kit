@@ -2,6 +2,7 @@
 import { Search } from '@lucide/vue';
 import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import GlobalSearchTrigger from '@/components/GlobalSearchTrigger.vue';
 import NotificationBell from '@/components/NotificationBell.vue';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -36,9 +37,11 @@ const openGlobalSearch = (): void => {
         </div>
 
         <div class="ml-auto flex shrink-0 items-center gap-2">
+            <GlobalSearchTrigger />
             <Button
                 variant="ghost"
                 size="icon"
+                class="lg:hidden"
                 :aria-label="t('navigation.menu.search')"
                 data-test="global-search-trigger"
                 @click="openGlobalSearch"

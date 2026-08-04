@@ -24,6 +24,7 @@ return [
         'navigation' => 'Menu navigasi',
         'description' => 'Tautan ke halaman utama aplikasi.',
         'search' => 'Buka pencarian global',
+        'search_label' => 'Cari…',
     ],
 
 ];

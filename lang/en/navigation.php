@@ -24,6 +24,7 @@ return [
         'navigation' => 'Navigation menu',
         'description' => 'Links to the main pages of the application.',
         'search' => 'Open global search',
+        'search_label' => 'Search…',
     ],
 
 ];

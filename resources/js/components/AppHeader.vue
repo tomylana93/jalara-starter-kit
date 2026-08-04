@@ -6,6 +6,7 @@ import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppMobileNavigation from '@/components/AppMobileNavigation.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import GlobalSearchTrigger from '@/components/GlobalSearchTrigger.vue';
 import NotificationBell from '@/components/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -197,10 +198,11 @@ const openGlobalSearch = (): void => {
 
                 <div class="ml-auto flex items-center space-x-2">
                     <div class="relative flex items-center space-x-1">
+                        <GlobalSearchTrigger />
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="group h-9 w-9 cursor-pointer"
+                            class="group h-9 w-9 cursor-pointer lg:hidden"
                             :aria-label="t('navigation.menu.search')"
                             data-test="global-search-trigger"
                             @click="openGlobalSearch"
