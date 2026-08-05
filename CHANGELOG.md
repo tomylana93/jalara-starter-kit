@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/tomylana93/jalara-starter-kit/compare/v0.4.0...v0.4.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **test:** keep Vitest on the forks pool so the fixed timezone applies ([129942e](https://github.com/tomylana93/jalara-starter-kit/commit/129942ed6a5a85dd34718a6e536894ad16a4bfc0))
+
 ## [0.4.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.3.0...v0.4.0) (2026-08-05)
 
 
