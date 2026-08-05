@@ -2,6 +2,7 @@ import { router } from '@inertiajs/vue3';
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TablePayload } from '@/components/data-table';
+import { TEST_TIME_ZONE, withTimeZone } from '@/test/timeZone';
 import type { UserRow } from './columns';
 import Index from './Index.vue';
 
@@ -90,18 +91,28 @@ describe('master data user index', () => {
     });
 
     it('renders the created instant in the browser timezone', () => {
-        const wrapper = mountIndex({ canCreate: true, dateFormat: 'd/m/Y' });
+        withTimeZone(TEST_TIME_ZONE, () => {
+            const wrapper = mountIndex({
+                canCreate: true,
+                dateFormat: 'd/m/Y',
+            });
 
-        /* 22:30 UTC on the 30th is 05:30 on the 31st in the test timezone. */
-        expect(wrapper.text()).toContain('31/07/2026 05:30');
-        /* A user with no timestamp still renders a safe fallback. */
-        expect(wrapper.text()).toContain('—');
+            /* 22:30 UTC on the 30th is 05:30 on the 31st in the pinned zone. */
+            expect(wrapper.text()).toContain('31/07/2026 05:30');
+            /* A user with no timestamp still renders a safe fallback. */
+            expect(wrapper.text()).toContain('—');
+        });
     });
 
     it('follows the configured date format preset', () => {
-        const wrapper = mountIndex({ canCreate: true, dateFormat: 'Y-m-d' });
+        withTimeZone(TEST_TIME_ZONE, () => {
+            const wrapper = mountIndex({
+                canCreate: true,
+                dateFormat: 'Y-m-d',
+            });
 
-        expect(wrapper.text()).toContain('2026-07-31 05:30');
+            expect(wrapper.text()).toContain('2026-07-31 05:30');
+        });
     });
 
     it('reports the ids of the rows selected on this page', async () => {

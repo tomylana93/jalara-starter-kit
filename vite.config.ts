@@ -22,15 +22,12 @@ export default defineConfig({
         include: ['resources/js/**/*.test.ts', 'vite/**/*.test.ts'],
         exclude: ['e2e/**'],
         /*
-         * A fixed non-UTC, DST-free zone so browser-timezone formatting is
-         * observably different from the UTC instants the server sends.
-         *
-         * This only takes effect under the default `forks` pool: a worker
-         * thread inherits the process timezone, so switching to `threads`
-         * silently drops it and the date tests fail wherever the machine is not
-         * already on this zone. Do not set `pool`.
+         * No timezone is configured here on purpose. A globally pinned zone
+         * hides the dependency from the tests that have one, and only applies
+         * under the `forks` pool, so it silently stopped working when the pool
+         * changed. Tests that render browser-local instants pin the zone
+         * themselves through `withTimeZone` in `resources/js/test/timeZone.ts`.
          */
-        env: { TZ: 'Asia/Jakarta' },
     },
     plugins: [
         laravelLang(),

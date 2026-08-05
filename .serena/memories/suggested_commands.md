@@ -20,7 +20,7 @@
   `ci:vitest`, `ci:pest`. `composer run ci:full` (promotion) swaps in coverage
   and adds Playwright with its single production build. Pest runs once per tier.
   Rector is in neither gate: it is a local-only auto-fixer run through
-  `composer run fix`. Pest TIA no longer exists in this repository.
+  `composer run fix`. Pest TIA is configured but inert; see `mem:testing`.
 - `.github/workflows/tests.yml` runs the gate as four parallel jobs — `static`,
   `vitest`, `pest`, `e2e` — so the slowest, not their sum, sets wall time. The
   `pest` job installs no Node toolchain because `Tests\TestCase` calls
