@@ -152,6 +152,7 @@ const open = (item: NotificationItem): void => {
                 <span>{{ t('notification.bell.title') }}</span>
                 <Button
                     v-if="hasUnread"
+                    type="button"
                     variant="link"
                     class="h-auto p-0 text-xs font-normal text-muted-foreground"
                     data-test="notification-mark-all"
