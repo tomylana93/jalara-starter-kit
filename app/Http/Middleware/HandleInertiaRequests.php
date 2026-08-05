@@ -88,6 +88,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'can' => [
                 'manageSettings' => $user?->can(Permission::ManageSettings->value) ?? false,
+                /* Separate from manageSettings: this one reaches the database. */
+                'manageBackups' => $user?->can(Permission::ManageBackups->value) ?? false,
                 'viewUsers' => $user?->can(Permission::ViewUsers->value) ?? false,
                 /* Gates the Super Admin's read-only chat audit entry. */
                 'auditChat' => $user?->hasRole(Role::SuperAdmin->value) ?? false,

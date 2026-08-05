@@ -66,7 +66,13 @@ export function useAppNavigation() {
             });
         }
 
-        if (page.props.can?.manageSettings) {
+        /*
+         * The settings index is a hub whose cards are filtered per ability, so
+         * the entry appears for either one. Backups live behind their own
+         * permission precisely because that surface hands out the database, and
+         * a holder of only that permission still needs a way in.
+         */
+        if (page.props.can?.manageSettings || page.props.can?.manageBackups) {
             items.push({
                 title: t('navigation.main.settings'),
                 href: settingsIndex(),

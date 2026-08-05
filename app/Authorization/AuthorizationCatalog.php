@@ -18,6 +18,7 @@ final class AuthorizationCatalog
     {
         return [
             Permission::ManageSettings,
+            Permission::ManageBackups,
             Permission::ViewUsers,
             Permission::CreateUsers,
             Permission::UpdateUsers,

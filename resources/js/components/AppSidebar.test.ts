@@ -21,6 +21,7 @@ vi.mock('@/components/ui/sidebar', async (importOriginal) => ({
 beforeEach(() => {
     inertiaPageProps.auth = { user: { name: 'Ada Lovelace' } };
     inertiaPageProps.can.manageSettings = true;
+    inertiaPageProps.can.manageBackups = false;
     inertiaPageProps.can.viewUsers = true;
     inertiaPageProps.can.auditChat = false;
     inertiaPageProps.chat.enabled = true;

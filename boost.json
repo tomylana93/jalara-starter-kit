@@ -11,7 +11,8 @@
     "nightwatch": false,
     "packages": [
         "spatie/laravel-permission",
-        "fruitcake/laravel-debugbar"
+        "fruitcake/laravel-debugbar",
+        "spatie/laravel-backup"
     ],
     "sail": false,
     "skills": [
@@ -23,6 +24,7 @@
         "tailwindcss-development",
         "echo-vue-development",
         "echo-development",
+        "laravel-backup",
         "laravel-permission-development",
         "debug-using-debugbar",
         "maintaining-agent-context"

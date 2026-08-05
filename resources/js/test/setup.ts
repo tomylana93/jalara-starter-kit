@@ -40,6 +40,7 @@ export const inertiaPageProps = {
     version: '0.1.0',
     can: {
         manageSettings: true,
+        manageBackups: true,
         viewUsers: true,
         auditChat: true,
         manageDocumentation: true,

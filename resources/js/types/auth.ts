@@ -16,6 +16,7 @@ export type Auth = {
 
 export type Abilities = {
     manageSettings: boolean;
+    manageBackups: boolean;
     viewUsers: boolean;
     auditChat: boolean;
     manageDocumentation: boolean;

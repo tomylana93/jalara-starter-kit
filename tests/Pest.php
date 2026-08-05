@@ -148,6 +148,23 @@ function roleQueryCount(Closure $request): int
 }
 
 /**
+ * Create a user allowed to manage backups.
+ *
+ * Deliberately not a settings manager: the two permissions are independent, and
+ * a test that conflated them would stop proving the separation exists.
+ */
+function backupManager(): User
+{
+    $user = User::factory()->create();
+
+    $user->givePermissionTo(
+        Spatie\Permission\Models\Permission::findOrCreate(Permission::ManageBackups->value, 'web'),
+    );
+
+    return $user;
+}
+
+/**
  * Create a user allowed to manage the application settings.
  */
 function settingsManager(): User

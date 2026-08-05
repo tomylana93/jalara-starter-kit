@@ -10,6 +10,7 @@ return [
 
     'permission' => [
         'manage_settings' => 'Manage settings',
+        'manage_backups' => 'Manage backups',
         'view_users' => 'View users',
         'create_users' => 'Create users',
         'update_users' => 'Update users',

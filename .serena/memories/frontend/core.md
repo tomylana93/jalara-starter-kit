@@ -13,6 +13,16 @@
 - Color preset contract, brand-accent scope, nested draft previews, and auth/chrome coverage: `mem:frontend/color_theme`.
 - Generic server-driven table (TanStack controlled state, domain-local `columns.ts`, URL query state): `mem:frontend/data_table`.
 - Frontend forms use Laravel/Inertia validation. Avoid native constraint attributes; preserve input type/inputmode semantics and bind errors with `:aria-invalid="Boolean(errors.field)"`.
+- Registry dialog action components (`AlertDialogAction`, and any primitive that
+  forwards `@click` as a fallthrough attribute) run their own close handler
+  BEFORE the consumer's listener, because Vue merges the component's own props
+  ahead of inherited attrs. A confirm flow whose `open` binding also clears the
+  pending target therefore reads null in its confirm handler and silently sends
+  nothing - no error, no request. Keep "which record is pending" and "is the
+  dialog open" in separate refs, and clear the target only after dispatching.
+  jsdom can order these the other way, so a passing component test is not
+  evidence; drive the close explicitly (`findComponent(AlertDialog).vm.$emit('update:open', false)`)
+  before clicking confirm.
 - Colocate Vitest component tests with pages/components. Use the shared `resources/js/test/setup.ts` Inertia/translation/browser stubs and assert rendered output or submitted controls rather than internal refs.
 - Media upload field placement, approved registry primitives, no-helper-text convention, required branding assets, and public fallback paths: `mem:frontend/media_uploads`.
 - Chat surfaces: which layer owns paging vs viewport vs realtime, the message registry primitives and their test stubs, and the desktop-only widget: `mem:frontend/chat`.

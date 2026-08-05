@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Http\Controllers\Backups\BackupController;
 use App\Http\Controllers\Settings\AuthenticationSettingsController;
 use App\Http\Controllers\Settings\BrandingSettingsController;
 use App\Http\Controllers\Settings\ChatSettingsController;
@@ -12,12 +13,58 @@ use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'permission:'.Permission::ManageSettings->value])
+/*
+ * The index is a hub, so it answers to either ability that owns a card on it.
+ * Every section below still enforces its own permission: reaching the hub grants
+ * nothing except the list of places the holder may actually go.
+ */
+Route::middleware([
+    'auth',
+    'verified',
+    'permission:'.Permission::ManageSettings->value.'|'.Permission::ManageBackups->value,
+])
     ->prefix('settings')
     ->name('settings.')
     ->group(function (): void {
         Route::inertia('/', 'settings/Index')->name('index');
+    });
 
+/*
+ * Backups sit under Settings by placement only. Authorization stays separate
+ * from `manage settings`, because this surface hands out a full copy of the
+ * database and must be grantable - and revocable - on its own.
+ *
+ * The whole group sits behind password confirmation. Note what that does and
+ * does not buy: Laravel's confirmation window is three hours, so this is a
+ * barrier at the start of a session, not a check on each download.
+ */
+Route::middleware([
+    'auth',
+    'verified',
+    'permission:'.Permission::ManageBackups->value,
+    RequirePassword::class,
+])
+    ->prefix('settings/backups')
+    ->name('settings.backups.')
+    ->group(function (): void {
+        Route::get('/', [BackupController::class, 'index'])->name('index');
+
+        Route::post('/', [BackupController::class, 'store'])->name('store');
+
+        /*
+         * The filename is a route parameter but never a path: the controller
+         * resolves it against the real archive listing. Laravel's default
+         * parameter pattern already refuses slashes, which is a second, weaker
+         * line of defence rather than the primary one.
+         */
+        Route::get('{filename}/download', [BackupController::class, 'download'])->name('download');
+        Route::delete('{filename}', [BackupController::class, 'destroy'])->name('destroy');
+    });
+
+Route::middleware(['auth', 'verified', 'permission:'.Permission::ManageSettings->value])
+    ->prefix('settings')
+    ->name('settings.')
+    ->group(function (): void {
         Route::get('general', [GeneralSettingsController::class, 'edit'])->name('general.edit');
         Route::put('general', [GeneralSettingsController::class, 'update'])
             ->middleware(HandlePrecognitiveRequests::class)
