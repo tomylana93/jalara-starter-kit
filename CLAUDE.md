@@ -75,18 +75,10 @@
 - Use the shell for Git and cases not covered by a purpose-built tool. Invoke
   repository-configured development tools through Composer scripts; use direct
   Artisan or package-manager commands only when no repository script exists.
-  Fall back to local inspection when an optional MCP tool is unavailable;
+  Fall back to local inspection when an optional MCP tool is unavailable, and
+  report the limitation only when it affects the result.
 - Avoid repeating equivalent discovery through several tools after an
   authoritative source has answered the question.
-
-## MCP Tool Usage and Error Mitigation
-
-- **Validation Error Mitigation (call_mcp_tool & mcp_ prefixes)**:
-  - If `call_mcp_tool` is not in the declared tools schema for the current session (such as in some client-Gemini sessions), do NOT attempt to use it or direct eager tools (e.g. `mcp_serena_execute_shell_command`).
-  - When `call_mcp_tool` is unavailable, fall back cleanly to native tools (`run_command` for terminal commands, `grep_search` / `view_file` for exploration, and `replace_file_content` / `multi_replace_file_content` for edits) instead of failing.
-- **Artifact Path Verification**:
-  - Never specify `ArtifactMetadata` when writing or editing repository code files (e.g., PHP, JS, Vue, CSS files) using `write_to_file`.
-  - Only specify `ArtifactMetadata` when explicitly creating or editing user-facing reports, analysis documents, or checklists inside the designated conversation brain directory (e.g. `/home/tomylana93/.gemini/antigravity-cli/brain/<conversation-id>/`).
 
 ## Skills
 
@@ -104,6 +96,8 @@
 ## Task Loop
 
 1. Ground the task in repository state, relevant memories, and nearby code.
+   Once the affected paths are known, read every `.ai/rules` file whose globs
+   cover them.
 2. Retrieve version-specific documentation before making framework-sensitive
    changes.
 3. Make the smallest coherent change using existing project patterns.
@@ -112,8 +106,9 @@
    experiment; otherwise label it as an unverified hypothesis.
 5. Run focused tests first, then the required format, lint, type, or build
    checks for the affected surface.
-6. Review the diff and update Serena memory only when the task revealed stable,
-   non-obvious project knowledge.
+6. Review the diff. When the task revealed stable, non-obvious knowledge,
+   classify it with the placement matrix below and record it in the one store
+   that owns it, or in none.
 
 ## Verification Boundaries
 
@@ -133,9 +128,11 @@
   script is mandatory before manual edits; manually address only issues the
   tool leaves unresolved. Type-check, unit-test, build, and E2E failures have no
   general auto-fixer and require focused diagnosis.
-- Keep the CI gate ordered from fast static checks to broader execution:
-  frontend lint, format, types, and unit tests; PHP Rector, Pint, Larastan, and
-  Pest; then the single production build performed by the Playwright command.
+- Keep the fast `composer run ci:check` gate ordered from static checks to
+  broader execution: frontend lint, format, types, and unit tests, followed by
+  PHP Rector, Pint, Larastan, and Pest. Reserve `composer run ci:full` for the
+  full gate, which adds coverage and the single production build performed by
+  the Playwright command.
 - Always run the required `composer run ci:check` final gate. If it exposes a
   failure outside the original task scope, treat that failure as required
   follow-up work: isolate its cause, make the smallest safe fix while
@@ -143,11 +140,49 @@
   until the full gate passes. Stop only when the fix requires user approval,
   destructive action, external coordination, or another unavailable authority.
 
+## Durable Knowledge Boundary
+
+Every durable finding has exactly one canonical destination. Classify it before
+recording it, and never mirror the same knowledge into a second store.
+
+| The finding is                                                            | Destination                    |
+| ------------------------------------------------------------------------- | ------------------------------ |
+| An always-on workflow, routing, or verification rule binding every task    | `.ai/guidelines/`              |
+| A focused procedure worth loading only when its trigger metadata matches   | `.ai/skills/`                  |
+| A stable, non-obvious constraint selectable from an affected file glob     | `.ai/rules/` via `record-rule` |
+| Orientation knowledge needed before paths are known: source maps, invariants | Serena memory                |
+| Visible in the code, tooling-owned, generic framework knowledge, task-local | nowhere                        |
+
+- Tie-break: knowledge already stated in a guideline or enforced by configured
+  tooling is already owned. Do not restate it as a Project Rule or a memory.
+- A Project Rule that would apply regardless of which file is in scope is
+  misfiled; it belongs in a guideline. A memory that only matters once a
+  specific glob is in scope is misfiled; it belongs in `.ai/rules/`.
+- `.ai/rules/` holds path-scoped rules: settled decisions, non-obvious traps,
+  and standing constraints that bind whoever edits a given glob. An agent finds
+  them by matching the file it is about to touch against `.ai/rules/index.md`.
+- Serena memory holds the project knowledge graph: source maps, domain
+  invariants, and discovery shortcuts that orient an agent before it knows
+  which files are in scope. An agent finds them by traversing `mem:` references
+  from `mem:core`.
+- Boost's generated instruction to always prefer `record-rule` over "native
+  memory" targets personal, session-scoped assistant memory. It does not apply
+  to Serena memory here, which is committed under `.serena/memories/` and
+  shared with the team. Both stores are in the repository and both are
+  authoritative.
+- Write a rule with the `record-rule` tool, never by hand: it owns file
+  placement, frontmatter, and the index. Pass a `glob`, a short `title`, and a
+  few-line `note`.
+- Path-scoped framework guidance under `.ai/rules/boost` is not in use;
+  `boost.rules.scoped_guidelines` stays disabled, so package guidelines remain
+  inline in the generated agent files. Do not expect that directory to exist.
+
 ## Memory Discipline
 
 - Read `mem:memory_maintenance` before every memory write.
 - Record durable invariants and discovery shortcuts, not secrets, logs,
-  transient state, obvious facts, or task-local notes.
+  transient state, obvious facts, or task-local notes. A constraint the
+  placement matrix assigns to `.ai/rules/` never also becomes a memory.
 - Keep `mem:core` as the graph root and place focused knowledge in topic
   memories linked with marked `mem:` references.
 - After memory changes, check referential integrity with
@@ -229,32 +264,11 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 ## Foundational Context
 
-This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
+This application is a Laravel application running on PHP 8.5. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
 
-- php - 8.5
-- inertiajs/inertia-laravel (INERTIA_LARAVEL) - v3
-- laravel/fortify (FORTIFY) - v1
-- laravel/framework (LARAVEL) - v13
-- laravel/prompts (PROMPTS) - v0
-- laravel/reverb (REVERB) - v1
-- laravel/wayfinder (WAYFINDER) - v0
-- larastan/larastan (LARASTAN) - v3
-- laravel/boost (BOOST) - v2
-- laravel/mcp (MCP) - v0
-- laravel/pail (PAIL) - v1
-- laravel/pint (PINT) - v1
-- laravel/sail (SAIL) - v1
-- pestphp/pest (PEST) - v5
-- phpunit/phpunit (PHPUNIT) - v13
-- rector/rector (RECTOR) - v2
-- @inertiajs/vue3 (INERTIA_VUE) - v3
-- tailwindcss (TAILWINDCSS) - v4
-- vue (VUE) - v3
-- @laravel/echo-vue (ECHO_VUE) - v2
-- @laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0
-- eslint (ESLINT) - v9
-- laravel-echo (ECHO) - v2
-- prettier (PRETTIER) - v3
+Before relying on a package's API, confirm its installed version:
+- PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
+- JS packages: check `package.json` for the installed versions.
 
 ## Skills Activation
 
@@ -312,6 +326,11 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 2. Use `"quoted phrases"` for exact position matching: `"infinite scroll"` requires adjacent words in order.
 3. Combine words and phrases for mixed queries: `middleware "rate limit"`.
 4. Use multiple queries for OR logic: `queries=["authentication", "middleware"]`.
+
+## Project Rules
+
+- This project keeps committed, area-grouped rules in `.ai/rules` (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule.
+- Record durable rules with `record-rule` so the next agent or teammate inherits them instead of working them out again. Pass a `glob` (e.g. `app/Http/Controllers/**`), a short `title`, and a few-line `note`. Always use `record-rule`, never your native memory or notes tool — native memory is personal and session-scoped; only `.ai/rules` is shared with the team and persists in the repo.
 
 ## Artisan
 

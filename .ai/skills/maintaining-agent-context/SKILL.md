@@ -15,6 +15,16 @@ regenerate.
 - Treat `.ai/guidelines/` and `.ai/skills/` as the custom Boost sources.
   Treat `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/` as
   generated outputs.
+- Treat `.ai/rules/` as a third, tool-owned store: committed, path-scoped rules
+  written only through the `record-rule` MCP tool, which owns file placement,
+  frontmatter, and `index.md`. It is neither a Boost source you hand-author nor
+  a generated output you regenerate, so leave it untouched by
+  `composer run agents:update` and never edit it by hand.
+- Boost exposes no update or delete operation for a recorded rule. Removing or
+  rewriting one is therefore a direct-edit exception that requires explicit
+  per-change developer approval, and it must end by regenerating `index.md`
+  through `RuleRepository::writeIndex` rather than by hand. An index reading
+  `No rules recorded yet.` is valid.
 - Change generated outputs only through
   `composer run agents:update`; do not patch them independently.
 - Invoke dependency-backed repository tooling through Composer scripts. Add or
@@ -39,6 +49,23 @@ regenerate.
   when they remove repeated work or large optional context.
 - Validate custom skills before publication and inspect trigger overlap so a
   routine task activates only the minimum relevant set.
+
+## Place Durable Knowledge
+
+- Classify every candidate against the placement matrix in the agent-workflow
+  guideline before recording it anywhere. Name the single destination and the
+  reason it is not one of the others.
+- Reject a candidate that is already stated in a guideline, already enforced by
+  configured tooling, visible in the code, generic framework knowledge, or
+  task-local. "Nowhere" is a valid outcome.
+- Never bulk-migrate between stores. Audit read-only first, report candidates
+  grouped as keep, migrate, relocate, remove, or conflict, and let the developer
+  approve them individually.
+- Per approved candidate, follow audit, confirm, record, remove in that order:
+  record the destination entry first, verify it is discoverable through its own
+  retrieval path, then remove the source entry. Never leave the same knowledge
+  live in two stores between steps, and never remove a source before its
+  replacement exists.
 
 ## Maintain Serena Memory
 
