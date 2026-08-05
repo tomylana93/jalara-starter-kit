@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import { SmilePlus } from '@lucide/vue';
+import type { AcceptableValue } from 'reka-ui';
 import { computed } from 'vue';
 import {
     Attachment,
@@ -27,6 +28,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslations } from '@/composables/useTranslations';
 import type { ChatMessage } from '@/types';
 
@@ -78,7 +80,14 @@ const time = computed(() => {
     }).format(new Date(props.message.created_at));
 });
 
-const chooseReaction = (emoji: string): void => {
+/**
+ * Apply the picker's new selection.
+ *
+ * The toggle group reports the resulting selection rather than the emoji that
+ * was pressed, so choosing the emoji already applied arrives here as an empty
+ * selection - which is exactly the "remove my reaction" case.
+ */
+const chooseReaction = (value: AcceptableValue | AcceptableValue[]): void => {
     if (props.audit || own.value || props.currentUserId === null) {
         return;
     }
@@ -86,7 +95,7 @@ const chooseReaction = (emoji: string): void => {
     emit(
         'react',
         props.message,
-        reaction.value?.emoji === emoji ? null : emoji,
+        typeof value === 'string' && value !== '' ? value : null,
     );
 };
 </script>
@@ -172,17 +181,29 @@ const chooseReaction = (emoji: string): void => {
                             <SmilePlus class="size-3.5" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent class="grid w-auto grid-cols-6 gap-1 p-2">
-                        <button
-                            v-for="emoji in EMOJIS"
-                            :key="emoji"
-                            type="button"
-                            class="rounded-md p-1.5 text-lg hover:bg-muted"
-                            :class="reaction?.emoji === emoji ? 'bg-muted' : ''"
-                            @click="chooseReaction(emoji)"
+                    <PopoverContent class="w-auto p-2">
+                        <!--
+                            `grid` overrides the primitive's single-row `flex`:
+                            twelve emoji belong in a 6-column block, not a
+                            segmented control.
+                        -->
+                        <ToggleGroup
+                            type="single"
+                            :model-value="reaction?.emoji ?? ''"
+                            class="grid grid-cols-6 gap-1"
+                            @update:model-value="chooseReaction"
                         >
-                            {{ emoji }}
-                        </button>
+                            <ToggleGroupItem
+                                v-for="emoji in EMOJIS"
+                                :key="emoji"
+                                :value="emoji"
+                                class="px-0 text-lg"
+                                :aria-label="emoji"
+                                :data-test="`chat-reaction-option-${emoji}`"
+                            >
+                                {{ emoji }}
+                            </ToggleGroupItem>
+                        </ToggleGroup>
                     </PopoverContent>
                 </Popover>
             </MessageContent>

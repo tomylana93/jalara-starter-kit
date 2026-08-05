@@ -6,6 +6,10 @@ const PEER_NAME = 'Playwright Peer';
 /**
  * Create the Active user the direct message is sent to, in the same isolated
  * environment the server under test uses.
+ *
+ * `email_verified_at` is force-filled because it is not mass assignable. Strict
+ * models turned that from a silent discard into an exception, which is how the
+ * peer turned out to have been unverified all along.
  */
 const createPeer = (environment: Record<string, string>): void => {
     execFileSync(
@@ -14,7 +18,7 @@ const createPeer = (environment: Record<string, string>): void => {
             'artisan',
             'tinker',
             '--execute',
-            `App\\Models\\User::firstOrCreate(['email' => 'peer@example.test'], ['name' => '${PEER_NAME}', 'password' => 'Playwright-Test-Password-123!', 'email_verified_at' => now()]);`,
+            `App\\Models\\User::firstOrCreate(['email' => 'peer@example.test'], ['name' => '${PEER_NAME}', 'password' => 'Playwright-Test-Password-123!'])->forceFill(['email_verified_at' => now()])->save();`,
         ],
         { env: { ...process.env, ...environment }, stdio: 'inherit' },
     );

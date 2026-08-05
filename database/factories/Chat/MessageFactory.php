@@ -23,6 +23,8 @@ class MessageFactory extends Factory
             'conversation_id' => Conversation::factory(),
             'sender_id' => User::factory(),
             'body' => fake()->sentence(),
+            'image_path' => null,
+            'image_mime_type' => null,
         ];
     }
 

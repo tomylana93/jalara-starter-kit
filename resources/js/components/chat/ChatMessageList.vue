@@ -3,6 +3,12 @@ import { InfiniteScroll, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import ChatMessageBubble from '@/components/chat/ChatMessageBubble.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { Marker, MarkerContent } from '@/components/ui/marker';
 import {
     MessageScroller,
@@ -168,18 +174,19 @@ watch(
                 data-test="chat-message-list"
                 @scroll="onScroll"
             >
-                <p
+                <Empty
                     v-if="props.messages.length === 0"
-                    class="py-10 text-center text-sm"
                     data-test="chat-messages-empty"
                 >
-                    <span class="block font-medium">
-                        {{ t('chat.empty.messages') }}
-                    </span>
-                    <span class="mt-1 block text-muted-foreground">
-                        {{ t('chat.empty.messages_description') }}
-                    </span>
-                </p>
+                    <EmptyHeader>
+                        <EmptyTitle class="text-sm">
+                            {{ t('chat.empty.messages') }}
+                        </EmptyTitle>
+                        <EmptyDescription>
+                            {{ t('chat.empty.messages_description') }}
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
 
                 <InfiniteScroll
                     v-else-if="props.scrollProp"

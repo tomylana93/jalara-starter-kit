@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
+import {
+    Command,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    provideCommandGroupContext,
+} from '@/components/ui/command';
 import { RECIPIENT_SEARCH_MINIMUM, useChat } from '@/composables/useChat';
 import { getInitials } from '@/composables/useInitials';
 import { useTranslations } from '@/composables/useTranslations';
@@ -13,6 +19,14 @@ const emit = defineEmits<{
 
 const { t } = useTranslations();
 const { searchRecipients } = useChat();
+
+/*
+ * CommandItem injects a group context, and these results sit outside a
+ * CommandGroup: the server has already filtered them, and a group mounted after
+ * the palette's own filter pass would hide them for good. An id-less context
+ * keeps the registry item primitive usable on its own.
+ */
+provideCommandGroupContext({});
 
 const term = ref('');
 const results = ref<ChatProfile[]>([]);
@@ -54,14 +68,20 @@ const select = (recipient: ChatProfile): void => {
 </script>
 
 <template>
-    <div class="space-y-2 p-3">
+    <!--
+        `h-auto` overrides the primitive's `h-full`: this search sits above the
+        conversation list in a flex column, so a full-height root would stretch
+        over the list rather than size to its own contents.
+    -->
+    <Command class="h-auto space-y-2 overflow-visible bg-transparent p-3">
         <label class="sr-only" for="chat-recipient-search">
             {{ t('chat.label.search') }}
         </label>
-        <Input
+        <CommandInput
             id="chat-recipient-search"
             v-model="term"
             type="search"
+            class="h-9"
             :placeholder="t('chat.placeholder.search')"
             data-test="chat-recipient-search"
         />
@@ -89,43 +109,39 @@ const select = (recipient: ChatProfile): void => {
             {{ t('chat.empty.search') }}
         </p>
 
-        <ul
-            v-if="results.length > 0"
-            class="space-y-1"
-            data-test="chat-search-results"
-        >
-            <li v-for="recipient in results" :key="recipient.id">
-                <button
-                    type="button"
-                    class="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent/50"
-                    :data-test="`chat-recipient-${recipient.id}`"
-                    @click="select(recipient)"
-                >
-                    <Avatar class="size-8 shrink-0 rounded-full">
-                        <AvatarImage
-                            v-if="recipient.avatar"
-                            :src="recipient.avatar"
-                            :alt="recipient.name"
-                        />
-                        <AvatarFallback
-                            class="bg-primary/10 text-xs font-semibold text-primary"
-                        >
-                            {{ getInitials(recipient.name) }}
-                        </AvatarFallback>
-                    </Avatar>
-                    <span class="min-w-0 flex-1">
-                        <span class="block truncate text-sm font-medium">
-                            {{ recipient.name }}
-                        </span>
-                        <span
-                            v-if="recipient.role"
-                            class="block truncate text-xs text-muted-foreground"
-                        >
-                            {{ recipient.role }}
-                        </span>
+        <CommandList v-if="results.length > 0" data-test="chat-search-results">
+            <CommandItem
+                v-for="recipient in results"
+                :key="recipient.id"
+                :value="recipient.name"
+                class="cursor-pointer gap-2 rounded-lg px-2 py-2"
+                :data-test="`chat-recipient-${recipient.id}`"
+                @select="select(recipient)"
+            >
+                <Avatar class="size-8 shrink-0 rounded-full">
+                    <AvatarImage
+                        v-if="recipient.avatar"
+                        :src="recipient.avatar"
+                        :alt="recipient.name"
+                    />
+                    <AvatarFallback
+                        class="bg-primary/10 text-xs font-semibold text-primary"
+                    >
+                        {{ getInitials(recipient.name) }}
+                    </AvatarFallback>
+                </Avatar>
+                <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-medium">
+                        {{ recipient.name }}
                     </span>
-                </button>
-            </li>
-        </ul>
-    </div>
+                    <span
+                        v-if="recipient.role"
+                        class="block truncate text-xs text-muted-foreground"
+                    >
+                        {{ recipient.role }}
+                    </span>
+                </span>
+            </CommandItem>
+        </CommandList>
+    </Command>
 </template>

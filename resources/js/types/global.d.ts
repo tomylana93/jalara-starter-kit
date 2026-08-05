@@ -1,8 +1,10 @@
 import type { Primitive as PrimitiveComponent } from 'reka-ui';
+import type { CreatedApiToken } from '@/types/apiTokens';
 import type { Abilities, Auth } from '@/types/auth';
 import type { Branding } from '@/types/branding';
 import type { ChatSharedState } from '@/types/chat';
 import type { NotificationBellState } from '@/types/notifications';
+import type { FlashToast } from '@/types/ui';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -32,6 +34,15 @@ declare module '@inertiajs/core' {
             chat: ChatSharedState;
             sidebarOpen: boolean;
             [key: string]: unknown;
+        };
+
+        /*
+         * Flash is a sibling of `props` on the page object, not a prop, so it
+         * survives exactly one render and never enters history state.
+         */
+        flashDataType: {
+            toast?: FlashToast;
+            createdApiToken?: CreatedApiToken;
         };
     }
 }

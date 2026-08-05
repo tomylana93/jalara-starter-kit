@@ -10,6 +10,20 @@ import { computed } from 'vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from '@/components/ui/empty';
+import {
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemDescription,
+    ItemGroup,
+    ItemTitle,
+} from '@/components/ui/item';
+import {
     Pagination,
     PaginationContent,
     PaginationEllipsis,
@@ -157,70 +171,68 @@ const open = (item: NotificationItem): void => {
                     </Link>
                 </nav>
 
-                <p
+                <Empty
                     v-if="items.length === 0"
-                    class="rounded-xl border border-sidebar-border/70 py-12 text-center"
+                    class="border border-sidebar-border/70"
                     data-test="notification-empty"
                 >
-                    <span class="block font-medium">
-                        {{ t('notification.empty.title') }}
-                    </span>
-                    <span
-                        class="mt-1 block text-sm text-muted-foreground"
-                        data-test="notification-empty-description"
-                    >
-                        {{ t(`notification.empty.${props.filter}`) }}
-                    </span>
-                </p>
+                    <EmptyHeader>
+                        <EmptyTitle>
+                            {{ t('notification.empty.title') }}
+                        </EmptyTitle>
+                        <EmptyDescription
+                            data-test="notification-empty-description"
+                        >
+                            {{ t(`notification.empty.${props.filter}`) }}
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
 
-                <ul v-else class="space-y-2" data-test="notification-list">
-                    <li
+                <ItemGroup v-else class="gap-2" data-test="notification-list">
+                    <Item
                         v-for="item in items"
                         :key="item.id"
-                        class="rounded-xl border border-sidebar-border/70 p-4"
+                        variant="outline"
+                        class="flex-col items-start gap-3 border-sidebar-border/70 sm:flex-row sm:items-start"
                         :data-test="`notification-row-${item.id}`"
                         :data-unread="item.read_at === null ? 'true' : 'false'"
                     >
-                        <div
-                            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-                        >
-                            <div class="min-w-0 space-y-1">
-                                <p class="flex items-center gap-2 font-medium">
-                                    <span
-                                        v-if="item.read_at === null"
-                                        class="size-1.5 shrink-0 rounded-full bg-primary"
-                                        aria-hidden="true"
-                                    ></span>
-                                    {{ item.title }}
-                                </p>
-                                <p class="text-sm text-muted-foreground">
-                                    {{ item.message }}
-                                </p>
-                            </div>
-
-                            <div class="flex shrink-0 items-center gap-2">
-                                <Button
-                                    v-if="item.url !== null"
-                                    variant="outline"
-                                    size="sm"
-                                    :data-test="`notification-open-${item.id}`"
-                                    @click="open(item)"
-                                >
-                                    {{ t('notification.button.open') }}
-                                </Button>
-                                <Button
+                        <ItemContent>
+                            <ItemTitle class="gap-2">
+                                <span
                                     v-if="item.read_at === null"
-                                    variant="ghost"
-                                    size="sm"
-                                    :data-test="`notification-read-${item.id}`"
-                                    @click="markAsRead(item)"
-                                >
-                                    {{ t('notification.button.mark_read') }}
-                                </Button>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
+                                    class="size-1.5 shrink-0 rounded-full bg-primary"
+                                    aria-hidden="true"
+                                ></span>
+                                {{ item.title }}
+                            </ItemTitle>
+                            <ItemDescription>
+                                {{ item.message }}
+                            </ItemDescription>
+                        </ItemContent>
+
+                        <ItemActions>
+                            <Button
+                                v-if="item.url !== null"
+                                variant="outline"
+                                size="sm"
+                                :data-test="`notification-open-${item.id}`"
+                                @click="open(item)"
+                            >
+                                {{ t('notification.button.open') }}
+                            </Button>
+                            <Button
+                                v-if="item.read_at === null"
+                                variant="ghost"
+                                size="sm"
+                                :data-test="`notification-read-${item.id}`"
+                                @click="markAsRead(item)"
+                            >
+                                {{ t('notification.button.mark_read') }}
+                            </Button>
+                        </ItemActions>
+                    </Item>
+                </ItemGroup>
 
                 <div
                     v-if="meta.total > 0"

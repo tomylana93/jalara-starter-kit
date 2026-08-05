@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserStatus;
 use App\Models\User;
 
 use function Pest\Laravel\actingAs;
@@ -24,6 +25,35 @@ it('returns the authenticated user as JSON API', function () {
         'failed_login_attempts',
         'suspended_until',
     ]);
+});
+
+it('accepts a personal access token from a client that has no session', function () {
+    $user = User::factory()->create();
+    $token = $user->createToken('cli')->plainTextToken;
+
+    getJson(route('api.v1.me'), ['Authorization' => "Bearer {$token}"])
+        ->assertOk()
+        ->assertJsonPath('data.id', $user->id);
+});
+
+it('rejects a token whose account was disabled after it was issued', function () {
+    $user = User::factory()->create();
+    $token = $user->createToken('cli')->plainTextToken;
+
+    $user->forceFill(['status' => UserStatus::Disabled])->save();
+
+    getJson(route('api.v1.me'), ['Authorization' => "Bearer {$token}"])
+        ->assertForbidden();
+});
+
+it('rejects a revoked personal access token', function () {
+    $user = User::factory()->create();
+    $token = $user->createToken('cli')->plainTextToken;
+
+    $user->tokens()->delete();
+
+    getJson(route('api.v1.me'), ['Authorization' => "Bearer {$token}"])
+        ->assertUnauthorized();
 });
 
 it('rejects guests', function () {

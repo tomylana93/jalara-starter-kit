@@ -4,7 +4,9 @@ import { config } from '@vue/test-utils';
 import { Primitive } from 'reka-ui';
 import { vi } from 'vitest';
 import { defineComponent, h, reactive } from 'vue';
+import type { CreatedApiToken } from '@/types/apiTokens';
 import type { NotificationItem } from '@/types/notifications';
+import type { FlashToast } from '@/types/ui';
 
 export const formState = {
     errors: {} as Record<string, string>,
@@ -27,6 +29,20 @@ export const resetHttpState = (): void => {
     httpState.submissions = [];
     httpState.cancelled = 0;
     httpState.response = { data: [] };
+};
+
+/**
+ * Flash is a sibling of `props` on the real page object, so a component reading
+ * it must find it in the same place here.
+ */
+export const inertiaPageFlash: {
+    toast?: FlashToast;
+    createdApiToken?: CreatedApiToken;
+} = {};
+
+export const resetInertiaPageFlash = (): void => {
+    delete inertiaPageFlash.toast;
+    delete inertiaPageFlash.createdApiToken;
 };
 
 export const inertiaPageProps = {
@@ -234,6 +250,7 @@ vi.mock('@inertiajs/vue3', async (importOriginal) => {
         },
         usePage: () => ({
             props: inertiaPageProps,
+            flash: inertiaPageFlash,
             get url() {
                 return inertiaPageUrl.value;
             },
@@ -500,6 +517,12 @@ config.global.stubs = {
     },
     AvatarFallback: { template: '<span><slot /></span>' },
 };
+
+/*
+ * jsdom implements no scrolling, so the roving-focus primitives behind
+ * `Command` reject when they move the highlight. The browser always has this.
+ */
+Element.prototype.scrollIntoView = (): void => undefined;
 
 Object.defineProperty(window, 'matchMedia', {
     writable: true,

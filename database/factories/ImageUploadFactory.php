@@ -28,6 +28,12 @@ class ImageUploadFactory extends Factory
             'status' => ImageUploadStatus::Pending,
             'source_path' => ImageUpload::SOURCE_DIRECTORY.'/'.fake()->uuid().'.png',
             'source_mime_type' => 'image/png',
+            'result_path' => null,
+            'result_mime_type' => null,
+            'lock_key' => null,
+            'payload' => null,
+            'error_code' => null,
+            'completed_at' => null,
         ];
     }
 

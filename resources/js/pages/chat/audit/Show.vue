@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import ChatMessageBubble from '@/components/chat/ChatMessageBubble.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { buttonVariants } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader } from '@/components/ui/empty';
 import {
     MessageScroller,
     MessageScrollerButton,
@@ -86,13 +87,17 @@ const nameFor = (senderId: string): string =>
                         </span>
                     </h2>
 
-                    <p
+                    <Empty
                         v-if="props.messages.data.length === 0"
-                        class="rounded-xl border py-10 text-center text-sm"
+                        class="border"
                         data-test="chat-audit-messages-empty"
                     >
-                        {{ t('chat.audit.empty.messages') }}
-                    </p>
+                        <EmptyHeader>
+                            <EmptyDescription>
+                                {{ t('chat.audit.empty.messages') }}
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
 
                     <MessageScrollerProvider
                         v-else
@@ -149,13 +154,17 @@ const nameFor = (senderId: string): string =>
                         {{ t('chat.audit.label.access_log') }}
                     </h2>
 
-                    <p
+                    <Empty
                         v-if="props.auditLogs.data.length === 0"
-                        class="rounded-xl border py-10 text-center text-sm"
+                        class="border"
                         data-test="chat-audit-logs-empty"
                     >
-                        {{ t('chat.audit.empty.logs') }}
-                    </p>
+                        <EmptyHeader>
+                            <EmptyDescription>
+                                {{ t('chat.audit.empty.logs') }}
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
 
                     <InfiniteScroll
                         v-else

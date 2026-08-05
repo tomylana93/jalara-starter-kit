@@ -2,9 +2,13 @@
 import { Eye, EyeOff } from '@lucide/vue';
 import { ref, useTemplateRef } from 'vue';
 import type { HTMLAttributes } from 'vue';
-import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { useTranslations } from '@/composables/useTranslations';
-import { cn } from '@/lib/utils';
 
 defineOptions({ inheritAttrs: false });
 
@@ -23,30 +27,27 @@ defineExpose({
 </script>
 
 <template>
-    <div class="relative">
-        <Input
+    <InputGroup :class="props.class">
+        <InputGroupInput
             ref="inputRef"
             :type="showPassword ? 'text' : 'password'"
-            :class="cn('pr-10', props.class)"
             v-bind="$attrs"
         />
-        <button
-            type="button"
-            @click="showPassword = !showPassword"
-            :class="
-                cn(
-                    'absolute inset-y-0 right-0 flex items-center rounded-r-md px-3 text-muted-foreground hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none',
-                )
-            "
-            :aria-label="
-                showPassword
-                    ? t('common.password.button.hide')
-                    : t('common.password.button.show')
-            "
-            :tabindex="-1"
-        >
-            <EyeOff v-if="showPassword" class="size-4" />
-            <Eye v-else class="size-4" />
-        </button>
-    </div>
+        <InputGroupAddon align="inline-end">
+            <InputGroupButton
+                type="button"
+                size="icon-xs"
+                :aria-label="
+                    showPassword
+                        ? t('common.password.button.hide')
+                        : t('common.password.button.show')
+                "
+                :tabindex="-1"
+                @click="showPassword = !showPassword"
+            >
+                <EyeOff v-if="showPassword" class="size-4" />
+                <Eye v-else class="size-4" />
+            </InputGroupButton>
+        </InputGroupAddon>
+    </InputGroup>
 </template>
