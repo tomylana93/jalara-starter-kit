@@ -150,15 +150,15 @@ const open = (item: NotificationItem): void => {
         <DropdownMenuContent align="end" class="w-80">
             <DropdownMenuLabel class="flex items-center justify-between gap-2">
                 <span>{{ t('notification.bell.title') }}</span>
-                <button
+                <Button
                     v-if="hasUnread"
-                    type="button"
-                    class="cursor-pointer text-xs font-normal text-muted-foreground underline-offset-4 hover:underline"
+                    variant="link"
+                    class="h-auto p-0 text-xs font-normal text-muted-foreground"
                     data-test="notification-mark-all"
                     @click="markAllAsRead"
                 >
                     {{ t('notification.button.mark_all') }}
-                </button>
+                </Button>
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator />

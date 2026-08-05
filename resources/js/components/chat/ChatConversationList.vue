@@ -2,6 +2,12 @@
 import { InfiniteScroll } from '@inertiajs/vue3';
 import ChatConversationRow from '@/components/chat/ChatConversationRow.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from '@/components/ui/empty';
 import { useTranslations } from '@/composables/useTranslations';
 import type { ChatConversation } from '@/types';
 
@@ -34,18 +40,19 @@ const { t } = useTranslations();
 
 <template>
     <div class="flex h-full min-h-0 flex-col">
-        <p
+        <Empty
             v-if="props.conversations.length === 0 && !props.loading"
-            class="px-4 py-10 text-center text-sm"
             data-test="chat-conversations-empty"
         >
-            <span class="block font-medium">
-                {{ t('chat.empty.conversations') }}
-            </span>
-            <span class="mt-1 block text-muted-foreground">
-                {{ t('chat.empty.conversations_description') }}
-            </span>
-        </p>
+            <EmptyHeader>
+                <EmptyTitle class="text-sm">
+                    {{ t('chat.empty.conversations') }}
+                </EmptyTitle>
+                <EmptyDescription>
+                    {{ t('chat.empty.conversations_description') }}
+                </EmptyDescription>
+            </EmptyHeader>
+        </Empty>
 
         <InfiniteScroll
             v-else-if="props.scrollProp"

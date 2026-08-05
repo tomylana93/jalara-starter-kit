@@ -3,6 +3,7 @@ import { Head, InfiniteScroll, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { buttonVariants } from '@/components/ui/button';
+import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index, show } from '@/routes/chat/audit';
@@ -95,17 +96,21 @@ watch(term, (value) => {
                     />
                 </div>
 
-                <p
+                <Empty
                     v-if="rows.length === 0"
-                    class="rounded-xl border py-12 text-center font-medium"
+                    class="border"
                     data-test="chat-audit-empty"
                 >
-                    {{
-                        props.search
-                            ? t('chat.audit.empty.search')
-                            : t('chat.audit.empty.conversations')
-                    }}
-                </p>
+                    <EmptyHeader>
+                        <EmptyTitle>
+                            {{
+                                props.search
+                                    ? t('chat.audit.empty.search')
+                                    : t('chat.audit.empty.conversations')
+                            }}
+                        </EmptyTitle>
+                    </EmptyHeader>
+                </Empty>
 
                 <InfiniteScroll
                     v-else

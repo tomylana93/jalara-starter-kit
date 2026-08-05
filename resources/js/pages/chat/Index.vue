@@ -6,6 +6,7 @@ import ChatPanel from '@/components/chat/ChatPanel.vue';
 import ChatRecipientSearch from '@/components/chat/ChatRecipientSearch.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
+import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { useChat } from '@/composables/useChat';
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { useUploadGuard } from '@/composables/useUploadGuard';
@@ -288,13 +289,11 @@ const seen = (messageId: string): void => {
             :title="t('chat.page.title')"
             :description="t('chat.page.description')"
         >
-            <p
-                v-if="!enabled"
-                class="rounded-xl border py-12 text-center font-medium"
-                data-test="chat-disabled"
-            >
-                {{ t('chat.message.disabled') }}
-            </p>
+            <Empty v-if="!enabled" class="border" data-test="chat-disabled">
+                <EmptyHeader>
+                    <EmptyTitle>{{ t('chat.message.disabled') }}</EmptyTitle>
+                </EmptyHeader>
+            </Empty>
 
             <template v-else>
                 <p

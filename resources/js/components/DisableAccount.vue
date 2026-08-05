@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import { TriangleAlert } from '@lucide/vue';
 import { useTemplateRef } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Account/ProfileController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -30,17 +32,16 @@ const { t } = useTranslations();
             :title="t('account.profile.disable.title')"
             :description="t('account.profile.disable.description')"
         />
-        <div
-            class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
-        >
-            <div class="relative space-y-0.5 text-red-600 dark:text-red-100">
-                <p class="font-medium">
+        <div class="space-y-4">
+            <Alert variant="destructive">
+                <TriangleAlert />
+                <AlertTitle>
                     {{ t('account.profile.disable.label.warning') }}
-                </p>
-                <p class="text-sm">
+                </AlertTitle>
+                <AlertDescription>
                     {{ t('account.profile.disable.warning') }}
-                </p>
-            </div>
+                </AlertDescription>
+            </Alert>
             <Dialog>
                 <DialogTrigger as-child>
                     <Button
