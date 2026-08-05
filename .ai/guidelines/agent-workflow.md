@@ -71,7 +71,8 @@
 - Use the shell for Git and cases not covered by a purpose-built tool. Invoke
   repository-configured development tools through Composer scripts; use direct
   Artisan or package-manager commands only when no repository script exists.
-  Fall back to local inspection when an optional MCP tool is unavailable;
+  Fall back to local inspection when an optional MCP tool is unavailable, and
+  report the limitation only when it affects the result.
 - Avoid repeating equivalent discovery through several tools after an
   authoritative source has answered the question.
 
@@ -123,9 +124,11 @@
   script is mandatory before manual edits; manually address only issues the
   tool leaves unresolved. Type-check, unit-test, build, and E2E failures have no
   general auto-fixer and require focused diagnosis.
-- Keep the CI gate ordered from fast static checks to broader execution:
-  frontend lint, format, types, and unit tests; PHP Rector, Pint, Larastan, and
-  Pest; then the single production build performed by the Playwright command.
+- Keep the fast `composer run ci:check` gate ordered from static checks to
+  broader execution: frontend lint, format, types, and unit tests, followed by
+  PHP Rector, Pint, Larastan, and Pest. Reserve `composer run ci:full` for the
+  full gate, which adds coverage and the single production build performed by
+  the Playwright command.
 - Always run the required `composer run ci:check` final gate. If it exposes a
   failure outside the original task scope, treat that failure as required
   follow-up work: isolate its cause, make the smallest safe fix while
