@@ -107,8 +107,8 @@
 5. Run focused tests first, then the required format, lint, type, or build
    checks for the affected surface.
 6. Review the diff. When the task revealed stable, non-obvious knowledge,
-   record it in the store that matches how it must be found: `record-rule` for
-   a constraint bound to a path, Serena memory for orientation knowledge.
+   classify it with the placement matrix below and record it in the one store
+   that owns it, or in none.
 
 ## Verification Boundaries
 
@@ -142,10 +142,22 @@
 
 ## Durable Knowledge Boundary
 
-Two committed stores hold durable knowledge. They are complementary, not
-alternatives; choose by how the knowledge must be found, and never mirror the
-same rule into both.
+Every durable finding has exactly one canonical destination. Classify it before
+recording it, and never mirror the same knowledge into a second store.
 
+| The finding is                                                            | Destination                    |
+| ------------------------------------------------------------------------- | ------------------------------ |
+| An always-on workflow, routing, or verification rule binding every task    | `.ai/guidelines/`              |
+| A focused procedure worth loading only when its trigger metadata matches   | `.ai/skills/`                  |
+| A stable, non-obvious constraint selectable from an affected file glob     | `.ai/rules/` via `record-rule` |
+| Orientation knowledge needed before paths are known: source maps, invariants | Serena memory                |
+| Visible in the code, tooling-owned, generic framework knowledge, task-local | nowhere                        |
+
+- Tie-break: knowledge already stated in a guideline or enforced by configured
+  tooling is already owned. Do not restate it as a Project Rule or a memory.
+- A Project Rule that would apply regardless of which file is in scope is
+  misfiled; it belongs in a guideline. A memory that only matters once a
+  specific glob is in scope is misfiled; it belongs in `.ai/rules/`.
 - `.ai/rules/` holds path-scoped rules: settled decisions, non-obvious traps,
   and standing constraints that bind whoever edits a given glob. An agent finds
   them by matching the file it is about to touch against `.ai/rules/index.md`.
@@ -169,7 +181,8 @@ same rule into both.
 
 - Read `mem:memory_maintenance` before every memory write.
 - Record durable invariants and discovery shortcuts, not secrets, logs,
-  transient state, obvious facts, or task-local notes.
+  transient state, obvious facts, or task-local notes. A constraint the
+  placement matrix assigns to `.ai/rules/` never also becomes a memory.
 - Keep `mem:core` as the graph root and place focused knowledge in topic
   memories linked with marked `mem:` references.
 - After memory changes, check referential integrity with

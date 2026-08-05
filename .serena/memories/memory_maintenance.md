@@ -27,6 +27,12 @@ Keep guidance durable and generalizable, not task-local.
 Add or update memories only with stable, non-obvious project conventions that avoid complex rediscovery in the future.
 Do not add: quick-read facts; generic language/framework knowledge; one-off task notes; volatile line-level details; behavior likely to change soon.
 
+## Store boundary
+
+Serena memory stores project maps, cross-domain invariants, and discovery shortcuts needed *before* the affected paths are known.
+A stable constraint that can be selected deterministically from an affected file glob belongs exclusively in Laravel Boost Project Rules (`.ai/rules`, written via `record-rule`) and must never be duplicated here.
+Knowledge already stated in a `.ai/guidelines` file or enforced by configured tooling is owned there; do not mirror it into memory.
+
 ## Maintenance Actions
 
 - Renaming memories: References are updated automatically if handled via Serena's memory rename tool.

@@ -5,5 +5,5 @@ paths:
 
 # App
 
-## Run Rector before Pint on PHP changes
-After changing PHP, run `composer run rector` first, then `composer run format:agent`. Rector performs structural refactoring that Pint must format afterwards; doing it in the other order leaves a dirty tree. Never reproduce Rector changes by hand when `rector:check` blocks CI.
+## Model ids are UUIDv7 strings, never int
+All application Eloquent models use UUIDv7 primary keys via the `HasUuids` trait, not auto-increment integers. Any code that type-hints a model's id must use `string`, never `int` — this includes validation rule helpers, route bindings, and action/service signatures.

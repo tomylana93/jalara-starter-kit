@@ -1,14 +1,9 @@
 # Data Table
 
-- `resources/js/components/data-table/` holds the generic, domain-free table
-  (`DataTable.vue`, `DataTableColumnHeader.vue`, `DataTablePagination.vue`,
-  `types.ts`). It must never import a domain type, a domain route, or perform
-  client-side filtering/sorting/pagination.
-- Built on `@tanstack/vue-table` with `manualPagination`, `manualSorting`, and
-  `manualFiltering`. Sorting/pagination state is *controlled*: computed from the
-  server payload, never mutated locally. `onSortingChange`/`onPaginationChange`
-  resolve the updater and emit a single `query-change` carrying the full
-  `TableQuery`; the page owns the visit.
+- `resources/js/components/data-table/` holds the generic table (`DataTable.vue`,
+  `DataTableColumnHeader.vue`, `DataTableFilter.vue`, `DataTablePagination.vue`,
+  `types.ts`). Its domain-free and server-controlled-state constraints are a
+  Project Rule on that glob.
 - The consuming page turns `query-change` into a Wayfinder `router.get` with
   `only: ['users']`, `preserveState`, `preserveScroll`, `replace` — that is what
   parks table state in the URL. Wayfinder `queryParams` drops null, so an absent
@@ -20,10 +15,6 @@
 - `DataTableColumnHeader` takes the structural `SortableColumn` type, not
   `Column<TData, TValue>`: a generic SFC passed through `h()` cannot unify its
   generics and fails type-check.
-- Every emit goes through the `pendingQuery` snapshot, which each emit advances
-  before publishing. Building a query straight from the server props lets two
-  interactions that overlap one round trip discard each other. A search term
-  still awaiting its debounce survives an older response landing.
 - Row selection follows the official shadcn-vue example and lives in the domain
   `columns.ts` as an `id: 'select'` column: `Checkbox` bound to
   `getIsAllPageRowsSelected() || (getIsSomePageRowsSelected() && 'indeterminate')`
