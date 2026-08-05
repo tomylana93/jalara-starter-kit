@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.3.0...v0.4.0) (2026-08-05)
+
+
+### Features
+
+* add scheduled backups, editor context menu, and navigation improvements ([2b42fe5](https://github.com/tomylana93/jalara-starter-kit/commit/2b42fe50a6871d6b29eda9e9213b29c513fc2359))
+* **backups:** add scheduled database and media backups ([3fb0d4d](https://github.com/tomylana93/jalara-starter-kit/commit/3fb0d4df3899377bd5766bf70435b64c48b6674e))
+* **editor:** reach every toolbar action from a context menu ([8ec2137](https://github.com/tomylana93/jalara-starter-kit/commit/8ec2137167dd338659df3f99251f406bfa84a864))
+* **navigation:** give global search an input-shaped desktop trigger ([52f4986](https://github.com/tomylana93/jalara-starter-kit/commit/52f4986eee3393b3430a655f8e0de622bf6a9991))
+* **navigation:** group the header menu and restore the footer tooltip ([dfb0959](https://github.com/tomylana93/jalara-starter-kit/commit/dfb0959f42a3722b33e0c0d65109ca257c749701))
+
+
+### Bug Fixes
+
+* **documentation:** stretch the editor selects to the full field width ([2ef0d42](https://github.com/tomylana93/jalara-starter-kit/commit/2ef0d423c268f3a3228a102bb5827624e2502fc3))
+* **navigation:** keep long breadcrumbs on one line on mobile ([491219d](https://github.com/tomylana93/jalara-starter-kit/commit/491219dbe1e7acb8fc073dab022ba4427cfc7115))
+
 ## [0.3.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.2.0...v0.3.0) (2026-08-04)
 
 
