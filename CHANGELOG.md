@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.4.1...v1.0.0) (2026-08-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **models:** strict models are enabled outside production. An application built on this kit whose factories do not set every column will now see a `MissingAttributeException` where an unset column previously read as null. The fix is to name the column in `definition()` with an explicit null; see `.ai/rules/factories.md`.
+
+### Features
+
+* **api:** authenticate the versioned API with Sanctum tokens ([a737a39](https://github.com/tomylana93/jalara-starter-kit/commit/a737a3971b08e74d05deaff833c6ccbfaf20b88a))
+* **models:** enable strict Eloquent models outside production ([71c3c27](https://github.com/tomylana93/jalara-starter-kit/commit/71c3c27bea452288f3f5f9e7602ef20c1ea16db2))
+
+
+### Bug Fixes
+
+* **e2e:** force fill the chat peer's verification timestamp ([61e332a](https://github.com/tomylana93/jalara-starter-kit/commit/61e332ae21efebcc465ede42c21e76b1ffc447f5))
+* **ui:** restore the explicit button type on the notification mark-all control ([a6329f6](https://github.com/tomylana93/jalara-starter-kit/commit/a6329f6ab3f4b17154d5b1bc963528b16b3cbe15))
+
 ## [0.4.1](https://github.com/tomylana93/jalara-starter-kit/compare/v0.4.0...v0.4.1) (2026-08-05)
 
 
