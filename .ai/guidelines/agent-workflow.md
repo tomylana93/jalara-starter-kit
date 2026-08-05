@@ -108,27 +108,31 @@
 
 ## Verification Boundaries
 
-- After changing PHP, run Rector before Pint: use `composer run rector` for
-  automated structural refactoring, then `composer run format:agent` to format
-  the resulting dirty files with agent-readable output. Reserve
-  `composer run lint` for an explicitly requested repository-wide formatting
-  pass.
-- Rector scripts must use JSON output without a progress bar. If
-  `composer run rector:check` blocks CI by reporting transformable code, run
-  `composer run rector` as the required first fix; do not reproduce Rector's
-  changes manually. Then run `composer run format:agent`, recheck Rector and
-  Pint, and rerun the full gate.
+- Run `composer run fix` before the gate whenever the task touched PHP or
+  frontend sources. It applies Rector, formats the dirty PHP with Pint's
+  agent-readable output, then runs the ESLint and Prettier auto-fixes in that
+  order. This is mandatory, not optional: Rector is no longer part of any CI
+  gate, so nothing downstream will catch code it would have transformed.
+- Never reproduce Rector's changes by hand. `composer run rector` is the fix;
+  `composer run rector:check` is the read-only inspection. Rector scripts must
+  use JSON output without a progress bar. Run Rector non-dry-run whenever
+  possible: `--dry-run` leaves the result cache barely populated, so a suite of
+  dry runs stays an order of magnitude slower than one real run.
+- Reserve `composer run lint` for an explicitly requested repository-wide
+  formatting pass.
 - For frontend auto-fixes, run `pnpm run lint` before `pnpm run format` because
   ESLint may change source structure and Prettier should normalize the final
   output. If `lint:check` or `format:check` blocks CI, the matching auto-fix
   script is mandatory before manual edits; manually address only issues the
   tool leaves unresolved. Type-check, unit-test, build, and E2E failures have no
   general auto-fixer and require focused diagnosis.
-- Keep the fast `composer run ci:check` gate ordered from static checks to
-  broader execution: frontend lint, format, types, and unit tests, followed by
-  PHP Rector, Pint, Larastan, and Pest. Reserve `composer run ci:full` for the
-  full gate, which adds coverage and the single production build performed by
-  the Playwright command.
+- The gate is composed from one script per CI job, so the local command runs
+  the same set as CI: `ci:static` (frontend lint, format, types, then
+  `config:clear`, Pint, Larastan), `ci:vitest`, `ci:pest`, `ci:pest:coverage`,
+  and `ci:e2e`. `composer run ci:check` is `ci:static`, `ci:vitest`, `ci:pest`;
+  `composer run ci:full` swaps in coverage and adds the Playwright suite with
+  its single production build. Change a gate by changing the job script, never
+  by editing one aggregate in isolation.
 - Always run the required `composer run ci:check` final gate. If it exposes a
   failure outside the original task scope, treat that failure as required
   follow-up work: isolate its cause, make the smallest safe fix while

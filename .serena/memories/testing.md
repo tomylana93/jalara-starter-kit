@@ -5,7 +5,8 @@
 - Playwright Test owns only critical cross-stack Chromium flows. E2E proves wiring and representative user journeys; authorization, persistence edge cases, validation detail, and permission matrices stay in Pest Feature tests.
 - Keep one canonical test per behavior and do not duplicate backend contracts across Pest and Playwright.
 - Tests only guard application behavior or build artifacts the running application consumes. Do not test development tooling, agent/skill infrastructure, Composer/CI wiring, README/LICENSE content, or dev-only dependency registration; those surfaces are proven by the command that owns them (`composer run ci:check`, the linters, the agent-context generator), not by a Pest assertion.
-- Coverage is enforced at 80% via `composer run coverage:check`, which runs only inside the full gate (`composer run ci:full`); the fast gate runs Pest without coverage. GitHub CI loads PCOV; dependency advisories are part of both gates.
+- Coverage is enforced at 80% via `composer run coverage:check`, reached through `ci:pest:coverage` and run only inside the full gate (`composer run ci:full`); the fast gate runs Pest without coverage.
+- Vitest keeps per-file isolation on purpose. `isolate: false` tears down the jsdom globals after the first file in a worker, so later files fail with `document is not defined`, and `resources/js/test/setup.ts` exposes mutable module state (`inertiaPageProps`, `formState`, `httpState`, `echoState`, `inertiaClientState`) with no global reset hook. `pool: 'threads'` is safe and is the configured pool. GitHub CI loads PCOV; dependency advisories are part of both gates.
 - Prefer stable public outcomes over collaborator wiring, internal call sequences, or class-shape assertions.
 - `laravel/pao` must stay at `>= 1.1.3`. PAO 1.1.2 repeated Collision's
   `--no-output` flag, so `php artisan test` exited 1 while reporting

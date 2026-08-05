@@ -18,6 +18,13 @@ export default defineConfig({
     },
     test: {
         environment: 'jsdom',
+        /*
+         * Worker threads start faster than forked processes, and the suite
+         * needs no process-level isolation: `isolate` stays on because jsdom
+         * globals are torn down per file and shared setup state would leak
+         * without it.
+         */
+        pool: 'threads',
         setupFiles: ['./resources/js/test/setup.ts'],
         include: ['resources/js/**/*.test.ts', 'vite/**/*.test.ts'],
         exclude: ['e2e/**'],

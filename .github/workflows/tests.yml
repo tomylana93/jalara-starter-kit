@@ -35,17 +35,18 @@ env:
   RUN_FULL: ${{ (github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}
 
 jobs:
+  # The gate is split into independent jobs so the slowest one, rather than
+  # their sum, sets the wall time. `composer.json` keeps one script per job and
+  # composes them into `ci:check` and `ci:full`, so the local gate provably runs
+  # the same set as CI.
+  #
   # `edited` fires on title, body, and base branch changes. Only the commit
   # contract job has anything to say about those, so the expensive jobs opt out.
-  ci:
+  static:
+    name: static analysis
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
-    # Sized against a bad day, not against the gate. The gate itself runs in
-    # about four minutes, but a single cache miss on the Playwright browsers
-    # once pushed a legitimate run to 887s — thirteen seconds short of a
-    # fifteen-minute limit. A timeout that fires on a slow download reads as a
-    # broken test suite and, on `main`, silently stops releases.
-    timeout-minutes: 20
+    timeout-minutes: 15
     env:
       APP_ENV: testing
       DB_DATABASE: ':memory:'
@@ -65,32 +66,105 @@ jobs:
           # dependency explicit rather than relying on the runner's defaults.
           extensions: zip
           tools: composer:v2
-          coverage: pcov
+          coverage: none
+
+      # pnpm has to exist before `setup-node`, which shells out to it to locate
+      # the store it caches.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
+          cache: 'pnpm'
+
+      # Only the download cache is stored, never `vendor/`. The install still
+      # runs, so Composer's platform checks keep validating the tree; a stale or
+      # corrupt cache can make a run slow, never wrong.
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      # PHPStan keeps a result cache that would otherwise land in the runner's
+      # always-empty temporary directory. The key carries `composer.lock` and
+      # the tool configuration, so a version or rule change produces a cold
+      # cache rather than letting a stale one pass code the check should flag.
+      #
+      # The commit is appended so every run saves a freshened entry. Without it
+      # a hit on the primary key ends in `not saving cache`, and the stored
+      # result set stays frozen at whatever the first run after a dependency
+      # bump produced.
+      - name: Cache the static analysis results
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache
+          key: ${{ runner.os }}-php8.5-analysis-${{ hashFiles('composer.lock', 'phpstan.neon') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-analysis-${{ hashFiles('composer.lock', 'phpstan.neon') }}-
+            ${{ runner.os }}-php8.5-analysis-
+
+      - name: Setup Application
+        run: composer run ci:setup
+
+      # ESLint, Prettier, and vue-tsc all read the generated route and action
+      # modules, which are gitignored.
+      - name: Generate Wayfinder routes
+        run: php artisan wayfinder:generate --with-form --no-interaction
+
+      - name: Run the static checks
+        run: composer run ci:static
+
+  vitest:
+    name: vitest
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # PHP is not optional here: the Vue components under test import the
+      # gitignored Wayfinder modules, which only Artisan can generate.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: '11'
 
-      # Rector and PHPStan are the two most expensive stages of both gates and
-      # both keep a result cache. Left unconfigured they write to the runner's
-      # temporary directory, which is always empty, so every run reanalyses the
-      # whole tree. The key carries `composer.lock` and both tool configs: any
-      # rule set, tool version, or configuration change produces a new key and a
-      # cold cache, which is what keeps a stale cache from passing code the
-      # checks should have flagged.
-      - name: Cache the static analysis results
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Cache the Composer downloads
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .cache
-          key: ${{ runner.os }}-php8.5-analysis-${{ hashFiles('composer.lock', 'rector.php', 'phpstan.neon') }}
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php8.5-analysis-
+            ${{ runner.os }}-php8.5-composer-
 
       - name: Setup Application
         run: composer run ci:setup
@@ -98,27 +172,130 @@ jobs:
       - name: Generate Wayfinder routes
         run: php artisan wayfinder:generate --with-form --no-interaction
 
-      # Only the full gate runs Playwright, so this stays out of the routine
-      # feedback loop.
-      #
+      - name: Run the Vitest suite
+        run: composer run ci:vitest
+
+  # `Tests\TestCase` calls `withoutVite()`, so nothing in the Pest suite reads a
+  # built asset. That makes this the one job with no Node toolchain at all.
+  pest:
+    name: pest
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          # Only the full tier measures coverage, but the driver is cheap to
+          # install and keeping one PHP setup avoids a second expression.
+          coverage: pcov
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      # Pest runs once per tier: plain on the fast one, with coverage on the
+      # full one. A step-level `if` can read the workflow `env` that a
+      # job-level one cannot.
+      - name: Run the Pest suite
+        if: env.RUN_FULL != 'true'
+        run: composer run ci:pest
+
+      - name: Run the Pest suite with coverage
+        if: env.RUN_FULL == 'true'
+        run: composer run ci:pest:coverage
+
+  # Only the full gate runs Playwright, so it stays out of the routine feedback
+  # loop. The tiering expression is repeated here because a job-level `if`
+  # cannot read `env`.
+  e2e:
+    name: end-to-end
+    if: >-
+      github.event.action != 'edited' &&
+      ((github.event_name == 'push' && github.ref_name == 'main') ||
+       (github.event_name == 'pull_request' && github.event.pull_request.draft == false))
+    runs-on: ubuntu-latest
+    # Sized against a bad day, not against the gate. A single cache miss on the
+    # Playwright browsers once pushed a legitimate run to 887s — thirteen
+    # seconds short of a fifteen-minute limit. A timeout that fires on a slow
+    # download reads as a broken test suite and, on `main`, silently stops
+    # releases.
+    timeout-minutes: 20
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: '11'
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup
+
       # Deliberately uncached. `~/.cache/ms-playwright` was cached here and
       # measured on `main`: 22s with a cold cache, 22s with a warm one, plus 5s
       # to restore 269 MB. Almost all of the time is `--with-deps` installing
-      # system libraries through apt, which no cache covers; the browser download
-      # it does skip is the cheap part. Dropping `--with-deps` would make a cache
-      # worth having, but it bets on which libraries the runner image happens to
-      # ship and fails as an unexplained Chromium crash.
+      # system libraries through apt, which no cache covers; the browser
+      # download it does skip is the cheap part. Dropping `--with-deps` would
+      # make a cache worth having, but it bets on which libraries the runner
+      # image happens to ship and fails as an unexplained Chromium crash.
       - name: Install Chromium
-        if: env.RUN_FULL == 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run the fast CI gate
-        if: env.RUN_FULL != 'true'
-        run: composer run ci:check
-
-      - name: Run the full CI gate
-        if: env.RUN_FULL == 'true'
-        run: composer run ci:full
+      # `e2e/run-tests.sh` performs the single production build the suite needs,
+      # which regenerates the Wayfinder modules through the Vite plugin.
+      - name: Run the end-to-end suite
+        run: composer run ci:e2e
 
   # Validates the Conventional Commit contract that Release Please reads to
   # derive the next version and the changelog. Merge commits are exempt: the
