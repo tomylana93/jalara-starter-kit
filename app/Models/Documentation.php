@@ -6,6 +6,7 @@ use App\Enums\DocumentationStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\DocumentationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,12 +43,12 @@ class Documentation extends Model
     }
 
     /**
-     * @param  Builder<Documentation>  $query
-     * @return Builder<Documentation>
+     * @param  Builder<$this>  $query
      */
-    protected function scopePublished(Builder $query): Builder
+    #[Scope]
+    protected function published(Builder $query): void
     {
-        return $query->where('status', DocumentationStatus::Published);
+        $query->where('status', DocumentationStatus::Published);
     }
 
     public function getRouteKeyName(): string
