@@ -75,15 +75,6 @@
 - Avoid repeating equivalent discovery through several tools after an
   authoritative source has answered the question.
 
-## MCP Tool Usage and Error Mitigation
-
-- **Validation Error Mitigation (call_mcp_tool & mcp_ prefixes)**:
-  - If `call_mcp_tool` is not in the declared tools schema for the current session (such as in some client-Gemini sessions), do NOT attempt to use it or direct eager tools (e.g. `mcp_serena_execute_shell_command`).
-  - When `call_mcp_tool` is unavailable, fall back cleanly to native tools (`run_command` for terminal commands, `grep_search` / `view_file` for exploration, and `replace_file_content` / `multi_replace_file_content` for edits) instead of failing.
-- **Artifact Path Verification**:
-  - Never specify `ArtifactMetadata` when writing or editing repository code files (e.g., PHP, JS, Vue, CSS files) using `write_to_file`.
-  - Only specify `ArtifactMetadata` when explicitly creating or editing user-facing reports, analysis documents, or checklists inside the designated conversation brain directory (e.g. `/home/tomylana93/.gemini/antigravity-cli/brain/<conversation-id>/`).
-
 ## Skills
 
 - Discover the available skill catalog at runtime. Never maintain a static list
