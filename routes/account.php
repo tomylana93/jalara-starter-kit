@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\ApiTokenController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\SecurityController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
@@ -25,4 +26,8 @@ Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->gr
     Route::put('password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('password.update');
+
+    Route::get('api-tokens', [ApiTokenController::class, 'index'])->name('api-tokens.index');
+    Route::post('api-tokens', [ApiTokenController::class, 'store'])->name('api-tokens.store');
+    Route::delete('api-tokens/{token}', [ApiTokenController::class, 'destroy'])->name('api-tokens.destroy');
 });

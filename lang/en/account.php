@@ -8,6 +8,7 @@ return [
         'label' => [
             'profile' => 'Profile',
             'security' => 'Security',
+            'api_tokens' => 'API tokens',
         ],
     ],
 
@@ -75,6 +76,40 @@ return [
             'must_change_password_title' => 'Password change required',
             'must_change_password' => 'Set a new password before continuing to the application.',
         ],
+    ],
+
+    'api_token' => [
+        'title' => 'API tokens',
+        'description' => 'Issue tokens that authenticate API requests from clients without a browser session',
+        'label' => [
+            'name' => 'Token name',
+            'created' => 'Created',
+            'last_used' => 'Last used',
+            'never_used' => 'Never used',
+            'plain_text' => 'New token',
+        ],
+        'placeholder' => [
+            'name' => 'Laptop, deploy bot, mobile app',
+        ],
+        'button' => [
+            'create' => 'Create token',
+            'revoke' => 'Revoke',
+            'copy' => 'Copy',
+            'copied' => 'Copied',
+            'cancel' => 'Cancel',
+            'dismiss' => 'Done',
+        ],
+        'message' => [
+            'created' => 'Token created.',
+            'revoked' => 'Token revoked.',
+            'copy_once' => 'This is the only time the token is shown. Copy it before leaving the page.',
+        ],
+        'empty' => [
+            'title' => 'No tokens yet',
+            'description' => 'A token authenticates API requests without a browser session.',
+        ],
+        'confirmation_title' => 'Revoke this token?',
+        'confirmation_description' => 'Any client using this token loses access immediately. This cannot be undone.',
     ],
 
     'appearance' => [

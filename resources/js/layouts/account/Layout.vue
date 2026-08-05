@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { useTranslations } from '@/composables/useTranslations';
 import { toUrl } from '@/lib/utils';
+import { index as apiTokens } from '@/routes/account/api-tokens';
 import { edit as editProfile } from '@/routes/account/profile';
 import { edit as editSecurity } from '@/routes/account/security';
 import type { NavItem } from '@/types';
@@ -21,6 +22,10 @@ const sidebarNavItems = computed<NavItem[]>(() => [
     {
         title: t('account.layout.label.security'),
         href: editSecurity(),
+    },
+    {
+        title: t('account.layout.label.api_tokens'),
+        href: apiTokens(),
     },
 ]);
 </script>
