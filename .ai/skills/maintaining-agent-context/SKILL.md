@@ -15,6 +15,11 @@ regenerate.
 - Treat `.ai/guidelines/` and `.ai/skills/` as the custom Boost sources.
   Treat `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/` as
   generated outputs.
+- Treat `.ai/rules/` as a third, tool-owned store: committed, path-scoped rules
+  written only through the `record-rule` MCP tool, which owns file placement,
+  frontmatter, and `index.md`. It is neither a Boost source you hand-author nor
+  a generated output you regenerate, so leave it untouched by
+  `composer run agents:update` and never edit it by hand.
 - Change generated outputs only through
   `composer run agents:update`; do not patch them independently.
 - Invoke dependency-backed repository tooling through Composer scripts. Add or

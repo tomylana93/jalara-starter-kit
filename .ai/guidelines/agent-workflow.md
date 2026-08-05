@@ -100,6 +100,8 @@
 ## Task Loop
 
 1. Ground the task in repository state, relevant memories, and nearby code.
+   Once the affected paths are known, read every `.ai/rules` file whose globs
+   cover them.
 2. Retrieve version-specific documentation before making framework-sensitive
    changes.
 3. Make the smallest coherent change using existing project patterns.
@@ -108,8 +110,9 @@
    experiment; otherwise label it as an unverified hypothesis.
 5. Run focused tests first, then the required format, lint, type, or build
    checks for the affected surface.
-6. Review the diff and update Serena memory only when the task revealed stable,
-   non-obvious project knowledge.
+6. Review the diff. When the task revealed stable, non-obvious knowledge,
+   record it in the store that matches how it must be found: `record-rule` for
+   a constraint bound to a path, Serena memory for orientation knowledge.
 
 ## Verification Boundaries
 
@@ -138,6 +141,31 @@
   preserving unrelated user changes, rerun the focused check, and continue
   until the full gate passes. Stop only when the fix requires user approval,
   destructive action, external coordination, or another unavailable authority.
+
+## Durable Knowledge Boundary
+
+Two committed stores hold durable knowledge. They are complementary, not
+alternatives; choose by how the knowledge must be found, and never mirror the
+same rule into both.
+
+- `.ai/rules/` holds path-scoped rules: settled decisions, non-obvious traps,
+  and standing constraints that bind whoever edits a given glob. An agent finds
+  them by matching the file it is about to touch against `.ai/rules/index.md`.
+- Serena memory holds the project knowledge graph: source maps, domain
+  invariants, and discovery shortcuts that orient an agent before it knows
+  which files are in scope. An agent finds them by traversing `mem:` references
+  from `mem:core`.
+- Boost's generated instruction to always prefer `record-rule` over "native
+  memory" targets personal, session-scoped assistant memory. It does not apply
+  to Serena memory here, which is committed under `.serena/memories/` and
+  shared with the team. Both stores are in the repository and both are
+  authoritative.
+- Write a rule with the `record-rule` tool, never by hand: it owns file
+  placement, frontmatter, and the index. Pass a `glob`, a short `title`, and a
+  few-line `note`.
+- Path-scoped framework guidance under `.ai/rules/boost` is not in use;
+  `boost.rules.scoped_guidelines` stays disabled, so package guidelines remain
+  inline in the generated agent files. Do not expect that directory to exist.
 
 ## Memory Discipline
 
