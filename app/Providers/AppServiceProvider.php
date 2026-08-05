@@ -7,6 +7,7 @@ use App\Settings\AuthenticationSettings;
 use App\Settings\SettingsResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -95,6 +96,16 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        /*
+         * Strict models outside production. `preventAccessingMissingAttributes`
+         * is the demanding half: a model hydrated without a column throws on
+         * access rather than reporting null, so `#[Appends]` accessors reading
+         * a column a factory never set fail loudly instead of at serialization
+         * time in a consumer's browser. `FactoryCoverageTest` holds the other
+         * end of that contract.
+         */
+        Model::shouldBeStrict(! app()->isProduction());
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
