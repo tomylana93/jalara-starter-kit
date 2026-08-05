@@ -33,9 +33,27 @@ A professional and production-ready Laravel application starter kit. Jalara prov
 - **Localization**: Multi-language support for English and Indonesian with a runtime-configurable default locale.
 - **Typed Inertia/Vue Frontend**: Seamless SPA architecture combining Vue 3 and Inertia.js 3, powered by Laravel Wayfinder for end-to-end type-safe routing.
 
-## Installation
+## Prerequisites
 
-Jalara installs as a community starter kit through the [Laravel installer](https://laravel.com/docs/installation) (version 5.31 or newer). This is the supported command:
+Before setting up Jalara Starter Kit, ensure your environment meets the following requirements:
+
+### System Prerequisites
+- **PHP**: `^8.5` (Composer dependencies require this version)
+- **Composer**: `^2.0`
+- **Node.js**: Version `^24.x` recommended
+- **pnpm**: `^11.0` (pinned via `pnpm-lock.yaml`)
+- **Database**: SQLite (recommended for local development), MySQL, MariaDB, or PostgreSQL
+- **Laravel Installer**: `^5.31`
+
+### Agent & MCP Prerequisites (for AI-assisted development)
+- **Laravel Boost MCP**: Version `^2.0` for framework context, database query execution, and schemas
+- **Serena MCP**: For semantic search, precise code refactoring, and code memories
+- **Context7 MCP**: For non-Laravel library documentation queries
+- **shadcn MCP**: For searching and managing shadcn-vue components
+
+## Installation & Quick Start
+
+Jalara installs as a community starter kit through the [Laravel installer](https://laravel.com/docs/installation) (version 5.31 or newer). Run the following command:
 
 ```bash
 laravel new my-app \
@@ -46,87 +64,13 @@ laravel new my-app \
   --no-interaction
 ```
 
-The installer clones the starter kit, installs the Composer dependencies, writes `.env`, generates the application key, runs the Jalara installer hooks, configures and migrates the database, and finally installs and builds the frontend with pnpm.
-
-**Required — dropping either of these produces a different application:**
-
-- `--pnpm` — Jalara is locked with `pnpm-lock.yaml`, and its Composer scripts call `pnpm`. The installer deletes the lock files of every package manager it was not told to use, so any other choice discards Jalara's locked frontend dependency graph. Without an explicit package manager the installer also skips the dependency install and asset build entirely.
-- `--no-interaction` — an interactive install treats the starter kit as a bare Laravel skeleton and reinstalls the test suite over it (`pest --init` and `pest --drift` rewrite `tests/Pest.php` and the existing tests, and the accompanying unpinned `composer update` ignores the committed lock). Jalara already ships Pest 5 with a configured test suite, so this step must not run.
-
-**Defensive — redundant today, kept for explicitness:**
-
-- `--no-boost` — Jalara already depends on Laravel Boost and keeps its own curated configuration in `boost.json` and `.ai/`, with the generated agent guidelines refreshed through `composer run agents:update`. Laravel installer 5.31 only selects Boost while prompting, so `--no-interaction` already skips the step; `--no-boost` states the intent outright and keeps it skipped if that default ever changes. Boost remains installed in the resulting application either way.
-
-**Choice:**
-
-- `--database=` — SQLite needs no further configuration. MySQL, MariaDB, and PostgreSQL are also supported; note that production refuses to run on SQLite.
-
-To skip the frontend install and build, replace `--pnpm` with `--no-node` and run `pnpm install && pnpm run build` yourself afterwards.
-
-If you clone the repository instead of installing it, run the equivalent setup yourself:
-
-```bash
-composer run setup
-```
-
-### Creating the Super Admin
-
-Jalara ships without any user. The super admin is created from environment-backed credentials so nothing secret is committed or seeded. After installation, set the credentials in `.env`:
-
-```dotenv
-SUPER_ADMIN_NAME="Super Admin"
-SUPER_ADMIN_EMAIL=admin@example.com
-SUPER_ADMIN_PASSWORD=
-```
-
-Then create the user and synchronize the authorization catalog:
-
-```bash
-php artisan auth:init-superadmin
-```
-
-The command is idempotent: it restores the protected super admin and re-applies its role on every run, and `--reset-password` re-applies the configured password. Public registration stays disabled; further users are provisioned from the application's user management.
-
-### Starting Development
+After installation, set up the development server:
 
 ```bash
 composer run dev
 ```
 
-### Operational Requirements
-
-To support asynchronous tasks, real-time features, and file storage, Jalara requires the following services and processes:
-
-1. **Task Scheduler**: Periodic tasks and cleanup operations must be scheduled.
-   - **Production**: Configure a cron entry on your server to run every minute:
-     ```cron
-     * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
-     ```
-   - **Local Development**: You may optionally run the scheduler in the foreground:
-     ```bash
-     php artisan schedule:work
-     ```
-
-2. **Queue Worker**: Asynchronous background tasks (such as notifications and image processing) run via queue workers.
-   - **Production**: Run `php artisan queue:work` as a long-running process managed by a process monitor (e.g., Supervisor or systemd) to ensure it restarts automatically if it fails.
-   - **Local Development**: Run the worker in the foreground:
-     ```bash
-     php artisan queue:work
-     ```
-
-3. **Real-time Broadcasting (Laravel Reverb)**: Chat features and live updates are driven by WebSockets.
-   - **Production**: Run `php artisan reverb:start` as a long-running process managed by a process monitor (e.g., Supervisor or systemd) to keep the WebSockets server active.
-   - **Local Development**: Start the server in the foreground:
-     ```bash
-     php artisan reverb:start
-     ```
-
-4. **Storage Link**: Uploaded files and brand assets are served publicly.
-   - Supported installation paths (the Laravel installer and `composer run setup`) automatically link the public directory.
-   - Manual execution is only required for custom deployments or if the link is missing:
-     ```bash
-     php artisan storage:link
-     ```
+For detailed explanations of the installation flags, how to configure the environment, setup the Super Admin, or run background processes (scheduler, queue, broadcasting), see the [Setup & Technical Documentation](docs/setup.md).
 
 ## Technology Stack
 
@@ -160,38 +104,7 @@ To maintain code standards, we utilize:
 
 ## Contributing & Releases
 
-The full conventions live in [`.ai/guidelines/release-workflow.md`](.ai/guidelines/release-workflow.md); the summary below is what a contributor needs day to day.
-
-### Branching and CI
-
-Work happens on `dev`, and `main` receives it through a pull request that is merged with a merge commit.
-
-Continuous integration is tiered so routine feedback stays fast:
-
-| Context | Gate | Contents |
-| --- | --- | --- |
-| Draft pull request, push to an ordinary branch | `composer run ci:check` | Frontend lint, format, types, and Vitest; PHP Rector, Pint, Larastan, and Pest |
-| Ready pull request, push to `main` | `composer run ci:full` | Everything above plus 80% coverage enforcement and the Playwright journeys (the public starter-kit installer check runs in parallel on GitHub Actions) |
-
-Both commands run locally too. Superseded runs for the same branch or pull request are cancelled automatically.
-
-### Commit and pull-request conventions
-
-Every non-merge commit and every pull-request title uses an English Conventional Commit with an optional scope — `<type>(<optional scope>): <description>` — using one of `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, or `revert`. English is mandatory authoring guidance; CI programmatically validates Conventional Commit structure, allowed types, and scopes, not natural-language detection. Merge commits are exempt, and a CI job enforces the rest. Release Please reads these messages to decide the next version and to write the changelog.
-
-Pull-request descriptions contain three sections: **Summary**, **Testing**, and **Release impact**.
-
-### Releases
-
-Releases are automated with [Release Please](https://github.com/googleapis/release-please). It targets `main`, runs only after the full gate has succeeded there, starts at `0.1.0`, and follows standard SemVer. It maintains `CHANGELOG.md`, the version manifest, the Git tag, the GitHub Release, and `version.json` — the runtime version the application footer renders as `v<version>`.
-
-Publishing a release means merging the release pull request that Release Please opens.
-
-Release automation is opt-in, so a fork or private descendant stays silent until it is enabled:
-
-1. Create a fine-grained personal access token scoped to the repository with **Contents**, **Pull requests**, and **Issues** read/write access.
-2. Add it as the repository secret `RELEASE_PLEASE_TOKEN`.
-3. Add the repository variable `RELEASE_ENABLED` with the value `true`.
+Guidelines for branching, tiered CI checks, commit conventions, and release automation are documented in the [Contributing & Releases Guidelines](CONTRIBUTING.md).
 
 ## License
 
