@@ -108,14 +108,14 @@ describe('GlobalSearch', () => {
         await vi.advanceTimersByTimeAsync(300);
         expect(httpState.submissions).toHaveLength(0);
 
-        await input.setValue('akun');
+        await input.setValue('account');
         await vi.advanceTimersByTimeAsync(249);
         expect(httpState.submissions).toHaveLength(0);
         await vi.advanceTimersByTimeAsync(1);
         await flushPromises();
 
         expect(httpState.submissions).toHaveLength(1);
-        expect(httpState.submissions[0]?.data).toEqual({ query: 'akun' });
+        expect(httpState.submissions[0]?.data).toEqual({ query: 'account' });
         expect(httpState.submissions[0]?.href).toMatchObject({
             url: '/documentation/search',
             method: 'get',
@@ -126,12 +126,12 @@ describe('GlobalSearch', () => {
         const wrapper = mountSearch();
         const input = await openPalette(wrapper);
 
-        await input.setValue('akun');
+        await input.setValue('account');
         await vi.advanceTimersByTimeAsync(250);
         await flushPromises();
         const cancelledBefore = httpState.cancelled;
 
-        await input.setValue('akun baru');
+        await input.setValue('account setup');
 
         expect(httpState.cancelled).toBeGreaterThan(cancelledBefore);
     });

@@ -13,7 +13,13 @@ return [
             'security' => 'Keamanan',
             'branding' => 'Branding',
             'chat' => 'Chat',
+            'backups' => 'Backup',
         ],
+    ],
+
+    'backup' => [
+        'title' => 'Backup',
+        'description' => 'Arsip database dan media terjadwal',
     ],
 
     'general' => [

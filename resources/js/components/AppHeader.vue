@@ -6,6 +6,7 @@ import AppearanceToggle from '@/components/AppearanceToggle.vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppMobileNavigation from '@/components/AppMobileNavigation.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import GlobalSearchTrigger from '@/components/GlobalSearchTrigger.vue';
 import NotificationBell from '@/components/NotificationBell.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -16,8 +17,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     NavigationMenu,
+    NavigationMenuContent,
     NavigationMenuItem,
+    NavigationMenuLink,
     NavigationMenuList,
+    NavigationMenuTrigger,
     navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import {
@@ -28,6 +32,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import UserMenuContent from '@/components/UserMenuContent.vue';
+import type { AppNavigationGroup } from '@/composables/useAppNavigation';
 import { useAppNavigation } from '@/composables/useAppNavigation';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
@@ -46,11 +51,13 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const mobileNavigationOpen = ref(false);
-const { mainItems } = useAppNavigation();
+const { mainGroups, footerItems } = useAppNavigation();
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 const { t } = useTranslations();
 
 const activeItemStyles = 'bg-accent text-accent-foreground';
+const isGroupActive = (group: AppNavigationGroup): boolean =>
+    group.items.some((item) => isCurrentUrl(item.href));
 const openGlobalSearch = (): void => {
     window.dispatchEvent(new CustomEvent('open-global-search'));
 };
@@ -95,33 +102,91 @@ const openGlobalSearch = (): void => {
 
                 <!-- Desktop Menu -->
                 <div class="hidden h-full lg:flex lg:flex-1">
-                    <NavigationMenu class="ml-10 flex h-full items-stretch">
+                    <NavigationMenu
+                        class="ml-10 flex h-full items-stretch"
+                        data-test="desktop-navigation"
+                    >
                         <NavigationMenuList
                             class="flex h-full items-stretch space-x-2"
                         >
                             <NavigationMenuItem
-                                v-for="(item, index) in mainItems"
-                                :key="index"
+                                v-for="group in mainGroups"
+                                :key="group.title"
                                 class="relative flex h-full items-center"
                             >
-                                <Link
+                                <NavigationMenuTrigger
+                                    data-test="desktop-navigation-group"
                                     :class="[
-                                        navigationMenuTriggerStyle(),
-                                        whenCurrentUrl(
-                                            item.href,
-                                            activeItemStyles,
-                                        ),
+                                        isGroupActive(group)
+                                            ? activeItemStyles
+                                            : '',
                                         'h-9 cursor-pointer px-3',
                                     ]"
-                                    :href="item.href"
                                 >
-                                    <component
-                                        v-if="item.icon"
-                                        :is="item.icon"
-                                        class="mr-2 h-4 w-4"
-                                    />
-                                    {{ item.title }}
-                                </Link>
+                                    {{ group.title }}
+                                </NavigationMenuTrigger>
+                                <NavigationMenuContent>
+                                    <ul class="grid w-56 gap-1">
+                                        <li
+                                            v-for="item in group.items"
+                                            :key="item.title"
+                                        >
+                                            <NavigationMenuLink
+                                                as-child
+                                                :class="[
+                                                    whenCurrentUrl(
+                                                        item.href,
+                                                        activeItemStyles,
+                                                    ),
+                                                    'flex-row items-center gap-2',
+                                                ]"
+                                            >
+                                                <Link :href="item.href">
+                                                    <component
+                                                        v-if="item.icon"
+                                                        :is="item.icon"
+                                                        class="size-4"
+                                                    />
+                                                    <span>{{
+                                                        item.title
+                                                    }}</span>
+                                                </Link>
+                                            </NavigationMenuLink>
+                                        </li>
+                                    </ul>
+                                </NavigationMenuContent>
+                                <div
+                                    v-if="isGroupActive(group)"
+                                    class="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-primary"
+                                ></div>
+                            </NavigationMenuItem>
+
+                            <NavigationMenuItem
+                                v-for="item in footerItems"
+                                :key="item.title"
+                                class="relative flex h-full items-center"
+                            >
+                                <NavigationMenuLink as-child>
+                                    <Link
+                                        data-test="desktop-navigation-link"
+                                        :class="[
+                                            navigationMenuTriggerStyle(),
+                                            whenCurrentUrl(
+                                                item.href,
+                                                activeItemStyles,
+                                            ),
+                                            'h-9 cursor-pointer px-3',
+                                        ]"
+                                        :href="item.href"
+                                    >
+                                        <component
+                                            v-if="item.icon"
+                                            :is="item.icon"
+                                            class="mr-2 h-4 w-4"
+                                        />
+                                        {{ item.title }}
+                                    </Link>
+                                </NavigationMenuLink>
                                 <div
                                     v-if="isCurrentUrl(item.href)"
                                     class="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-primary"
@@ -133,10 +198,11 @@ const openGlobalSearch = (): void => {
 
                 <div class="ml-auto flex items-center space-x-2">
                     <div class="relative flex items-center space-x-1">
+                        <GlobalSearchTrigger />
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="group h-9 w-9 cursor-pointer"
+                            class="group h-9 w-9 cursor-pointer lg:hidden"
                             :aria-label="t('navigation.menu.search')"
                             data-test="global-search-trigger"
                             @click="openGlobalSearch"

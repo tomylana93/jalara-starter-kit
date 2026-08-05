@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Hash;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\from;
+use function Pest\Laravel\get;
+use function Pest\Laravel\put;
 
 it('updates the password', function () {
     usePasswordPolicy(PasswordPolicy::Strict);
@@ -83,8 +85,8 @@ it('requires the correct password to update the password', function () {
 });
 
 it('requires authentication for security routes', function () {
-    $this->get(route('account.security.edit'))->assertRedirect(route('login'));
-    $this->put(route('account.password.update'))->assertRedirect(route('login'));
+    get(route('account.security.edit'))->assertRedirect(route('login'));
+    put(route('account.password.update'))->assertRedirect(route('login'));
 });
 
 it('throttles password update attempts', function () {
@@ -93,14 +95,14 @@ it('throttles password update attempts', function () {
     actingAs($user);
 
     foreach (range(1, 6) as $_) {
-        $this->put(route('account.password.update'), [
+        put(route('account.password.update'), [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ]);
     }
 
-    $response = $this->put(route('account.password.update'), [
+    $response = put(route('account.password.update'), [
         'current_password' => 'wrong-password',
         'password' => 'new-password',
         'password_confirmation' => 'new-password',

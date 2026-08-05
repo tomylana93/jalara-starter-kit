@@ -44,6 +44,27 @@ return [
             'after_commit' => false,
         ],
 
+        /*
+         * Long-running work that outlives the default 90 second `retry_after`.
+         *
+         * `retry_after` is a per-connection setting, so moving a slow job to
+         * another queue name on the `database` connection would change nothing:
+         * once a reservation goes stale the worker runs the job a second time
+         * while the first is still going. A database backup reliably exceeds 90
+         * seconds, and two concurrent dumps would race for the same destination.
+         *
+         * Workers must be told about this connection explicitly
+         * (`queue:work database-long`); otherwise its jobs are never processed.
+         */
+        'database-long' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => env('DB_QUEUE_LONG', 'long-running'),
+            'retry_after' => (int) env('DB_QUEUE_LONG_RETRY_AFTER', 3600),
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

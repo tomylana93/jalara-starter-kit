@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\artisan;
 use function Pest\Laravel\get;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
@@ -263,7 +264,7 @@ it('sends a test notification through the command', function () {
 
     $user = User::factory()->create();
 
-    pendingCommand($this->artisan('notification:test', ['email' => $user->email]))->assertSuccessful();
+    pendingCommand(artisan('notification:test', ['email' => $user->email]))->assertSuccessful();
 
     expect($user->notifications()->count())->toBe(1)
         ->and($user->notifications()->sole()->data['type'])->toBe('test');
@@ -274,7 +275,7 @@ it('sends a test notification through the command', function () {
 it('fails the command for an unknown email without notifying anyone', function () {
     User::factory()->create();
 
-    pendingCommand($this->artisan('notification:test', ['email' => 'nobody@example.com']))->assertFailed();
+    pendingCommand(artisan('notification:test', ['email' => 'nobody@example.com']))->assertFailed();
 
     expect(DB::table('notifications')->count())->toBe(0);
 });

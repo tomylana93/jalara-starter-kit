@@ -93,7 +93,9 @@ describe('rich text editor', () => {
         ).toContain('editor.action.paragraph');
         expect(
             wrapper
-                .findAll('[role="radiogroup"] [role="menuitemradio"]')
+                .findAll(
+                    '[role="radiogroup"] [role="menuitemradio"][data-test^="rich-text-block-"]',
+                )
                 .map((item) => item.attributes('data-test')),
         ).toEqual([
             'rich-text-block-paragraph',
@@ -300,6 +302,141 @@ describe('rich text editor', () => {
         await nextTick();
 
         expect(bold().attributes()).toHaveProperty('disabled');
+    });
+
+    it('repeats every toolbar action in the editor context menu', async () => {
+        const wrapper = mountEditor();
+        await nextTick();
+
+        for (const action of [
+            'rich-text-context-block-trigger',
+            'rich-text-context-bold',
+            'rich-text-context-italic',
+            'rich-text-context-bulletList',
+            'rich-text-context-orderedList',
+            'rich-text-context-blockquote',
+            'rich-text-context-codeBlock',
+            'rich-text-context-link',
+            'rich-text-context-table-trigger',
+            'rich-text-context-undo',
+            'rich-text-context-redo',
+        ]) {
+            expect(wrapper.find(`[data-test="${action}"]`).exists()).toBe(true);
+        }
+    });
+
+    it('keeps a shortcut it handled from reaching application-wide listeners', async () => {
+        const wrapper = mountEditor();
+        await nextTick();
+        const onWindowKeydown = vi.fn();
+        window.addEventListener('keydown', onWindowKeydown);
+        const editable = editorOf(wrapper).view.dom;
+        const press = (key: string) =>
+            editable.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key,
+                    ctrlKey: true,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+
+        /*
+         * Ctrl+B is the sidebar toggle as well as the bold command, so the
+         * editor has to consume it; Ctrl+K belongs to the command palette and
+         * must still reach the window listener behind it.
+         */
+        press('b');
+        await nextTick();
+
+        expect(editorOf(wrapper).isActive('bold')).toBe(true);
+        expect(onWindowKeydown).not.toHaveBeenCalled();
+
+        press('k');
+
+        expect(onWindowKeydown).toHaveBeenCalledOnce();
+        window.removeEventListener('keydown', onWindowKeydown);
+    });
+
+    it('names the Tiptap keyboard shortcut behind every context menu command that has one', () => {
+        const wrapper = mountEditor();
+        const keysOf = (action: string) =>
+            wrapper
+                .get(`[data-test="rich-text-context-${action}"]`)
+                .findAll('[data-slot="kbd-group"] kbd')
+                .map((key) => key.text());
+
+        expect(keysOf('bold')).toEqual(['Ctrl', 'B']);
+        expect(keysOf('bulletList')).toEqual(['Ctrl', 'Shift', '8']);
+        expect(keysOf('codeBlock')).toEqual(['Ctrl', 'Alt', 'C']);
+        expect(keysOf('redo')).toEqual(['Ctrl', 'Shift', 'Z']);
+        expect(keysOf('block-heading_2')).toEqual(['Ctrl', 'Alt', '2']);
+        expect(
+            wrapper
+                .get('[data-test="rich-text-context-link"]')
+                .find('kbd')
+                .exists(),
+        ).toBe(false);
+    });
+
+    it('applies a format chosen from the context menu and reports it as active', async () => {
+        const wrapper = mountEditor();
+        await nextTick();
+        const bulletList = () =>
+            wrapper.get('[data-test="rich-text-context-bulletList"]');
+
+        expect(bulletList().attributes('aria-checked')).toBe('false');
+
+        await bulletList().trigger('click');
+        await nextTick();
+
+        expect(editorOf(wrapper).isActive('bulletList')).toBe(true);
+        expect(bulletList().attributes('aria-checked')).toBe('true');
+    });
+
+    it('opens the link dialog from the context menu once the menu has closed', async () => {
+        vi.useFakeTimers();
+        const wrapper = mountEditor();
+        await nextTick();
+
+        await wrapper
+            .get('[data-test="rich-text-context-link"]')
+            .trigger('click');
+
+        expect(wrapper.find('[data-test="link-dialog"]').exists()).toBe(false);
+
+        vi.runAllTimers();
+        await nextTick();
+
+        expect(wrapper.find('[data-test="link-dialog"]').exists()).toBe(true);
+        vi.useRealTimers();
+    });
+
+    it('offers contextual table operations in the context menu once inside a table', async () => {
+        const wrapper = mountEditor();
+        await nextTick();
+
+        expect(
+            wrapper
+                .find('[data-test="rich-text-context-table-insert"]')
+                .exists(),
+        ).toBe(true);
+
+        await wrapper
+            .get('[data-test="rich-text-context-table-insert"]')
+            .trigger('click');
+        await nextTick();
+
+        expect(
+            wrapper
+                .find('[data-test="rich-text-context-table-insert"]')
+                .exists(),
+        ).toBe(false);
+        expect(
+            wrapper
+                .find('[data-test="rich-text-context-table-delete_table"]')
+                .exists(),
+        ).toBe(true);
     });
 
     it('disables table and link commands appropriately', async () => {

@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\getJson;
 
 beforeEach(function (): void {
     Storage::fake('public');
@@ -308,9 +310,10 @@ it('restores only the callers own active uploads', function (): void {
 it('requires authentication for every status endpoint', function (): void {
     $upload = ImageUpload::factory()->create();
 
-    $this->getJson(route('media.image-uploads.index'))->assertUnauthorized();
-    $this->getJson(route('media.image-uploads.show', $upload))->assertUnauthorized();
-    $this->deleteJson(route('media.image-uploads.destroy', $upload))->assertUnauthorized();
+    getJson(route('media.image-uploads.index'))->assertUnauthorized();
+    getJson(route('media.image-uploads.show', $upload))->assertUnauthorized();
+
+    deleteJson(route('media.image-uploads.destroy', $upload))->assertUnauthorized();
 });
 
 it('keeps branding uploads behind the settings permission', function (): void {

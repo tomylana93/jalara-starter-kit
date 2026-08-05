@@ -12,6 +12,7 @@ import {
     Table2,
     Undo2,
 } from '@lucide/vue';
+import { isMacOS } from '@tiptap/core';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
@@ -22,6 +23,19 @@ import type { Component } from 'vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
+import {
+    ContextMenu,
+    ContextMenuCheckboxItem,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuRadioGroup,
+    ContextMenuRadioItem,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
+    ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import {
     Dialog,
     DialogContent,
@@ -41,6 +55,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Field, FieldLabel, FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -58,8 +73,23 @@ type ToolbarControl = {
     value: string;
     label: string;
     icon: Component;
+    keys: string[];
     apply: (chain: ChainedCommands) => ChainedCommands;
 };
+
+/*
+ * Tiptap binds its defaults to `Mod`, which resolves to ⌘ on Apple platforms
+ * and Ctrl everywhere else. The hints are expanded through the same check the
+ * keymap uses so they can never advertise a key the editor does not listen to.
+ */
+const modifierKeys: Record<string, string> = isMacOS()
+    ? { mod: '⌘', alt: '⌥', shift: '⇧' }
+    : { mod: 'Ctrl', alt: 'Alt', shift: 'Shift' };
+
+/** Expands one Tiptap keymap binding into the keys a hint should render. */
+function shortcutKeys(binding: string): string[] {
+    return binding.split('-').map((key) => modifierKeys[key] ?? key);
+}
 
 const props = defineProps<{ modelValue: RichTextDocument }>();
 const emit = defineEmits<{ 'update:modelValue': [value: RichTextDocument] }>();
@@ -139,11 +169,13 @@ const blockLevels = [
     {
         value: 'paragraph',
         label: t('editor.action.paragraph'),
+        keys: shortcutKeys('mod-alt-0'),
         apply: (chain: ChainedCommands) => chain.setParagraph(),
     },
     ...headingLevels.map((level) => ({
         value: `heading_${level}`,
         label: t(`editor.action.heading_${level}`),
+        keys: shortcutKeys(`mod-alt-${level}`),
         apply: (chain: ChainedCommands) => chain.setHeading({ level }),
     })),
 ];
@@ -152,12 +184,14 @@ const markControls: ToolbarControl[] = [
         value: 'bold',
         label: t('editor.action.bold'),
         icon: Bold,
+        keys: shortcutKeys('mod-B'),
         apply: (chain) => chain.toggleBold(),
     },
     {
         value: 'italic',
         label: t('editor.action.italic'),
         icon: Italic,
+        keys: shortcutKeys('mod-I'),
         apply: (chain) => chain.toggleItalic(),
     },
 ];
@@ -166,24 +200,28 @@ const blockControls: ToolbarControl[] = [
         value: 'bulletList',
         label: t('editor.action.bullet_list'),
         icon: List,
+        keys: shortcutKeys('mod-shift-8'),
         apply: (chain) => chain.toggleBulletList(),
     },
     {
         value: 'orderedList',
         label: t('editor.action.ordered_list'),
         icon: ListOrdered,
+        keys: shortcutKeys('mod-shift-7'),
         apply: (chain) => chain.toggleOrderedList(),
     },
     {
         value: 'blockquote',
         label: t('editor.action.quote'),
         icon: Quote,
+        keys: shortcutKeys('mod-shift-B'),
         apply: (chain) => chain.toggleBlockquote(),
     },
     {
         value: 'codeBlock',
         label: t('editor.action.code'),
         icon: Code,
+        keys: shortcutKeys('mod-alt-C'),
         apply: (chain) => chain.toggleCodeBlock(),
     },
 ];
@@ -265,6 +303,7 @@ const historyControls = computed(() => [
         value: 'undo',
         label: t('editor.action.undo'),
         icon: Undo2,
+        keys: shortcutKeys('mod-Z'),
         disabled: !canUndo.value,
         apply: (chain: ChainedCommands) => chain.undo(),
     },
@@ -272,6 +311,7 @@ const historyControls = computed(() => [
         value: 'redo',
         label: t('editor.action.redo'),
         icon: Redo2,
+        keys: shortcutKeys('mod-shift-Z'),
         disabled: !canRedo.value,
         apply: (chain: ChainedCommands) => chain.redo(),
     },
@@ -286,6 +326,27 @@ function openLinkDialog(): void {
         editor.value.getAttributes('link').href ?? 'https://',
     );
     isLinkDialogOpen.value = true;
+}
+
+/**
+ * Keeps a keystroke the editor already acted on from reaching application-wide
+ * listeners. ProseMirror only calls `preventDefault` on a shortcut its keymap
+ * handled, but the event still bubbles to `window`, where the sidebar toggle
+ * would collapse the sidebar on the same Ctrl/Cmd+B that applies bold.
+ */
+function stopHandledShortcut(event: KeyboardEvent): void {
+    if (event.defaultPrevented) {
+        event.stopPropagation();
+    }
+}
+
+/**
+ * Opens the link dialog once the context menu has finished closing. The menu
+ * restores focus to its trigger on close, which would pull focus straight back
+ * out of the dialog if both happened in the same tick.
+ */
+function openLinkDialogFromMenu(): void {
+    setTimeout(openLinkDialog);
 }
 
 function applyLink(): void {
@@ -375,7 +436,16 @@ onBeforeUnmount(() => editor.value?.destroy());
                                     <component :is="control.icon" />
                                 </ToggleGroupItem>
                             </TooltipTrigger>
-                            <TooltipContent>{{ control.label }}</TooltipContent>
+                            <TooltipContent class="flex items-center gap-2">
+                                {{ control.label }}
+                                <KbdGroup>
+                                    <Kbd
+                                        v-for="key in control.keys"
+                                        :key="key"
+                                        >{{ key }}</Kbd
+                                    >
+                                </KbdGroup>
+                            </TooltipContent>
                         </Tooltip>
                     </ToggleGroup>
                     <Separator orientation="vertical" class="h-6" />
@@ -406,7 +476,16 @@ onBeforeUnmount(() => editor.value?.destroy());
                                     <component :is="control.icon" />
                                 </ToggleGroupItem>
                             </TooltipTrigger>
-                            <TooltipContent>{{ control.label }}</TooltipContent>
+                            <TooltipContent class="flex items-center gap-2">
+                                {{ control.label }}
+                                <KbdGroup>
+                                    <Kbd
+                                        v-for="key in control.keys"
+                                        :key="key"
+                                        >{{ key }}</Kbd
+                                    >
+                                </KbdGroup>
+                            </TooltipContent>
                         </Tooltip>
                     </ToggleGroup>
                     <Separator orientation="vertical" class="h-6" />
@@ -494,18 +573,148 @@ onBeforeUnmount(() => editor.value?.destroy());
                                     <component :is="control.icon" />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>{{ control.label }}</TooltipContent>
+                            <TooltipContent class="flex items-center gap-2">
+                                {{ control.label }}
+                                <KbdGroup>
+                                    <Kbd
+                                        v-for="key in control.keys"
+                                        :key="key"
+                                        >{{ key }}</Kbd
+                                    >
+                                </KbdGroup>
+                            </TooltipContent>
                         </Tooltip>
                     </ButtonGroup>
                 </div>
             </ScrollArea>
         </TooltipProvider>
-        <EditorContent
-            v-if="editor"
-            :editor="editor"
-            class="p-5"
-            data-test="rich-text-editor"
-        />
+        <ContextMenu>
+            <ContextMenuTrigger as-child>
+                <div class="p-5" @keydown="stopHandledShortcut">
+                    <EditorContent
+                        v-if="editor"
+                        :editor="editor"
+                        data-test="rich-text-editor"
+                    />
+                </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent
+                class="w-64 *:whitespace-nowrap"
+                data-test="rich-text-context-menu"
+            >
+                <ContextMenuSub>
+                    <ContextMenuSubTrigger
+                        :disabled="!canBlock"
+                        data-test="rich-text-context-block-trigger"
+                        >{{ t('editor.block.label') }}</ContextMenuSubTrigger
+                    >
+                    <ContextMenuSubContent>
+                        <ContextMenuRadioGroup :model-value="activeBlockLevel">
+                            <ContextMenuRadioItem
+                                v-for="level in blockLevels"
+                                :key="level.value"
+                                :value="level.value"
+                                :disabled="!isAvailable(level.apply)"
+                                :data-test="`rich-text-context-block-${level.value}`"
+                                @select="runCommand(level.apply)"
+                            >
+                                {{ level.label }}
+                                <KbdGroup class="ml-auto shrink-0">
+                                    <Kbd v-for="key in level.keys" :key="key">{{
+                                        key
+                                    }}</Kbd>
+                                </KbdGroup>
+                            </ContextMenuRadioItem>
+                        </ContextMenuRadioGroup>
+                    </ContextMenuSubContent>
+                </ContextMenuSub>
+                <ContextMenuSeparator />
+                <ContextMenuCheckboxItem
+                    v-for="control in markControls"
+                    :key="control.value"
+                    :model-value="activeMarks.includes(control.value)"
+                    :disabled="!isAvailable(control.apply)"
+                    :data-test="`rich-text-context-${control.value}`"
+                    @select="runCommand(control.apply)"
+                >
+                    <component :is="control.icon" />{{ control.label }}
+                    <KbdGroup class="ml-auto shrink-0">
+                        <Kbd v-for="key in control.keys" :key="key">{{
+                            key
+                        }}</Kbd>
+                    </KbdGroup>
+                </ContextMenuCheckboxItem>
+                <ContextMenuSeparator />
+                <ContextMenuCheckboxItem
+                    v-for="control in blockControls"
+                    :key="control.value"
+                    :model-value="activeBlocks.includes(control.value)"
+                    :disabled="!isAvailable(control.apply)"
+                    :data-test="`rich-text-context-${control.value}`"
+                    @select="runCommand(control.apply)"
+                >
+                    <component :is="control.icon" />{{ control.label }}
+                    <KbdGroup class="ml-auto shrink-0">
+                        <Kbd v-for="key in control.keys" :key="key">{{
+                            key
+                        }}</Kbd>
+                    </KbdGroup>
+                </ContextMenuCheckboxItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                    :disabled="!canSetLink"
+                    data-test="rich-text-context-link"
+                    @select="openLinkDialogFromMenu"
+                >
+                    <LinkIcon />{{ t('editor.action.link') }}
+                </ContextMenuItem>
+                <ContextMenuSub>
+                    <ContextMenuSubTrigger
+                        :disabled="!canTable"
+                        data-test="rich-text-context-table-trigger"
+                        >{{ t('editor.table.label') }}</ContextMenuSubTrigger
+                    >
+                    <ContextMenuSubContent>
+                        <ContextMenuItem
+                            v-if="!isInsideTable"
+                            :disabled="!canInsertTable"
+                            data-test="rich-text-context-table-insert"
+                            @select="runCommand(insertTable)"
+                            >{{ t('editor.table.insert') }}</ContextMenuItem
+                        >
+                        <template v-else>
+                            <ContextMenuItem
+                                v-for="operation in tableOperations"
+                                :key="operation.key"
+                                :disabled="
+                                    !tableOperationAvailability[operation.key]
+                                "
+                                :data-test="`rich-text-context-table-${operation.key}`"
+                                @select="runCommand(operation.apply)"
+                                >{{
+                                    t(`editor.table.${operation.key}`)
+                                }}</ContextMenuItem
+                            >
+                        </template>
+                    </ContextMenuSubContent>
+                </ContextMenuSub>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                    v-for="control in historyControls"
+                    :key="control.value"
+                    :disabled="control.disabled"
+                    :data-test="`rich-text-context-${control.value}`"
+                    @select="runCommand(control.apply)"
+                >
+                    <component :is="control.icon" />{{ control.label }}
+                    <KbdGroup class="ml-auto shrink-0">
+                        <Kbd v-for="key in control.keys" :key="key">{{
+                            key
+                        }}</Kbd>
+                    </KbdGroup>
+                </ContextMenuItem>
+            </ContextMenuContent>
+        </ContextMenu>
         <Dialog v-model:open="isLinkDialogOpen">
             <DialogContent>
                 <DialogHeader>

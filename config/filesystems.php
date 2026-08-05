@@ -47,6 +47,21 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Backup archives. Rooted outside `storage/app` on purpose: it keeps
+         * operational artifacts out of the application media tree, and it keeps
+         * archives out of the directories the backup itself includes.
+         *
+         * Never store archives on the `public` disk, which is symlinked from
+         * `public/storage` and therefore world-readable.
+         */
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('backups'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

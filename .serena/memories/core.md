@@ -10,6 +10,7 @@
 - Locale layout and the natural Indonesian translation voice/technical-term policy: `mem:localization`.
 - Stable test boundaries and domain-oriented suite organization: `mem:testing`.
 - Internal documentation data model, authorization, editor, search, and navigation invariants: `mem:documentation`.
+- Scheduled backup configuration, single-flight run lock, queue-connection and archive-addressing invariants: `mem:backend/backups`.
 - Required task verification sequence: `mem:task_completion`.
 - Commit-message, pull-request, application-version, and release automation conventions: `mem:release_process`.
 - Top-level paths: `app/` backend application code; `routes/` web/console routes; `database/` migrations/factories/seeders; `resources/js/` Inertia Vue application; `resources/css/app.css` Tailwind entrypoint; `tests/` Pest suites.

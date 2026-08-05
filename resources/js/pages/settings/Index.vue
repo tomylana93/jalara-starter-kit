@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import {
     ArrowRight,
+    DatabaseBackup,
     KeyRound,
     Mail,
     MessagesSquare,
@@ -22,6 +23,7 @@ import {
 import { translate, useTranslations } from '@/composables/useTranslations';
 import { index } from '@/routes/settings';
 import { edit as editAuthentication } from '@/routes/settings/authentication';
+import { index as backupsIndex } from '@/routes/settings/backups';
 import { edit as editBranding } from '@/routes/settings/branding';
 import { edit as editChat } from '@/routes/settings/chat';
 import { edit as editGeneral } from '@/routes/settings/general';
@@ -58,8 +60,30 @@ defineOptions({
     }),
 });
 
+const page = usePage();
 const { t } = useTranslations();
+
+/*
+ * The index is reachable by either ability, so each card is filtered by the one
+ * that actually opens it. Rendering a card the holder cannot follow would send
+ * them to a 403 from a page that invited them there.
+ */
 const settingsCards = computed<SettingsCard[]>(() => [
+    ...(page.props.can?.manageSettings ? settingsManagementCards.value : []),
+    ...(page.props.can?.manageBackups
+        ? [
+              {
+                  key: 'backups',
+                  title: t('setting.backup.title'),
+                  description: t('setting.backup.description'),
+                  href: backupsIndex(),
+                  icon: DatabaseBackup,
+              },
+          ]
+        : []),
+]);
+
+const settingsManagementCards = computed<SettingsCard[]>(() => [
     {
         key: 'general',
         title: t('setting.general.title'),

@@ -13,7 +13,13 @@ return [
             'security' => 'Security',
             'branding' => 'Branding',
             'chat' => 'Chat',
+            'backups' => 'Backups',
         ],
+    ],
+
+    'backup' => [
+        'title' => 'Backups',
+        'description' => 'Scheduled database and media archives',
     ],
 
     'general' => [

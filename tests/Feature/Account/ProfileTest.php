@@ -6,8 +6,11 @@ use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\assertAuthenticatedAs;
 use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\from;
+use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 it('displays the profile page with account disable ability', function () {
     $user = User::factory()->create();
@@ -155,7 +158,7 @@ it('requires the correct password to disable account', function () {
         ->assertRedirect(route('account.profile.edit'));
 
     expect($user->refresh()->status)->toBe(UserStatus::Active);
-    $this->assertAuthenticatedAs($user);
+    assertAuthenticatedAs($user);
 });
 
 it('forbids system users and super administrators from disabling their accounts', function (string $protectedBy) {
@@ -173,7 +176,7 @@ it('forbids system users and super administrators from disabling their accounts'
         ->assertForbidden();
 
     expect($user->refresh()->status)->toBe(UserStatus::Active);
-    $this->assertAuthenticatedAs($user);
+    assertAuthenticatedAs($user);
 
     actingAs($user)
         ->get(route('account.profile.edit'))
@@ -181,8 +184,9 @@ it('forbids system users and super administrators from disabling their accounts'
 })->with(['system flag', 'super-admin role']);
 
 it('requires authentication for account routes', function () {
-    $this->get(route('account.index'))->assertRedirect(route('login'));
-    $this->get(route('account.profile.edit'))->assertRedirect(route('login'));
-    $this->patch(route('account.profile.update'))->assertRedirect(route('login'));
-    $this->patch(route('account.disable'))->assertRedirect(route('login'));
+    get(route('account.index'))->assertRedirect(route('login'));
+    get(route('account.profile.edit'))->assertRedirect(route('login'));
+
+    patch(route('account.profile.update'))->assertRedirect(route('login'));
+    patch(route('account.disable'))->assertRedirect(route('login'));
 });

@@ -6,6 +6,7 @@ import { useAppNavigation } from './useAppNavigation';
 describe('useAppNavigation', () => {
     beforeEach(() => {
         inertiaPageProps.can.manageSettings = true;
+        inertiaPageProps.can.manageBackups = false;
         inertiaPageProps.can.viewUsers = true;
         inertiaPageProps.can.auditChat = false;
         inertiaPageProps.chat.enabled = true;
@@ -100,6 +101,40 @@ describe('useAppNavigation', () => {
             ['navigation.main.dashboard', 'navigation.main.chat'],
             ['navigation.main.master_data'],
         ]);
+    });
+
+    /*
+     * Backups live behind their own ability, and the settings index is the hub
+     * that leads to them. A holder of only that ability must still get the entry,
+     * or the permission would be grantable but unreachable.
+     */
+    it('offers the settings entry to a holder of only the backup ability', () => {
+        inertiaPageProps.can.manageSettings = false;
+        inertiaPageProps.can.viewUsers = false;
+        inertiaPageProps.can.manageBackups = true;
+
+        const { mainItems } = useAppNavigation();
+
+        expect(
+            mainItems.value.map((item) => ({
+                title: item.title,
+                href: toUrl(item.href),
+            })),
+        ).toContainEqual({
+            title: 'navigation.main.settings',
+            href: '/settings',
+        });
+    });
+
+    it('drops the settings entry when neither ability is held', () => {
+        inertiaPageProps.can.manageSettings = false;
+        inertiaPageProps.can.manageBackups = false;
+
+        const { mainItems } = useAppNavigation();
+
+        expect(mainItems.value.map((item) => item.title)).not.toContain(
+            'navigation.main.settings',
+        );
     });
 
     it('drops the chat entry while chat is switched off', () => {

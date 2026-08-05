@@ -1,5 +1,7 @@
+import type * as InertiaCore from '@inertiajs/core';
 import type * as Inertia from '@inertiajs/vue3';
 import { config } from '@vue/test-utils';
+import { Primitive } from 'reka-ui';
 import { vi } from 'vitest';
 import { defineComponent, h, reactive } from 'vue';
 import type { NotificationItem } from '@/types/notifications';
@@ -38,6 +40,7 @@ export const inertiaPageProps = {
     version: '0.1.0',
     can: {
         manageSettings: true,
+        manageBackups: true,
         viewUsers: true,
         auditChat: true,
         manageDocumentation: true,
@@ -72,6 +75,51 @@ export const resetEchoState = (): void => {
 export const inertiaPageUrl = {
     value: '/',
 };
+
+/**
+ * Records what the Inertia XHR client behind `chatClient` and `imageUploads`
+ * was asked to send, so a test can assert the request and choose the response.
+ */
+export const inertiaClientState = {
+    requests: [] as InertiaCore.HttpRequestConfig[],
+    response: {
+        data: {},
+        status: 200,
+        headers: {},
+    } as InertiaCore.HttpResponse,
+};
+
+export const resetInertiaClientState = (): void => {
+    inertiaClientState.requests = [];
+    inertiaClientState.response = {
+        data: {},
+        status: 200,
+        headers: {},
+    } as InertiaCore.HttpResponse;
+};
+
+/*
+ * jsdom has no server to answer the Inertia XHR client, so an unmocked call
+ * opened a real socket and reported the refused connection after the run. The
+ * stub keeps the client's request/response shape and hands the call to
+ * `inertiaClientState`; a test that needs richer behaviour still mocks
+ * `@inertiajs/core` or the calling module itself.
+ */
+vi.mock('@inertiajs/core', async (importOriginal) => {
+    const original = await importOriginal<typeof InertiaCore>();
+    const http = Object.create(original.http) as typeof original.http;
+
+    http.getClient = () =>
+        ({
+            request: (config: InertiaCore.HttpRequestConfig) => {
+                inertiaClientState.requests.push(config);
+
+                return Promise.resolve(inertiaClientState.response);
+            },
+        }) as ReturnType<typeof original.http.getClient>;
+
+    return { ...original, http };
+});
 
 export const resetFormState = (): void => {
     formState.errors = {};
@@ -223,6 +271,15 @@ vi.mock('@/composables/useTranslations', () => ({
     useTranslations: () => ({ t: (key: string) => key }),
 }));
 
+/*
+ * Mirrors the `withApp` registration in `resources/js/app.ts`: registry files
+ * such as AttachmentTrigger reference Primitive as a global component, and the
+ * test runner never boots the Inertia app that provides it.
+ */
+config.global.components = {
+    Primitive,
+};
+
 config.global.stubs = {
     PageWrapper: {
         template: '<main><slot name="actions" /><slot /></main>',
@@ -313,6 +370,50 @@ config.global.stubs = {
             '<div role="radiogroup" :data-value="modelValue"><slot /></div>',
     },
     DropdownMenuRadioItem: {
+        props: ['value'],
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="menuitemradio" v-bind="$attrs" @click="$emit(\'select\')"><slot /></button>',
+    },
+    /*
+     * The context menu only mounts its content once a real pointer opens it and
+     * measures the surface through floating-ui, neither of which jsdom has. The
+     * stubs keep the item structure and the `select` event so a test can assert
+     * what the menu offers and drive the command behind an entry.
+     */
+    ContextMenu: { template: '<div><slot /></div>' },
+    ContextMenuTrigger: { template: '<div><slot /></div>' },
+    ContextMenuContent: { template: '<div><slot /></div>' },
+    ContextMenuGroup: { template: '<div><slot /></div>' },
+    ContextMenuSub: { template: '<div><slot /></div>' },
+    ContextMenuSubContent: { template: '<div><slot /></div>' },
+    ContextMenuSubTrigger: {
+        inheritAttrs: false,
+        template: '<div role="menuitem" v-bind="$attrs"><slot /></div>',
+    },
+    ContextMenuSeparator: { template: '<hr />' },
+    ContextMenuItem: {
+        /* The real primitive emits `select` when the item is activated. */
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<div role="menuitem" v-bind="$attrs" @click="$emit(\'select\')"><slot /></div>',
+    },
+    ContextMenuCheckboxItem: {
+        props: ['modelValue'],
+        emits: ['select'],
+        inheritAttrs: false,
+        template:
+            '<button type="button" role="menuitemcheckbox" :aria-checked="String(Boolean(modelValue))" v-bind="$attrs" @click="$emit(\'select\')"><slot /></button>',
+    },
+    ContextMenuRadioGroup: {
+        name: 'ContextMenuRadioGroup',
+        props: ['modelValue'],
+        template:
+            '<div role="radiogroup" :data-value="modelValue"><slot /></div>',
+    },
+    ContextMenuRadioItem: {
         props: ['value'],
         emits: ['select'],
         inheritAttrs: false,

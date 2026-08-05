@@ -7,6 +7,7 @@ use App\Settings\AuthenticationSettings;
 use App\Settings\SettingsResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->registerDevCommands();
+    }
+
+    /**
+     * Add a worker for the long-running queue connection to `composer run dev`.
+     *
+     * `DevCommands::registerDefaults()` starts `queue:listen` with no connection
+     * argument, which serves the default `database` connection only. Backups run
+     * on `database-long` because `retry_after` is per-connection, so without this
+     * their jobs sit in the queue unclaimed and the run stays pending forever -
+     * with no failure anywhere to explain why.
+     *
+     * `--timeout=0` because the point of the connection is work that outlives the
+     * default limits.
+     */
+    private function registerDevCommands(): void
+    {
+        if (class_exists(DevCommands::class)) {
+            DevCommands::artisan(
+                'queue:listen database-long --tries=1 --timeout=0',
+                'queue-long',
+            );
+        }
     }
 
     /**
