@@ -18,19 +18,17 @@ export default defineConfig({
     },
     test: {
         environment: 'jsdom',
-        /*
-         * Worker threads start faster than forked processes, and the suite
-         * needs no process-level isolation: `isolate` stays on because jsdom
-         * globals are torn down per file and shared setup state would leak
-         * without it.
-         */
-        pool: 'threads',
         setupFiles: ['./resources/js/test/setup.ts'],
         include: ['resources/js/**/*.test.ts', 'vite/**/*.test.ts'],
         exclude: ['e2e/**'],
         /*
          * A fixed non-UTC, DST-free zone so browser-timezone formatting is
          * observably different from the UTC instants the server sends.
+         *
+         * This only takes effect under the default `forks` pool: a worker
+         * thread inherits the process timezone, so switching to `threads`
+         * silently drops it and the date tests fail wherever the machine is not
+         * already on this zone. Do not set `pool`.
          */
         env: { TZ: 'Asia/Jakarta' },
     },

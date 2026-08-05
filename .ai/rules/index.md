@@ -8,7 +8,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/components/data-table/** | .ai/rules/data-table.md |
 | database/factories/** | .ai/rules/factories.md |
 | tests/Feature/** | .ai/rules/feature.md |
-| composer.json, README.md | .ai/rules/general.md |
+| composer.json, README.md, vite.config.ts | .ai/rules/general.md |
 | database/migrations/** | .ai/rules/migrations.md |
 | tests/PHPStan/** | .ai/rules/p-h-p-stan.md |
 | resources/js/pages/** | .ai/rules/pages.md |
