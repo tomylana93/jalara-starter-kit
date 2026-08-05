@@ -70,6 +70,11 @@
             "@php artisan key:generate --no-interaction",
             "pnpm install --frozen-lockfile"
         ],
+        "ci:setup:php": [
+            "composer install --no-interaction --prefer-dist",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate --no-interaction"
+        ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
@@ -102,30 +107,49 @@
         "coverage:check": [
             "pest --coverage --min=80 --only-summary-for-coverage-text"
         ],
-        "ci:check": [
+        "fix": [
             "Composer\\Config::disableProcessTimeout",
+            "@rector",
+            "@format:agent",
+            "pnpm run lint",
+            "pnpm run format"
+        ],
+        "ci:static": [
             "pnpm run lint:check",
             "pnpm run format:check",
             "pnpm run types:check",
-            "pnpm run test:unit",
-            "@test"
+            "@static:check"
+        ],
+        "ci:vitest": [
+            "pnpm run test:unit"
+        ],
+        "ci:pest": [
+            "pest"
+        ],
+        "ci:pest:coverage": [
+            "@coverage:check"
+        ],
+        "ci:e2e": [
+            "pnpm run test:e2e"
+        ],
+        "ci:check": [
+            "Composer\\Config::disableProcessTimeout",
+            "@ci:static",
+            "@ci:vitest",
+            "@ci:pest"
         ],
         "ci:full": [
             "Composer\\Config::disableProcessTimeout",
-            "pnpm run lint:check",
-            "pnpm run format:check",
-            "pnpm run types:check",
-            "pnpm run test:unit",
-            "@static:check",
-            "@coverage:check",
-            "pnpm run test:e2e"
+            "@ci:static",
+            "@ci:vitest",
+            "@ci:pest:coverage",
+            "@ci:e2e"
         ],
         "types:check": [
             "phpstan analyse --memory-limit=1G --no-progress --error-format=json"
         ],
         "static:check": [
             "@php artisan config:clear --ansi",
-            "@rector:check",
             "@lint:check",
             "@types:check"
         ],
