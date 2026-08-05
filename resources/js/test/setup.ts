@@ -518,6 +518,12 @@ config.global.stubs = {
     AvatarFallback: { template: '<span><slot /></span>' },
 };
 
+/*
+ * jsdom implements no scrolling, so the roving-focus primitives behind
+ * `Command` reject when they move the highlight. The browser always has this.
+ */
+Element.prototype.scrollIntoView = (): void => undefined;
+
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
