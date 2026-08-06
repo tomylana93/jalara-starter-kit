@@ -33,12 +33,7 @@ class ChatSettingsController extends Controller
         ChatSettings $settings,
         UpdateChatSettings $updateChatSettings,
     ): RedirectResponse {
-        $updateChatSettings->handle($settings, [
-            'chatEnabled' => $request->boolean('chatEnabled'),
-            'imageUploadsEnabled' => $request->has('imageUploadsEnabled')
-                ? $request->boolean('imageUploadsEnabled')
-                : $settings->imageUploadsEnabled,
-        ]);
+        $updateChatSettings->handle($settings, $request->toData($settings));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.chat.message.updated')]);
 

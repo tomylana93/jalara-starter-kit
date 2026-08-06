@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Data\Settings\UpdateAuthenticationSettingsData;
 use App\Enums\PasswordPolicy;
 use App\Rules\Settings\StoredDefaultPasswordSatisfiesPolicy;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -27,5 +28,17 @@ class UpdateAuthenticationSettingsRequest extends FormRequest
             ],
             'sessionLifetimeMinutes' => ['required', 'integer', 'min:5', 'max:10080'],
         ];
+    }
+
+    /**
+     * The validated settings, with every value already in its final type.
+     */
+    public function toData(): UpdateAuthenticationSettingsData
+    {
+        return new UpdateAuthenticationSettingsData(
+            requireEmailVerification: $this->boolean('requireEmailVerification'),
+            passwordPolicy: PasswordPolicy::from((string) $this->validated('passwordPolicy')),
+            sessionLifetimeMinutes: (int) $this->validated('sessionLifetimeMinutes'),
+        );
     }
 }

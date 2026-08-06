@@ -2,19 +2,18 @@
 
 namespace App\Actions\Settings;
 
+use App\Data\Settings\UpdateMailSettingsData;
 use App\Settings\MailSettings;
 
 final class UpdateMailSettings
 {
     /**
      * Update the mail settings.
-     *
-     * @param  array{fromName: string, fromAddress: string}  $attributes
      */
-    public function handle(MailSettings $settings, array $attributes): MailSettings
+    public function handle(MailSettings $settings, UpdateMailSettingsData $data): MailSettings
     {
-        $settings->fromName = $attributes['fromName'];
-        $settings->fromAddress = $attributes['fromAddress'];
+        $settings->fromName = $data->fromName;
+        $settings->fromAddress = $data->fromAddress;
 
         $settings->save();
 

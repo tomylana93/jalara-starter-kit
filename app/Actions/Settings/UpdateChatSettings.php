@@ -2,6 +2,7 @@
 
 namespace App\Actions\Settings;
 
+use App\Data\Settings\UpdateChatSettingsData;
 use App\Events\Chat\ChatAvailabilityChanged;
 use App\Settings\ChatSettings;
 
@@ -12,22 +13,20 @@ final class UpdateChatSettings
      *
      * The availability broadcast is only sent when the toggle actually moved,
      * so re-saving the same value never churns connected clients.
-     *
-     * @param  array{chatEnabled: bool, imageUploadsEnabled: bool}  $attributes
      */
-    public function handle(ChatSettings $settings, array $attributes): ChatSettings
+    public function handle(ChatSettings $settings, UpdateChatSettingsData $data): ChatSettings
     {
-        $changed = $settings->chatEnabled !== $attributes['chatEnabled']
-            || $settings->imageUploadsEnabled !== $attributes['imageUploadsEnabled'];
+        $changed = $settings->chatEnabled !== $data->chatEnabled
+            || $settings->imageUploadsEnabled !== $data->imageUploadsEnabled;
 
-        $settings->chatEnabled = $attributes['chatEnabled'];
-        $settings->imageUploadsEnabled = $attributes['imageUploadsEnabled'];
+        $settings->chatEnabled = $data->chatEnabled;
+        $settings->imageUploadsEnabled = $data->imageUploadsEnabled;
         $settings->save();
 
         if ($changed) {
             event(new ChatAvailabilityChanged(
-                $attributes['chatEnabled'],
-                $attributes['imageUploadsEnabled'],
+                $data->chatEnabled,
+                $data->imageUploadsEnabled,
             ));
         }
 
