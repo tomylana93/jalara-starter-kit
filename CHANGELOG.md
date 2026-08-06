@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.0.0...v1.1.0) (2026-08-06)
+
+
+### Features
+
+* **ui:** rework chat and notification timestamps ([6dd3911](https://github.com/tomylana93/jalara-starter-kit/commit/6dd39116f49cc900668bf1d792f5896a21ff6bba))
+* **ui:** rework timestamp placement in chat and notifications ([f596e80](https://github.com/tomylana93/jalara-starter-kit/commit/f596e80d472a2f293d972cc1b02e0f95f192d192))
+
+
+### Bug Fixes
+
+* **notifications:** open a notification in a single request ([0ee4867](https://github.com/tomylana93/jalara-starter-kit/commit/0ee48677b5471ae47e3c9de854e6171bbb8d916d))
+
 ## [1.0.0](https://github.com/tomylana93/jalara-starter-kit/compare/v0.4.1...v1.0.0) (2026-08-05)
 
 
