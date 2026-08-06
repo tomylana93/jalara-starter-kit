@@ -36,9 +36,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonInterface|null $last_login_at
  * @property int $failed_login_attempts
  * @property CarbonInterface|null $suspended_until
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property CarbonInterface|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
@@ -54,8 +51,6 @@ use Spatie\Permission\Traits\HasRoles;
     'last_login_at',
     'failed_login_attempts',
     'suspended_until',
-    'two_factor_secret',
-    'two_factor_recovery_codes',
     'remember_token',
 ])]
 class User extends Authenticatable implements MustVerifyEmailContract

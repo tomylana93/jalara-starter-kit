@@ -57,7 +57,7 @@ class ImageUploadController extends Controller
     /**
      * Poll one upload.
      */
-    public function show(Request $request, ImageUpload $imageUpload): ImageUploadResource
+    public function show(ImageUpload $imageUpload): ImageUploadResource
     {
         Gate::authorize('view', $imageUpload);
 
@@ -77,7 +77,6 @@ class ImageUploadController extends Controller
      * return, in which case the upload finishes and the response says so.
      */
     public function destroy(
-        Request $request,
         ImageUpload $imageUpload,
         CancelImageUpload $cancelImageUpload,
     ): JsonResponse {

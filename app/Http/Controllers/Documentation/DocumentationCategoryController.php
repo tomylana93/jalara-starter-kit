@@ -50,7 +50,7 @@ class DocumentationCategoryController extends Controller
     /**
      * Delete a category that no longer holds any documentation.
      */
-    public function destroy(Request $request, DocumentationCategory $documentationCategory, DeleteDocumentationCategory $deleteDocumentationCategory): RedirectResponse
+    public function destroy(DocumentationCategory $documentationCategory, DeleteDocumentationCategory $deleteDocumentationCategory): RedirectResponse
     {
         Gate::authorize('delete', $documentationCategory);
 

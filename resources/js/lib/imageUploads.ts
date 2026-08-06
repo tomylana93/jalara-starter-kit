@@ -184,7 +184,7 @@ export const startImageUpload = async (
 };
 
 /** Read one upload's current state. */
-export const readImageUpload = async (
+const readImageUpload = async (
     pollUrl: string,
     signal?: AbortSignal,
 ): Promise<ImageUploadRecord | null> =>

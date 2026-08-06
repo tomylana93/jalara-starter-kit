@@ -20,13 +20,13 @@ import type {
 /**
  * Explicit component maps. Import paths are never built from a preset value.
  */
-export const authLayouts: Record<AuthLayoutPreset, Component> = {
+const authLayouts: Record<AuthLayoutPreset, Component> = {
     simple: AuthSimpleLayout,
     card: AuthCardLayout,
     split: AuthSplitLayout,
 };
 
-export const appLayouts: Record<AppLayoutPreset, Component> = {
+const appLayouts: Record<AppLayoutPreset, Component> = {
     sidebar: AppSidebarLayout,
     header: AppHeaderLayout,
 };

@@ -2,7 +2,6 @@ import type {
     AppLayoutPreset,
     AuthLayoutPreset,
     Branding,
-    BrandingIdentityMode,
     ColorThemePreset,
     FontPairPreset,
 } from '@/types/branding';
@@ -37,11 +36,6 @@ export const fontPairPresets: readonly FontPairPreset[] = [
     'poppins-inter',
     'montserrat-open-sans',
     'playfair-display-source-sans',
-] as const;
-
-export const brandingIdentityModes: readonly BrandingIdentityMode[] = [
-    'logo',
-    'icon-text',
 ] as const;
 
 /**
