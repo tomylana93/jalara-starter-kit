@@ -1,0 +1,57 @@
+/*
+ * The stylesheet printed documents are built from.
+ *
+ * Deliberately separate from `app.css`. The application stylesheet is written
+ * for an interactive shell: it carries dark-mode variants, a `color-scheme`, the
+ * configurable branding theme and font pairing, and utilities for components
+ * that never reach paper. Inheriting all of that would couple every report to a
+ * theme switch nobody tests against print, and would happily render a page in
+ * dark mode onto white paper.
+ *
+ * So this file declares its own small, print-only surface. Chromium still does
+ * the layout, which is the whole reason for rendering through a browser, but
+ * what it lays out is owned by the documents rather than by the application.
+ */
+
+@import 'tailwindcss';
+
+@source '../views/pdf/**/*.blade.php';
+
+@theme {
+    --color-ink: oklch(0.22 0 0);
+    --color-muted-ink: oklch(0.52 0 0);
+    --color-rule: oklch(0.87 0 0);
+
+    --font-sans:
+        'DejaVu Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+        sans-serif;
+}
+
+/*
+ * Paper is white in every theme, and Chromium only paints backgrounds when
+ * asked, so the document states its own colours rather than inheriting any.
+ */
+@layer base {
+    html {
+        color-scheme: light;
+    }
+
+    body {
+        background-color: #fff;
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        font-size: 10pt;
+        line-height: 1.45;
+    }
+
+    /* A row split across a page break is unreadable in a printed table. */
+    tr,
+    th,
+    td {
+        break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+}

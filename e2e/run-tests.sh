@@ -30,6 +30,20 @@ export E2E_ASSET_ISOLATION="true"
 build_dir="public/build-e2e"
 hot_file="public/hot-e2e"
 
+# Browsershot renders documents with a real Chrome. Playwright already installs
+# one for this suite, so the renderer is pointed at that binary instead of
+# letting Puppeteer download a second copy - which is also why
+# `pnpm-workspace.yaml` declines Puppeteer's install script. Production supplies
+# its own browser; see the system prerequisites in the README.
+LARAVEL_PDF_CHROME_PATH="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+export LARAVEL_PDF_CHROME_PATH
+
+# Chromium's sandbox needs unprivileged user namespaces, which Ubuntu 23.10+ and
+# most CI containers deny, so the browser refuses to start at all. Disabling it
+# is scoped to this test run on purpose: the flag is a real weakening, and
+# production should keep the sandbox rather than inherit this.
+export LARAVEL_PDF_NO_SANDBOX="true"
+
 # Reverb values baked into the browser bundle at build time. They must match
 # playwright.config.ts, and they must never outlive the test run inside the
 # bundle the developer's own session serves.

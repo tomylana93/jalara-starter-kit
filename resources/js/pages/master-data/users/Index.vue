@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { Download, FileSpreadsheet, Plus, Upload } from '@lucide/vue';
+import { Download, FileSpreadsheet, FileText, Plus, Upload } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { DataTable } from '@/components/data-table';
 import type {
@@ -19,16 +19,18 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from '@/composables/useTranslations';
 import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as masterDataIndex } from '@/routes/master-data';
-import {
-    create,
-    exportMethod,
-    importMethod,
-    index,
-} from '@/routes/master-data/users';
+import { create, importMethod, index } from '@/routes/master-data/users';
+import { excel, pdf } from '@/routes/master-data/users/export';
 import { template } from '@/routes/master-data/users/import';
 import { createUserColumns } from './columns';
 import type { UserRow } from './columns';
@@ -75,11 +77,26 @@ const filters = computed<TableFilterConfig[]>(() =>
 const selectedUserIds = ref<string[]>([]);
 
 /*
- * A plain browser download rather than an Inertia visit: the response is a
- * file, and the selection order is what the spreadsheet rows follow.
+ * Plain browser downloads rather than Inertia visits: the responses are files,
+ * and the selection order is what their rows follow.
  */
-const exportUrl = computed(() =>
-    exportMethod.url({ query: { ids: selectedUserIds.value } }),
+const excelExportUrl = computed(() =>
+    excel.url({ query: { ids: selectedUserIds.value } }),
+);
+
+/*
+ * The document is rendered by Chromium on the server, where the browser's zone
+ * is the server's rather than the reader's. Sending the reader's zone is what
+ * keeps the printed timestamps equal to the ones on screen; the server
+ * validates it and falls back to UTC.
+ */
+const pdfExportUrl = computed(() =>
+    pdf.url({
+        query: {
+            ids: selectedUserIds.value,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+    }),
 );
 
 const isImportDialogOpen = ref(false);
@@ -219,15 +236,45 @@ const applyQuery = (query: TableQuery): void => {
                 @selection-change="selectedUserIds = $event"
             >
                 <template #actions>
-                    <a
-                        v-if="selectedUserIds.length > 0"
-                        :href="exportUrl"
-                        :class="buttonVariants({ variant: 'outline' })"
-                        data-test="export-users-button"
-                    >
-                        <FileSpreadsheet class="size-4" />
-                        {{ t('master_data.user.button.export') }}
-                    </a>
+                    <DropdownMenu v-if="selectedUserIds.length > 0">
+                        <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="outline"
+                                data-test="export-users-button"
+                            >
+                                <Download class="size-4" />
+                                {{ t('master_data.user.button.export') }}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <!-- Real links, so each stays an ordinary browser
+                                 download rather than a scripted request. -->
+                            <DropdownMenuItem as-child>
+                                <a
+                                    :href="excelExportUrl"
+                                    data-test="export-users-excel"
+                                >
+                                    <FileSpreadsheet class="size-4" />
+                                    {{
+                                        t(
+                                            'master_data.user.button.export_excel',
+                                        )
+                                    }}
+                                </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem as-child>
+                                <a
+                                    :href="pdfExportUrl"
+                                    data-test="export-users-pdf"
+                                >
+                                    <FileText class="size-4" />
+                                    {{
+                                        t('master_data.user.button.export_pdf')
+                                    }}
+                                </a>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </template>
             </DataTable>
         </PageWrapper>

@@ -71,3 +71,33 @@ test('creates a user that starts active and then disables it', async ({
             .getByText('Disabled', { exact: true }),
     ).toBeVisible();
 });
+
+/**
+ * The one place a document is really rendered.
+ *
+ * Every other PDF assertion runs against `Pdf::fake()` in Pest, which proves
+ * the template and its data but never opens a browser. Chromium only exists in
+ * this job, so this is what would notice that the renderer itself is broken -
+ * a missing browser, an unbuilt print stylesheet, a template Chromium refuses.
+ */
+test('downloads the selected users as a real pdf', async ({ page }) => {
+    await page.goto('/master-data/users');
+
+    await page.locator('[data-test="table-select-all"]').click();
+    await page.locator('[data-test="export-users-button"]').click();
+
+    const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.locator('[data-test="export-users-pdf"]').click(),
+    ]);
+
+    expect(download.suggestedFilename()).toBe('users.pdf');
+
+    const path = await download.path();
+    const { readFileSync } = await import('node:fs');
+    const contents = readFileSync(path);
+
+    /* Every PDF starts with this signature; anything else is not a document. */
+    expect(contents.subarray(0, 4).toString('latin1')).toBe('%PDF');
+    expect(contents.byteLength).toBeGreaterThan(1000);
+});

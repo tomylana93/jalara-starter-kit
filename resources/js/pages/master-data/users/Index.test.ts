@@ -84,6 +84,9 @@ const mountIndex = (
 describe('master data user index', () => {
     beforeEach(() => {
         routerGet.mockClear();
+        /* Teleported content outlives its test, so a document query would
+           otherwise read a previous mount's dropdown or dialog. */
+        document.body.innerHTML = '';
     });
 
     it('renders every user with its role and status', () => {
@@ -243,21 +246,46 @@ describe('master data user index', () => {
     });
 
     it('offers the export only once rows are selected', async () => {
-        const wrapper = mountIndex();
+        const wrapper = mountIndex({}, document.body);
 
         expect(wrapper.find('[data-test="export-users-button"]').exists()).toBe(
             false,
         );
 
         await wrapper.get('[data-test="table-select-all"]').trigger('click');
+        await wrapper.get('[data-test="export-users-button"]').trigger('click');
 
         expect(
             decodeURIComponent(
-                wrapper
-                    .get('[data-test="export-users-button"]')
-                    .attributes('href') ?? '',
+                document
+                    .querySelector('[data-test="export-users-excel"]')
+                    ?.getAttribute('href') ?? '',
             ),
-        ).toBe('/master-data/users/export?ids[]=user-1&ids[]=user-2');
+        ).toBe('/master-data/users/export/excel?ids[]=user-1&ids[]=user-2');
+    });
+
+    /*
+     * Chromium renders the document on the server, so without this the printed
+     * timestamps would follow the server's zone rather than the reader's.
+     */
+    it('sends the reader timezone with the pdf export', async () => {
+        const wrapper = mountIndex({}, document.body);
+
+        await wrapper
+            .get('[data-test="table-select-row-user-1"]')
+            .trigger('click');
+        await wrapper.get('[data-test="export-users-button"]').trigger('click');
+
+        const href = decodeURIComponent(
+            document
+                .querySelector('[data-test="export-users-pdf"]')
+                ?.getAttribute('href') ?? '',
+        );
+
+        expect(href).toContain('/master-data/users/export/pdf?ids[]=user-1');
+        expect(href).toContain(
+            `timezone=${Intl.DateTimeFormat().resolvedOptions().timeZone}`,
+        );
     });
 
     it('offers the import alongside the create action', () => {
@@ -329,18 +357,19 @@ describe('master data user index', () => {
     });
 
     it('exports a single selected row', async () => {
-        const wrapper = mountIndex();
+        const wrapper = mountIndex({}, document.body);
 
         await wrapper
             .get('[data-test="table-select-row-user-2"]')
             .trigger('click');
+        await wrapper.get('[data-test="export-users-button"]').trigger('click');
 
         expect(
             decodeURIComponent(
-                wrapper
-                    .get('[data-test="export-users-button"]')
-                    .attributes('href') ?? '',
+                document
+                    .querySelector('[data-test="export-users-excel"]')
+                    ?.getAttribute('href') ?? '',
             ),
-        ).toBe('/master-data/users/export?ids[]=user-2');
+        ).toBe('/master-data/users/export/excel?ids[]=user-2');
     });
 });

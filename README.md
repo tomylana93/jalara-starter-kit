@@ -44,6 +44,19 @@ Before setting up Jalara Starter Kit, ensure your environment meets the followin
 - **pnpm**: `^11.0` (pinned via `pnpm-lock.yaml`)
 - **Database**: SQLite (recommended for local development), MySQL, MariaDB, or PostgreSQL
 - **Laravel Installer**: `^5.31`
+- **ext-intl**: Required. Month names in documents are read from ICU so they match what the browser renders.
+- **A Chrome or Chromium binary**: Required only for PDF export, at runtime.
+
+#### PDF export at runtime
+
+PDF export renders through Browsershot, which drives a real Chrome from Node. Two things follow, and neither is optional wherever documents are generated:
+
+- `node_modules` must be present in production, because Browsershot shells out to Node and requires the `puppeteer` package. It is a runtime dependency, not a build-time one.
+- A Chrome or Chromium binary must exist, and `LARAVEL_PDF_CHROME_PATH` must point at it. Puppeteer's own browser download is declined in `pnpm-workspace.yaml`, so no browser is fetched during `pnpm install`.
+
+Nothing in CI catches a missing browser: the Pest suite fakes rendering, and only the end-to-end job runs a real one, pointed at the Chromium that Playwright installs. A misconfigured server therefore fails on the first document a user asks for, not in the pipeline.
+
+Chromium's sandbox needs unprivileged user namespaces, which Ubuntu 23.10+ and most containers deny. Prefer granting the namespace permission over setting `LARAVEL_PDF_NO_SANDBOX=true`; the test suite sets that flag for itself, and production should not inherit it.
 
 ### Agent & MCP Prerequisites (for AI-assisted development)
 - **Laravel Boost MCP**: Version `^2.0` for framework context, database query execution, and schemas

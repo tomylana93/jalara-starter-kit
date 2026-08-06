@@ -77,7 +77,14 @@ return [
             'save' => 'Simpan',
             'cancel' => 'Batal',
             'edit' => 'Ubah',
-            'export' => 'Ekspor XLSX',
+            'export' => 'Ekspor',
+            'export_excel' => 'Excel (XLSX)',
+            'export_pdf' => 'PDF',
+        ],
+
+        'document' => [
+            'generated_at' => 'Dibuat pada',
+            'generated_by' => 'Dibuat oleh',
         ],
 
         'message' => [

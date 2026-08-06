@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEST_TIME_ZONE, withTimeZone } from '@/test/timeZone';
+import instantCases from '../../../tests/Fixtures/instants.json';
 import {
     DATE_TIME_FALLBACK,
     formatBrowserDateTime,
@@ -177,4 +178,24 @@ describe('formatBrowserTime', () => {
         expect(formatBrowserTime('')).toBe(DATE_TIME_FALLBACK);
         expect(formatBrowserTime('not-a-date')).toBe(DATE_TIME_FALLBACK);
     });
+});
+
+/*
+ * A PDF is rendered by Chromium on the server, where the browser's own zone is
+ * the server's rather than the reader's, so `App\Support\InstantFormatter`
+ * reproduces this formatter in PHP. Both sides assert the same fixture: that is
+ * what makes the duplication safe, because an expectation cannot be changed on
+ * one side alone and a formatter changed on one side turns the other red.
+ */
+describe('shared instant expectations', () => {
+    it.each(instantCases.cases)(
+        'renders the same text PHP renders: $name',
+        ({ instant, dateFormat, timeZone, locale, expected }) => {
+            withTimeZone(timeZone, () => {
+                expect(formatBrowserDateTime(instant, dateFormat, locale)).toBe(
+                    expected,
+                );
+            });
+        },
+    );
 });
