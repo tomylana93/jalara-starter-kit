@@ -14,6 +14,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from '@/composables/useTranslations';
+import { formatRelativeTime } from '@/lib/dateTime';
 import { index, read, readAll } from '@/routes/notifications';
 import type { NotificationItem } from '@/types';
 
@@ -91,6 +92,14 @@ useEchoNotification<NotificationItem>(
     },
 );
 
+/*
+ * Computed as the row renders and never refreshed on a timer: an arrival, a
+ * read, or an Inertia visit all re-render the bell, and nobody is reading a
+ * dropdown they left open and idle.
+ */
+const relativeTime = (item: NotificationItem): string =>
+    formatRelativeTime(item.created_at, page.props.locale);
+
 const markAsRead = (item: NotificationItem): void => {
     if (item.read_at !== null) {
         return;
@@ -110,13 +119,20 @@ const markAllAsRead = (): void => {
 /*
  * A notification may carry no destination, so the row stays a plain item and
  * only records the read state.
+ *
+ * When it does carry one, the read and the navigation travel in the same
+ * request: the server redirects to the destination it holds. Two visits fired
+ * side by side race each other, and the `back()` response of the read wins,
+ * which flickers the destination and lands the user back where they were.
  */
 const open = (item: NotificationItem): void => {
-    markAsRead(item);
+    if (item.url === null) {
+        markAsRead(item);
 
-    if (item.url !== null) {
-        router.visit(item.url);
+        return;
     }
+
+    router.patch(read(item.id), { open: true });
 };
 </script>
 
@@ -188,6 +204,12 @@ const open = (item: NotificationItem): void => {
                     ></span>
                     <span class="truncate text-sm font-medium">
                         {{ item.title }}
+                    </span>
+                    <span
+                        class="ml-auto shrink-0 text-[0.625rem] text-muted-foreground tabular-nums"
+                        :data-test="`notification-time-${item.id}`"
+                    >
+                        {{ relativeTime(item) }}
                     </span>
                 </span>
                 <span class="line-clamp-2 text-xs text-muted-foreground">

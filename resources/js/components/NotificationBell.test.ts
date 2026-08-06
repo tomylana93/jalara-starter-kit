@@ -185,7 +185,11 @@ it('marks every notification as read from the dropdown', async () => {
     });
 });
 
-it('marks one notification as read and opens its destination', async () => {
+/*
+ * A second visit alongside the read would race the read's own redirect, so the
+ * click must leave exactly one request behind and no client-side navigation.
+ */
+it('marks one notification as read and opens it in the same request', async () => {
     const patch = vi.spyOn(router, 'patch').mockImplementation(() => undefined);
     const visit = vi.spyOn(router, 'visit').mockImplementation(() => undefined);
 
@@ -197,10 +201,12 @@ it('marks one notification as read and opens its destination', async () => {
     const wrapper = mount(NotificationBell);
     await wrapper.find('[data-test="notification-item-a1"]').trigger('click');
 
+    expect(patch).toHaveBeenCalledTimes(1);
     expect(patch.mock.calls[0]?.[0]).toMatchObject({
         url: '/notifications/a1/read',
     });
-    expect(visit).toHaveBeenCalledWith('/dashboard');
+    expect(patch.mock.calls[0]?.[1]).toEqual({ open: true });
+    expect(visit).not.toHaveBeenCalled();
 });
 
 it('keeps a notification without a url safe to select', async () => {
@@ -219,7 +225,7 @@ it('keeps a notification without a url safe to select', async () => {
     expect(visit).not.toHaveBeenCalled();
 });
 
-it('does not re-mark a notification that is already read', async () => {
+it('opens an already read notification through the same single request', async () => {
     const patch = vi.spyOn(router, 'patch').mockImplementation(() => undefined);
     const visit = vi.spyOn(router, 'visit').mockImplementation(() => undefined);
 
@@ -237,8 +243,9 @@ it('does not re-mark a notification that is already read', async () => {
     const wrapper = mount(NotificationBell);
     await wrapper.find('[data-test="notification-item-a1"]').trigger('click');
 
-    expect(patch).not.toHaveBeenCalled();
-    expect(visit).toHaveBeenCalledWith('/dashboard');
+    expect(patch).toHaveBeenCalledTimes(1);
+    expect(patch.mock.calls[0]?.[1]).toEqual({ open: true });
+    expect(visit).not.toHaveBeenCalled();
 });
 
 it('links to the full notification page', () => {
@@ -247,4 +254,19 @@ it('links to the full notification page', () => {
     expect(
         wrapper.find('[data-test="notification-view-all"]').attributes('href'),
     ).toBe('/notifications');
+});
+
+it('dates each notification relative to now', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T10:05:00+00:00'));
+
+    inertiaPageProps.notificationBell = { items: [item()], unreadCount: 1 };
+
+    const wrapper = mount(NotificationBell);
+
+    expect(wrapper.get('[data-test="notification-time-a1"]').text()).toBe(
+        '5 minutes ago',
+    );
+
+    vi.useRealTimers();
 });

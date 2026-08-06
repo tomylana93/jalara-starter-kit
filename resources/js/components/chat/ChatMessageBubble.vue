@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
 import { SmilePlus } from '@lucide/vue';
 import type { AcceptableValue } from 'reka-ui';
 import { computed } from 'vue';
+import ChatMessageMeta from '@/components/chat/ChatMessageMeta.vue';
 import {
     Attachment,
     AttachmentMedia,
@@ -17,11 +17,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-    Message,
-    MessageContent,
-    MessageFooter,
-} from '@/components/ui/message';
+import { Message, MessageContent } from '@/components/ui/message';
 import { MessageScrollerItem } from '@/components/ui/message-scroller';
 import {
     Popover,
@@ -30,6 +26,7 @@ import {
 } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useTranslations } from '@/composables/useTranslations';
+import { formatBrowserTime } from '@/lib/dateTime';
 import type { ChatMessage } from '@/types';
 
 const EMOJIS = [
@@ -50,13 +47,11 @@ const EMOJIS = [
 type Props = {
     message: ChatMessage;
     currentUserId: string | null;
-    latestOutgoing?: boolean;
     read?: boolean;
     audit?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
-    latestOutgoing: false,
     read: false,
     audit: false,
 });
@@ -65,19 +60,20 @@ const emit = defineEmits<{
     react: [message: ChatMessage, emoji: string | null];
 }>();
 
-const page = usePage();
 const { t } = useTranslations();
 const own = computed(() => props.message.sender_id === props.currentUserId);
 const reaction = computed(() => props.message.reactions[0] ?? null);
-const time = computed(() => {
-    if (!props.message.created_at) {
-        return '';
+const time = computed(() =>
+    props.message.created_at ? formatBrowserTime(props.message.created_at) : '',
+);
+
+/* Only the sender is told whether a message was read; the reader already knows. */
+const status = computed<'none' | 'sent' | 'read'>(() => {
+    if (!own.value) {
+        return 'none';
     }
 
-    return new Intl.DateTimeFormat(page.props.locale, {
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(props.message.created_at));
+    return props.read ? 'read' : 'sent';
 });
 
 /**
@@ -133,6 +129,18 @@ const chooseReaction = (value: AcceptableValue | AcceptableValue[]): void => {
                                 <AttachmentTrigger
                                     :aria-label="t('chat.button.preview_image')"
                                 />
+                                <!--
+                                    A message with text trails its meta after
+                                    that text instead, so this only covers the
+                                    image-only case. The scrim is what keeps it
+                                    readable over a bright photo.
+                                -->
+                                <ChatMessageMeta
+                                    v-if="!props.message.body"
+                                    :time="time"
+                                    :status="status"
+                                    class="pointer-events-none absolute right-1.5 bottom-1.5 z-20 rounded-full bg-black/55 px-1.5 py-0.5 text-white"
+                                />
                             </Attachment>
                         </DialogTrigger>
                         <DialogContent
@@ -152,12 +160,23 @@ const chooseReaction = (value: AcceptableValue | AcceptableValue[]): void => {
                         </DialogContent>
                     </Dialog>
 
-                    <BubbleContent
-                        v-if="props.message.body"
-                        class="whitespace-pre-wrap"
-                        data-test="chat-message-body"
-                    >
-                        {{ props.message.body }}
+                    <BubbleContent v-if="props.message.body">
+                        <span
+                            class="whitespace-pre-wrap"
+                            data-test="chat-message-body"
+                            >{{ props.message.body }}</span
+                        >
+                        <!--
+                            Its own row under the text rather than trailing it,
+                            so a long last line never has to share space with the
+                            meta, and settled into the bottom-right corner from
+                            there.
+                        -->
+                        <ChatMessageMeta
+                            :time="time"
+                            :status="status"
+                            class="mt-1 flex w-full justify-end opacity-70"
+                        />
                     </BubbleContent>
 
                     <BubbleReactions
@@ -207,20 +226,6 @@ const chooseReaction = (value: AcceptableValue | AcceptableValue[]): void => {
                     </PopoverContent>
                 </Popover>
             </MessageContent>
-
-            <MessageFooter class="gap-1">
-                <span>{{ time }}</span>
-                <template v-if="own && props.latestOutgoing">
-                    <span aria-hidden="true">·</span>
-                    <span data-test="chat-read-receipt">
-                        {{
-                            props.read
-                                ? t('chat.label.read')
-                                : t('chat.label.sent')
-                        }}
-                    </span>
-                </template>
-            </MessageFooter>
         </Message>
     </MessageScrollerItem>
 </template>

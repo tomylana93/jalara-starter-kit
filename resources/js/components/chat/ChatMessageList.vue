@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { InfiniteScroll, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import ChatMessageBubble from '@/components/chat/ChatMessageBubble.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,14 +50,6 @@ const emit = defineEmits<{
 
 const { t } = useTranslations();
 const page = usePage();
-
-const latestOutgoingId = computed(
-    () =>
-        [...props.messages]
-            .reverse()
-            .find((message) => message.sender_id === props.currentUserId)?.id ??
-        null,
-);
 
 const localDate = (message: ChatMessage): Date | null => {
     if (!message.created_at) {
@@ -220,9 +212,6 @@ watch(
                             <ChatMessageBubble
                                 :message="message"
                                 :current-user-id="props.currentUserId"
-                                :latest-outgoing="
-                                    message.id === latestOutgoingId
-                                "
                                 :read="isRead(message)"
                                 @react="
                                     (target, emoji) =>
@@ -261,7 +250,6 @@ watch(
                         <ChatMessageBubble
                             :message="message"
                             :current-user-id="props.currentUserId"
-                            :latest-outgoing="message.id === latestOutgoingId"
                             :read="isRead(message)"
                             @react="
                                 (target, emoji) => emit('react', target, emoji)

@@ -265,7 +265,7 @@ const seen = (messageId: string): void => {
     >
         <section
             v-if="open"
-            class="flex h-[30rem] w-[22rem] flex-col overflow-hidden rounded-xl border bg-background shadow-lg"
+            class="flex h-[30rem] w-[26rem] flex-col overflow-hidden rounded-xl border bg-background shadow-lg"
             :class="minimized ? 'h-auto' : ''"
             data-test="chat-widget-panel"
             :data-minimized="minimized ? 'true' : 'false'"

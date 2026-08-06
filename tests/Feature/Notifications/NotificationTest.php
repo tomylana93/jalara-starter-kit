@@ -182,6 +182,8 @@ it('paginates the notification page ten at a time, newest first', function () {
             ->where('notifications.meta.to', 10)
             ->where('notifications.data.0.title', 'Title 12')
             ->where('filter', 'all')
+            /* The page spells timestamps out, so it needs the configured preset. */
+            ->has('dateFormat')
         );
 
     actingAs($user)
@@ -240,6 +242,64 @@ it('marks a single notification as read', function () {
         ->assertRedirect();
 
     expect($notification->fresh()->read_at)->not->toBeNull();
+});
+
+it('carries the read and the navigation in a single request', function () {
+    $user = User::factory()->create();
+    sendNotification($user);
+    $notification = $user->notifications()->sole();
+
+    actingAs($user)
+        ->from(route('notifications.index'))
+        ->patch(route('notifications.read', $notification->id), ['open' => true])
+        ->assertRedirect('/dashboard');
+
+    expect($notification->fresh()->read_at)->not->toBeNull();
+});
+
+it('returns to the previous page when the read carries no open intent', function () {
+    $user = User::factory()->create();
+    sendNotification($user);
+    $notification = $user->notifications()->sole();
+
+    actingAs($user)
+        ->from(route('notifications.index'))
+        ->patch(route('notifications.read', $notification->id))
+        ->assertRedirect(route('notifications.index'));
+});
+
+it('ignores the open intent for a notification without a destination', function () {
+    $user = User::factory()->create();
+    sendNotification($user, url: null);
+    $notification = $user->notifications()->sole();
+
+    actingAs($user)
+        ->from(route('notifications.index'))
+        ->patch(route('notifications.read', $notification->id), ['open' => true])
+        ->assertRedirect(route('notifications.index'));
+
+    expect($notification->fresh()->read_at)->not->toBeNull();
+});
+
+it('refuses to follow a notification destination that leaves the application', function () {
+    $user = User::factory()->create();
+    sendNotification($user, url: 'https://evil.example.com/steal');
+    $notification = $user->notifications()->sole();
+
+    actingAs($user)
+        ->from(route('notifications.index'))
+        ->patch(route('notifications.read', $notification->id), ['open' => true])
+        ->assertRedirect(route('notifications.index'));
+});
+
+it('rejects a non-boolean open intent', function () {
+    $user = User::factory()->create();
+    sendNotification($user);
+    $notification = $user->notifications()->sole();
+
+    actingAs($user)
+        ->patch(route('notifications.read', $notification->id), ['open' => 'maybe'])
+        ->assertSessionHasErrors('open');
 });
 
 it('marks every unread notification of the user as read', function () {

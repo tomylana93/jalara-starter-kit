@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ChevronLeft,
     ChevronRight,
@@ -34,6 +34,7 @@ import {
     PaginationPrevious,
 } from '@/components/ui/pagination';
 import { translate, useTranslations } from '@/composables/useTranslations';
+import { formatBrowserDateTime } from '@/lib/dateTime';
 import { index, read, readAll } from '@/routes/notifications';
 import type {
     NotificationFilter,
@@ -49,6 +50,7 @@ type LayoutProps = {
 const props = defineProps<{
     notifications: NotificationPayload;
     filter: NotificationFilter;
+    dateFormat: string;
 }>();
 
 defineOptions({
@@ -67,8 +69,16 @@ defineOptions({
 });
 
 const { t } = useTranslations();
+const page = usePage();
 
 const filters: NotificationFilter[] = ['all', 'unread'];
+
+/*
+ * This page is the full record rather than a glance, so it spells the instant
+ * out under the configured date format, like every other listing does.
+ */
+const timestamp = (item: NotificationItem): string =>
+    formatBrowserDateTime(item.created_at, props.dateFormat, page.props.locale);
 
 const items = computed(() => props.notifications.data);
 const meta = computed(() => props.notifications.meta);
@@ -113,14 +123,14 @@ const markAllAsRead = (): void => {
     router.patch(readAll(), {}, { preserveScroll: true });
 };
 
+/*
+ * The read and the navigation travel in the same request: the server redirects
+ * to the destination it holds. Two visits fired side by side race each other,
+ * and the `back()` response of the read wins, which flickers the destination
+ * and lands the user back on this page.
+ */
 const open = (item: NotificationItem): void => {
-    if (item.read_at === null) {
-        markAsRead(item);
-    }
-
-    if (item.url !== null) {
-        router.visit(item.url);
-    }
+    router.patch(read(item.id), { open: true });
 };
 </script>
 
@@ -208,6 +218,12 @@ const open = (item: NotificationItem): void => {
                             </ItemTitle>
                             <ItemDescription>
                                 {{ item.message }}
+                            </ItemDescription>
+                            <ItemDescription
+                                class="text-xs tabular-nums"
+                                :data-test="`notification-time-${item.id}`"
+                            >
+                                {{ timestamp(item) }}
                             </ItemDescription>
                         </ItemContent>
 
