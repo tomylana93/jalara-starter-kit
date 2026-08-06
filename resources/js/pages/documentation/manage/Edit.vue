@@ -15,7 +15,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as documentationIndex } from '@/routes/documentation';
 import { create, index as manageIndex } from '@/routes/documentation/manage';
 import { edit, store, update } from '@/routes/documentation/manage/documents';
@@ -39,38 +40,16 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'documentation.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: documentationIndex(),
-            },
-            {
-                title: translate(
-                    'documentation.manage.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: manageIndex(),
-            },
-            {
-                title: translate(
-                    layoutProps.documentation
-                        ? 'documentation.form.edit'
-                        : 'documentation.form.create',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: layoutProps.documentation
-                    ? edit(layoutProps.documentation.slug)
-                    : create(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout<LayoutProps>((layoutProps) => [
+        { key: 'documentation.title', href: documentationIndex() },
+        { key: 'documentation.manage.title', href: manageIndex() },
+        layoutProps.documentation
+            ? {
+                  key: 'documentation.form.edit',
+                  href: edit(layoutProps.documentation.slug),
+              }
+            : { key: 'documentation.form.create', href: create() },
+    ]),
 });
 
 const { t } = useTranslations();

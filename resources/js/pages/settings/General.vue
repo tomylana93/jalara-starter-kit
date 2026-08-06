@@ -15,7 +15,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/general';
 import type { SelectOption } from '@/types';
@@ -27,11 +28,6 @@ type GeneralSettings = {
     dateFormat: string;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     settings: GeneralSettings;
     localeOptions: SelectOption[];
@@ -39,26 +35,10 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.general.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.general.title', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();
@@ -95,6 +75,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="applicationName">
                         {{ t('setting.general.label.application_name') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.application_name') }}
+                    </p>
                     <Input
                         id="applicationName"
                         name="applicationName"
@@ -112,6 +95,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="description">
                         {{ t('setting.general.label.description') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.description') }}
+                    </p>
                     <Textarea
                         id="description"
                         name="description"
@@ -129,6 +115,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="defaultLocale">
                         {{ t('setting.general.label.default_locale') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.default_locale') }}
+                    </p>
                     <input
                         type="hidden"
                         name="defaultLocale"
@@ -162,6 +151,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="dateFormat">
                         {{ t('setting.general.label.date_format') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.date_format') }}
+                    </p>
                     <input
                         type="hidden"
                         name="dateFormat"

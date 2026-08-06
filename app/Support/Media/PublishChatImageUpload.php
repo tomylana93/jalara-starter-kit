@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Media;
+namespace App\Support\Media;
 
 use App\Actions\Chat\SendMessage;
 use App\Actions\Chat\StartConversation;

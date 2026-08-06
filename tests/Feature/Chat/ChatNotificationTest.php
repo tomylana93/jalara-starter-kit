@@ -1,7 +1,6 @@
 <?php
 
 use App\Actions\Chat\NotifyChatMessageRecipient;
-use App\Actions\Chat\TrackChatPageContext;
 use App\Events\Chat\ChatMessageSent;
 use App\Jobs\Chat\DeliverChatMessageNotification;
 use App\Models\Chat\Conversation;
@@ -10,6 +9,7 @@ use App\Models\Chat\Participant;
 use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
+use App\Support\Chat\TrackChatPageContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;

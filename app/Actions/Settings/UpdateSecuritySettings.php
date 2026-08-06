@@ -2,20 +2,19 @@
 
 namespace App\Actions\Settings;
 
+use App\Data\Settings\UpdateSecuritySettingsData;
 use App\Settings\SecuritySettings;
 
 final class UpdateSecuritySettings
 {
     /**
      * Update the security settings.
-     *
-     * @param  array{maxFailedLoginAttempts: int, suspensionDurationMinutes: int, maintenanceEnabled: bool}  $attributes
      */
-    public function handle(SecuritySettings $settings, array $attributes): SecuritySettings
+    public function handle(SecuritySettings $settings, UpdateSecuritySettingsData $data): SecuritySettings
     {
-        $settings->maxFailedLoginAttempts = $attributes['maxFailedLoginAttempts'];
-        $settings->suspensionDurationMinutes = $attributes['suspensionDurationMinutes'];
-        $settings->maintenanceEnabled = $attributes['maintenanceEnabled'];
+        $settings->maxFailedLoginAttempts = $data->maxFailedLoginAttempts;
+        $settings->suspensionDurationMinutes = $data->suspensionDurationMinutes;
+        $settings->maintenanceEnabled = $data->maintenanceEnabled;
 
         $settings->save();
 

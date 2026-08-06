@@ -4,31 +4,18 @@ import { Settings2 } from '@lucide/vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index, show } from '@/routes/documentation';
 import { index as manageIndex } from '@/routes/documentation/manage';
 import type { DocumentationReaderCategory } from '@/types/documentation';
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 defineProps<{ categories: DocumentationReaderCategory[] }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'documentation.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'documentation.title', href: index() },
+    ]),
 });
 
 const page = usePage();

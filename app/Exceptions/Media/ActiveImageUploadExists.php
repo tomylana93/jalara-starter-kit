@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Media;
+namespace App\Exceptions\Media;
 
 use App\Models\ImageUpload;
 use RuntimeException;

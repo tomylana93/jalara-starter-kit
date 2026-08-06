@@ -8,17 +8,13 @@ import PasswordInput from '@/components/PasswordInput.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { edit } from '@/routes/account/security';
 
 type Props = {
     passwordRules: string;
     mustChangePassword: boolean;
-};
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
 };
 
 const props = defineProps<Props>();
@@ -30,18 +26,9 @@ defineOptions({
      * as extraneous attributes.
      */
     inheritAttrs: false,
-    layout: (props: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'account.layout.label.security',
-                    props.locale,
-                    props.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'account.layout.label.security', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();

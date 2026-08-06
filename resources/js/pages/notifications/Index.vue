@@ -33,7 +33,8 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { formatBrowserDateTime } from '@/lib/dateTime';
 import { index, read, readAll } from '@/routes/notifications';
 import type {
@@ -42,11 +43,6 @@ import type {
     NotificationPayload,
 } from '@/types';
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     notifications: NotificationPayload;
     filter: NotificationFilter;
@@ -54,18 +50,9 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'notification.page.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'notification.page.title', href: index() },
+    ]),
 });
 
 const { t } = useTranslations();

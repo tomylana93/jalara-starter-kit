@@ -2,50 +2,23 @@
 import { Head } from '@inertiajs/vue3';
 import UserController from '@/actions/App/Http/Controllers/MasterData/UserController';
 import PageWrapper from '@/components/PageWrapper.vue';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as masterDataIndex } from '@/routes/master-data';
 import { create, index } from '@/routes/master-data/users';
 import type { SelectOption } from '@/types';
 import UserForm from './components/UserForm.vue';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 const props = defineProps<{
     roleOptions: SelectOption[];
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'master_data.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: masterDataIndex(),
-            },
-            {
-                title: translate(
-                    'master_data.user.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-            {
-                title: translate(
-                    'master_data.user.create.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: create(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'master_data.layout.title', href: masterDataIndex() },
+        { key: 'master_data.user.title', href: index() },
+        { key: 'master_data.user.create.title', href: create() },
+    ]),
 });
 
 const { t } = useTranslations();

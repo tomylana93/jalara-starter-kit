@@ -3,6 +3,7 @@
 namespace App\Actions\Chat;
 
 use App\Actions\Media\StageImageUpload;
+use App\Data\Chat\SubmitChatMessageResult;
 use App\Enums\ImageUploadTarget;
 use App\Enums\UserStatus;
 use App\Jobs\Media\ProcessChatImageUpload;

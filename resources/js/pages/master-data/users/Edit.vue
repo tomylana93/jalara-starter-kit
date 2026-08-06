@@ -2,7 +2,8 @@
 import { Head } from '@inertiajs/vue3';
 import UserController from '@/actions/App/Http/Controllers/MasterData/UserController';
 import PageWrapper from '@/components/PageWrapper.vue';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as masterDataIndex } from '@/routes/master-data';
 import { edit, index } from '@/routes/master-data/users';
 import type { SelectOption } from '@/types';
@@ -29,34 +30,14 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'master_data.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: masterDataIndex(),
-            },
-            {
-                title: translate(
-                    'master_data.user.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-            {
-                title: translate(
-                    'master_data.user.edit.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(layoutProps.user.id),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout<LayoutProps>((layoutProps) => [
+        { key: 'master_data.layout.title', href: masterDataIndex() },
+        { key: 'master_data.user.title', href: index() },
+        {
+            key: 'master_data.user.edit.title',
+            href: edit(layoutProps.user.id),
+        },
+    ]),
 });
 
 const { t } = useTranslations();

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Chat;
+namespace App\Data\Chat;
 
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;

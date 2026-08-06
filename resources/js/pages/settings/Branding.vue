@@ -13,7 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
 import { useBranding } from '@/composables/useBranding';
 import { useResumableUploads } from '@/composables/useResumableUploads';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/branding';
 import {
@@ -32,11 +33,6 @@ type BrandingSettings = {
     fontPair: string;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     settings: BrandingSettings;
     identityModeOptions: SelectOption[];
@@ -47,26 +43,10 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.branding.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.branding.title', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();
@@ -127,6 +107,9 @@ const fontPair = ref(props.settings.fontPair);
                     <Label for="companyName">
                         {{ t('setting.branding.label.company_name') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.company_name') }}
+                    </p>
                     <Input
                         id="companyName"
                         name="companyName"
@@ -144,6 +127,9 @@ const fontPair = ref(props.settings.fontPair);
                     <Label for="footerText">
                         {{ t('setting.branding.label.footer_text') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.footer_text') }}
+                    </p>
                     <Textarea
                         id="footerText"
                         name="footerText"
@@ -225,6 +211,9 @@ const fontPair = ref(props.settings.fontPair);
                     <legend class="text-sm font-medium">
                         {{ t('setting.branding.label.auth_layout_group') }}
                     </legend>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.auth_layout_group') }}
+                    </p>
                     <input
                         type="hidden"
                         name="authLayout"
@@ -332,6 +321,9 @@ const fontPair = ref(props.settings.fontPair);
                     <legend class="text-sm font-medium">
                         {{ t('setting.branding.label.app_layout_group') }}
                     </legend>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.app_layout_group') }}
+                    </p>
                     <input type="hidden" name="appLayout" :value="appLayout" />
                     <RadioGroup
                         v-model="appLayout"
@@ -387,6 +379,9 @@ const fontPair = ref(props.settings.fontPair);
                     <legend class="text-sm font-medium">
                         {{ t('setting.branding.label.color_theme_group') }}
                     </legend>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.color_theme_group') }}
+                    </p>
                     <input
                         type="hidden"
                         name="colorTheme"
@@ -431,6 +426,9 @@ const fontPair = ref(props.settings.fontPair);
                     <legend class="text-sm font-medium">
                         {{ t('setting.branding.label.font_pair_group') }}
                     </legend>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.branding.help.font_pair_group') }}
+                    </p>
                     <input type="hidden" name="fontPair" :value="fontPair" />
                     <RadioGroup
                         v-model="fontPair"

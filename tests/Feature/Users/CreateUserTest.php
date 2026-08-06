@@ -2,6 +2,7 @@
 
 use App\Actions\Settings\ForgetDefaultPassword;
 use App\Actions\Users\CreateUser;
+use App\Data\Users\CreateUserData;
 use App\Exceptions\DefaultUserPasswordNotConfigured;
 use App\Models\User;
 use App\Settings\UserProvisioningSettings;
@@ -22,10 +23,10 @@ beforeEach(function () {
 });
 
 it('creates verified users from the configured default password', function () {
-    $user = app(CreateUser::class)->handle([
-        'name' => 'Admin Created',
-        'email' => 'created@example.com',
-    ]);
+    $user = app(CreateUser::class)->handle(new CreateUserData(
+        name: 'Admin Created',
+        email: 'created@example.com',
+    ));
 
     expect($user->hasVerifiedEmail())->toBeTrue()
         ->and($user->must_change_password)->toBeTrue()
@@ -36,8 +37,8 @@ it('creates verified users from the configured default password', function () {
 it('gives every created user a distinct password hash', function () {
     $action = app(CreateUser::class);
 
-    $first = $action->handle(['name' => 'First', 'email' => 'first@example.com']);
-    $second = $action->handle(['name' => 'Second', 'email' => 'second@example.com']);
+    $first = $action->handle(new CreateUserData(name: 'First', email: 'first@example.com'));
+    $second = $action->handle(new CreateUserData(name: 'Second', email: 'second@example.com'));
 
     expect($first->password)->not->toBe($second->password);
 });
@@ -45,10 +46,10 @@ it('gives every created user a distinct password hash', function () {
 it('fails safely when no default password is configured', function () {
     app(UserProvisioningSettings::class)->fill(['defaultPassword' => null])->save();
 
-    expect(fn () => app(CreateUser::class)->handle([
-        'name' => 'Admin Created',
-        'email' => 'created@example.com',
-    ]))->toThrow(DefaultUserPasswordNotConfigured::class)
+    expect(fn () => app(CreateUser::class)->handle(new CreateUserData(
+        name: 'Admin Created',
+        email: 'created@example.com',
+    )))->toThrow(DefaultUserPasswordNotConfigured::class)
         ->and(User::query()->where('email', 'created@example.com')->exists())->toBeFalse();
 });
 
@@ -56,7 +57,7 @@ it('never reveals the default password through the exception', function () {
     app(UserProvisioningSettings::class)->fill(['defaultPassword' => null])->save();
 
     try {
-        app(CreateUser::class)->handle(['name' => 'Admin Created', 'email' => 'created@example.com']);
+        app(CreateUser::class)->handle(new CreateUserData(name: 'Admin Created', email: 'created@example.com'));
     } catch (DefaultUserPasswordNotConfigured $defaultUserPasswordNotConfigured) {
         expect($defaultUserPasswordNotConfigured->getMessage())->not->toContain(defaultUserPassword());
     }
@@ -64,36 +65,36 @@ it('never reveals the default password through the exception', function () {
 
 it('returns the existing user when the default password was removed after creation', function () {
     $action = app(CreateUser::class);
-    $attributes = ['name' => 'Admin Created', 'email' => 'created@example.com'];
+    $data = new CreateUserData(name: 'Admin Created', email: 'created@example.com');
 
-    $user = $action->handle($attributes);
+    $user = $action->handle($data);
 
     app(ForgetDefaultPassword::class)->handle(app(UserProvisioningSettings::class));
 
-    expect($action->handle($attributes)->is($user))->toBeTrue()
-        ->and(User::query()->where('email', $attributes['email'])->count())->toBe(1);
+    expect($action->handle($data)->is($user))->toBeTrue()
+        ->and(User::query()->where('email', $data->email)->count())->toBe(1);
 });
 
 it('localizes the missing default password message', function () {
     app(UserProvisioningSettings::class)->fill(['defaultPassword' => null])->save();
     app()->setLocale('id');
 
-    expect(fn () => app(CreateUser::class)->handle(['name' => 'Admin Created', 'email' => 'created@example.com']))->toThrow(DefaultUserPasswordNotConfigured::class, __('setting.user_provisioning.default_password.not_configured', locale: 'id'));
+    expect(fn () => app(CreateUser::class)->handle(new CreateUserData(name: 'Admin Created', email: 'created@example.com')))->toThrow(DefaultUserPasswordNotConfigured::class, __('setting.user_provisioning.default_password.not_configured', locale: 'id'));
 });
 
 it('returns the existing user when an idempotent create is retried', function () {
     $action = app(CreateUser::class);
-    $attributes = [
-        'name' => 'Admin Created',
-        'email' => 'created@example.com',
-    ];
+    $data = new CreateUserData(
+        name: 'Admin Created',
+        email: 'created@example.com',
+    );
 
-    $firstUser = $action->handle($attributes);
+    $firstUser = $action->handle($data);
     $originalPassword = $firstUser->password;
 
-    $retriedUser = $action->handle($attributes);
+    $retriedUser = $action->handle($data);
 
     expect($retriedUser->is($firstUser))->toBeTrue()
         ->and($retriedUser->password)->toBe($originalPassword)
-        ->and(User::query()->where('email', $attributes['email'])->count())->toBe(1);
+        ->and(User::query()->where('email', $data->email)->count())->toBe(1);
 });

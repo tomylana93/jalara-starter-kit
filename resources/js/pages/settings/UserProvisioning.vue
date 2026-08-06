@@ -20,14 +20,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/user-provisioning';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 defineProps<{
     hasDefaultPassword: boolean;
@@ -35,26 +31,10 @@ defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.user_provisioning.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.user_provisioning.title', href: edit() },
+    ]),
 });
 
 const passwordInput = useTemplateRef('passwordInput');
@@ -88,6 +68,14 @@ const { t } = useTranslations();
                 </Badge>
             </div>
 
+            <!--
+                Only meaningful once something is stored: it explains why the
+                field below is empty rather than showing the current value.
+            -->
+            <p v-if="hasDefaultPassword" class="text-sm text-muted-foreground">
+                {{ t('setting.user_provisioning.help.stored') }}
+            </p>
+
             <Form
                 v-bind="UserProvisioningSettingsController.update.form()"
                 reset-on-success
@@ -104,6 +92,11 @@ const { t } = useTranslations();
                             )
                         }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{
+                            t('setting.user_provisioning.help.default_password')
+                        }}
+                    </p>
                     <PasswordInput
                         id="defaultPassword"
                         ref="passwordInput"

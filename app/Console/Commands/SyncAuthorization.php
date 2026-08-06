@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Actions\Authorization\AuthorizationSyncResult;
 use App\Actions\Authorization\SyncAuthorization as SyncAuthorizationAction;
+use App\Data\Authorization\AuthorizationSyncResult;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;

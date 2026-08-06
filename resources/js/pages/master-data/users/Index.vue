@@ -11,16 +11,12 @@ import type {
 } from '@/components/data-table';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { buttonVariants } from '@/components/ui/button';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as masterDataIndex } from '@/routes/master-data';
 import { create, exportMethod, index } from '@/routes/master-data/users';
 import { createUserColumns } from './columns';
 import type { UserRow } from './columns';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 const props = defineProps<{
     users: TablePayload<UserRow>;
@@ -30,26 +26,10 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'master_data.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: masterDataIndex(),
-            },
-            {
-                title: translate(
-                    'master_data.user.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'master_data.layout.title', href: masterDataIndex() },
+        { key: 'master_data.user.title', href: index() },
+    ]),
 });
 
 const { t } = useTranslations();

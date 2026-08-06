@@ -12,7 +12,6 @@ beforeEach(function () {
         'name' => 'Root Operator',
         'email' => 'root@example.com',
         'phone' => null,
-        'status' => UserStatus::Active->value,
         'email_verified' => true,
         'password' => 'initial-password',
     ]]);

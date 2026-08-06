@@ -5,7 +5,7 @@ namespace App\Actions\Documentation;
 use App\Models\DocumentationCategory;
 use Illuminate\Validation\ValidationException;
 
-class DeleteDocumentationCategory
+final class DeleteDocumentationCategory
 {
     /**
      * Remove a category once nothing is filed under it.

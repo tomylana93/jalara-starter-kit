@@ -6,6 +6,7 @@ use App\Actions\Documentation\CreateDocumentation;
 use App\Actions\Documentation\DeleteDocumentation;
 use App\Actions\Documentation\MoveDocumentation;
 use App\Actions\Documentation\UpdateDocumentation;
+use App\Enums\MoveDirection;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\DocumentationPresenter;
 use App\Http\Requests\Documentation\StoreDocumentationRequest;
@@ -13,7 +14,6 @@ use App\Http\Requests\Documentation\UpdateDocumentationRequest;
 use App\Models\Documentation;
 use App\Models\DocumentationCategory;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +37,7 @@ class DocumentationWriteController extends Controller
      */
     public function store(StoreDocumentationRequest $request, CreateDocumentation $createDocumentation): RedirectResponse
     {
-        $createDocumentation->handle($request->documentationAttributes());
+        $createDocumentation->handle($request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -65,7 +65,7 @@ class DocumentationWriteController extends Controller
      */
     public function update(UpdateDocumentationRequest $request, Documentation $documentation, UpdateDocumentation $updateDocumentation): RedirectResponse
     {
-        $updateDocumentation->handle($documentation, $request->documentationAttributes());
+        $updateDocumentation->handle($documentation, $request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -78,7 +78,7 @@ class DocumentationWriteController extends Controller
     /**
      * Permanently delete a document.
      */
-    public function destroy(Request $request, Documentation $documentation, DeleteDocumentation $deleteDocumentation): RedirectResponse
+    public function destroy(Documentation $documentation, DeleteDocumentation $deleteDocumentation): RedirectResponse
     {
         Gate::authorize('delete', $documentation);
 
@@ -98,10 +98,9 @@ class DocumentationWriteController extends Controller
      * Reordering is a repeated, incremental action, so it stays silent: a toast
      * per click would drown the list the author is looking at.
      */
-    public function move(Request $request, Documentation $documentation, string $direction, MoveDocumentation $moveDocumentation): RedirectResponse
+    public function move(Documentation $documentation, MoveDirection $direction, MoveDocumentation $moveDocumentation): RedirectResponse
     {
         Gate::authorize('update', $documentation);
-        abort_unless(in_array($direction, ['up', 'down'], true), 404);
 
         $moveDocumentation->handle($documentation, $direction);
 

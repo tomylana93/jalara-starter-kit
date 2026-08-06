@@ -3,6 +3,7 @@
 namespace App\Actions\Authorization;
 
 use App\Authorization\AuthorizationCatalog;
+use App\Data\Authorization\AuthorizationSyncResult;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;

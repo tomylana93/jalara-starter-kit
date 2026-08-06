@@ -34,11 +34,7 @@ class SecuritySettingsController extends Controller
         SecuritySettings $settings,
         UpdateSecuritySettings $updateSecuritySettings,
     ): RedirectResponse {
-        $updateSecuritySettings->handle($settings, [
-            'maxFailedLoginAttempts' => (int) $request->validated('maxFailedLoginAttempts'),
-            'suspensionDurationMinutes' => (int) $request->validated('suspensionDurationMinutes'),
-            'maintenanceEnabled' => $request->boolean('maintenanceEnabled'),
-        ]);
+        $updateSecuritySettings->handle($settings, $request->toData());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.security.message.updated')]);
 

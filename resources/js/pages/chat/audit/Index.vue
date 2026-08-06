@@ -5,14 +5,10 @@ import PageWrapper from '@/components/PageWrapper.vue';
 import { buttonVariants } from '@/components/ui/button';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index, show } from '@/routes/chat/audit';
 import type { ChatAuditConversation } from '@/types';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 const props = defineProps<{
     conversations: { data: ChatAuditConversation[] };
@@ -20,18 +16,9 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'chat.audit.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'chat.audit.title', href: index() },
+    ]),
 });
 
 const { t } = useTranslations();

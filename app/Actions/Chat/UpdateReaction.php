@@ -7,7 +7,7 @@ use App\Models\Chat\Message;
 use App\Models\Chat\Reaction;
 use App\Models\User;
 
-class UpdateReaction
+final class UpdateReaction
 {
     public function handle(Message $message, User $user, ?string $emoji): ?Reaction
     {

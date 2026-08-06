@@ -2,7 +2,7 @@
 
 namespace App\Http\Presenters;
 
-use App\Actions\Notifications\LoadNotificationBellResult;
+use App\Data\Notifications\LoadNotificationBellResult;
 use App\Notifications\RealtimeTestNotification;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Pagination\LengthAwarePaginator;

@@ -2,12 +2,13 @@
 
 namespace App\Actions\Users;
 
+use App\Data\Users\CreateUserData;
 use App\Exceptions\DefaultUserPasswordNotConfigured;
 use App\Models\User;
 use App\Settings\SettingsResolver;
 use App\Settings\UserProvisioningSettings;
 
-class CreateUser
+final class CreateUser
 {
     /**
      * Create a verified user, or return the existing user for an idempotent retry.
@@ -16,17 +17,15 @@ class CreateUser
      * created user starts from the configured default password and must change
      * it on first sign in.
      *
-     * @param  array{name: string, email: string}  $attributes
-     *
      * @throws DefaultUserPasswordNotConfigured When a new user is created without a configured default password.
      */
-    public function handle(array $attributes): User
+    public function handle(CreateUserData $data): User
     {
         /*
          * A retry stays idempotent even when the default password was removed
          * after the user was first created.
          */
-        $existingUser = User::query()->where('email', $attributes['email'])->first();
+        $existingUser = User::query()->where('email', $data->email)->first();
 
         if ($existingUser instanceof User) {
             return $existingUser;
@@ -34,8 +33,8 @@ class CreateUser
 
         $user = new User;
         $user->fill([
-            'name' => $attributes['name'],
-            'email' => $attributes['email'],
+            'name' => $data->name,
+            'email' => $data->email,
         ]);
 
         /* The hashed cast turns the shared plaintext into a per-user hash. */
@@ -49,7 +48,7 @@ class CreateUser
 
         /* Another request won the race on the unique email. */
         return User::query()
-            ->where('email', $attributes['email'])
+            ->where('email', $data->email)
             ->firstOrFail();
     }
 

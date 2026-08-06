@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Account;
 use App\Actions\Account\DisableAccount;
 use App\Actions\Account\RemoveAvatar;
 use App\Actions\Account\UpdateProfile;
-use App\Actions\Media\ActiveImageUploadExists;
 use App\Actions\Media\StageImageUpload;
 use App\Enums\ImageUploadTarget;
+use App\Exceptions\Media\ActiveImageUploadExists;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\DisableAccountRequest;
 use App\Http\Requests\Account\UpdateAvatarRequest;
@@ -41,10 +41,7 @@ class ProfileController extends Controller
      */
     public function update(UpdateProfileRequest $request, UpdateProfile $updateProfile): RedirectResponse
     {
-        $updateProfile->handle($request->user(), [
-            'name' => (string) $request->validated('name'),
-            'email' => (string) $request->validated('email'),
-        ]);
+        $updateProfile->handle($request->user(), $request->toData());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('account.profile.message.updated')]);
 

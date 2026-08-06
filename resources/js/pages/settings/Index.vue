@@ -20,7 +20,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index } from '@/routes/settings';
 import { edit as editAuthentication } from '@/routes/settings/authentication';
 import { index as backupsIndex } from '@/routes/settings/backups';
@@ -32,11 +33,6 @@ import { edit as editSecurity } from '@/routes/settings/security';
 import { edit as editUserProvisioning } from '@/routes/settings/user-provisioning';
 import type { RouteDefinition } from '@/wayfinder';
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 type SettingsCard = {
     key: string;
     title: string;
@@ -46,18 +42,9 @@ type SettingsCard = {
 };
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: index() },
+    ]),
 });
 
 const page = usePage();

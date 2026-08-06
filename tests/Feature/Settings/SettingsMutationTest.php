@@ -6,6 +6,11 @@ use App\Actions\Settings\UpdateBrandingSettings;
 use App\Actions\Settings\UpdateGeneralSettings;
 use App\Actions\Settings\UpdateMailSettings;
 use App\Actions\Settings\UpdateSecuritySettings;
+use App\Data\Settings\UpdateAuthenticationSettingsData;
+use App\Data\Settings\UpdateBrandingSettingsData;
+use App\Data\Settings\UpdateGeneralSettingsData;
+use App\Data\Settings\UpdateMailSettingsData;
+use App\Data\Settings\UpdateSecuritySettingsData;
 use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
@@ -25,12 +30,12 @@ use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\Mail;
 
 it('persists the general settings', function () {
-    app(UpdateGeneralSettings::class)->handle(app(GeneralSettings::class), [
-        'applicationName' => 'Jalara',
-        'description' => 'Starter kit',
-        'defaultLocale' => 'id',
-        'dateFormat' => 'Y-m-d',
-    ]);
+    app(UpdateGeneralSettings::class)->handle(app(GeneralSettings::class), new UpdateGeneralSettingsData(
+        applicationName: 'Jalara',
+        description: 'Starter kit',
+        defaultLocale: Locale::Indonesian,
+        dateFormat: DateFormat::Iso,
+    ));
 
     $settings = app(GeneralSettings::class)->refresh();
 
@@ -45,22 +50,22 @@ it('persists the general settings', function () {
 });
 
 it('persists an empty general description', function () {
-    app(UpdateGeneralSettings::class)->handle(app(GeneralSettings::class), [
-        'applicationName' => 'Jalara',
-        'description' => null,
-        'defaultLocale' => 'en',
-        'dateFormat' => 'd M Y',
-    ]);
+    app(UpdateGeneralSettings::class)->handle(app(GeneralSettings::class), new UpdateGeneralSettingsData(
+        applicationName: 'Jalara',
+        description: null,
+        defaultLocale: Locale::English,
+        dateFormat: DateFormat::from('d M Y'),
+    ));
 
     expect(app(GeneralSettings::class)->refresh()->description)->toBeNull();
 });
 
 it('persists the authentication settings', function () {
-    app(UpdateAuthenticationSettings::class)->handle(app(AuthenticationSettings::class), [
-        'requireEmailVerification' => false,
-        'passwordPolicy' => 'standard',
-        'sessionLifetimeMinutes' => 480,
-    ]);
+    app(UpdateAuthenticationSettings::class)->handle(app(AuthenticationSettings::class), new UpdateAuthenticationSettingsData(
+        requireEmailVerification: false,
+        passwordPolicy: PasswordPolicy::Standard,
+        sessionLifetimeMinutes: 480,
+    ));
 
     $settings = app(AuthenticationSettings::class)->refresh();
 
@@ -70,10 +75,10 @@ it('persists the authentication settings', function () {
 });
 
 it('persists the mail settings', function () {
-    app(UpdateMailSettings::class)->handle(app(MailSettings::class), [
-        'fromName' => 'Jalara Support',
-        'fromAddress' => 'support@jalara.test',
-    ]);
+    app(UpdateMailSettings::class)->handle(app(MailSettings::class), new UpdateMailSettingsData(
+        fromName: 'Jalara Support',
+        fromAddress: 'support@jalara.test',
+    ));
 
     $settings = app(MailSettings::class)->refresh();
 
@@ -82,11 +87,11 @@ it('persists the mail settings', function () {
 });
 
 it('persists the security settings', function () {
-    app(UpdateSecuritySettings::class)->handle(app(SecuritySettings::class), [
-        'maxFailedLoginAttempts' => 3,
-        'suspensionDurationMinutes' => 60,
-        'maintenanceEnabled' => true,
-    ]);
+    app(UpdateSecuritySettings::class)->handle(app(SecuritySettings::class), new UpdateSecuritySettingsData(
+        maxFailedLoginAttempts: 3,
+        suspensionDurationMinutes: 60,
+        maintenanceEnabled: true,
+    ));
 
     $settings = app(SecuritySettings::class)->refresh();
 
@@ -96,15 +101,15 @@ it('persists the security settings', function () {
 });
 
 it('persists the branding settings', function () {
-    app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), [
-        'companyName' => 'Jalara Group',
-        'footerText' => 'All rights reserved.',
-        'identityMode' => 'logo',
-        'authLayout' => 'split',
-        'appLayout' => 'header',
-        'colorTheme' => 'violet',
-        'fontPair' => 'space-grotesk-inter',
-    ]);
+    app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), new UpdateBrandingSettingsData(
+        companyName: 'Jalara Group',
+        footerText: 'All rights reserved.',
+        identityMode: BrandingIdentityMode::Logo,
+        authLayout: AuthLayoutPreset::Split,
+        appLayout: AppLayoutPreset::Header,
+        colorTheme: ColorThemePreset::Violet,
+        fontPair: FontPairPreset::SpaceGroteskInter,
+    ));
 
     $settings = app(BrandingSettings::class)->refresh();
 
@@ -122,10 +127,10 @@ it('sends the test message to the managing user with the configured identity', f
 
     $manager = settingsManager();
 
-    app(UpdateMailSettings::class)->handle(app(MailSettings::class), [
-        'fromName' => 'Jalara Support',
-        'fromAddress' => 'support@jalara.test',
-    ]);
+    app(UpdateMailSettings::class)->handle(app(MailSettings::class), new UpdateMailSettingsData(
+        fromName: 'Jalara Support',
+        fromAddress: 'support@jalara.test',
+    ));
 
     app(SendTestMail::class)->handle($manager, app(MailSettings::class), app(BrandingSettings::class));
 

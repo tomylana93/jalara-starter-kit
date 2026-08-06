@@ -4,6 +4,8 @@ namespace App\Http\Requests\MasterData;
 
 use App\Authorization\AuthorizationCatalog;
 use App\Concerns\ProfileValidationRules;
+use App\Data\Users\UpdateUserData;
+use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -39,5 +41,18 @@ class UpdateUserRequest extends FormRequest
             'status' => ['required', 'string', Rule::enum(UserStatus::class)],
             'role' => ['required', 'string', Rule::in($catalog->assignableRoleValues())],
         ];
+    }
+
+    /**
+     * The validated changes, with status and role already resolved to enums.
+     */
+    public function toData(): UpdateUserData
+    {
+        return new UpdateUserData(
+            name: (string) $this->validated('name'),
+            email: (string) $this->validated('email'),
+            status: UserStatus::from((string) $this->validated('status')),
+            role: Role::from((string) $this->validated('role')),
+        );
     }
 }

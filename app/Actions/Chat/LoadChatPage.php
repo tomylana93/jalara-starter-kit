@@ -2,6 +2,7 @@
 
 namespace App\Actions\Chat;
 
+use App\Data\Chat\LoadChatPageResult;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\User;

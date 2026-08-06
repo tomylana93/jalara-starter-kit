@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Media;
+namespace App\Data\Media;
 
 /**
  * What one orphan sweep found, and what it did about it.

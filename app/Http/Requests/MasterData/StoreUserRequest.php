@@ -4,6 +4,8 @@ namespace App\Http\Requests\MasterData;
 
 use App\Authorization\AuthorizationCatalog;
 use App\Concerns\ProfileValidationRules;
+use App\Data\Users\CreateManagedUserData;
+use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -33,5 +35,20 @@ class StoreUserRequest extends FormRequest
             'role' => ['required', 'string', Rule::in($catalog->assignableRoleValues())],
             'status' => ['prohibited'],
         ];
+    }
+
+    /**
+     * The validated provisioning attributes, with the role already an enum.
+     *
+     * The role is validated against the catalog of roles this actor may assign;
+     * every value that survives that is a Role case.
+     */
+    public function toData(): CreateManagedUserData
+    {
+        return new CreateManagedUserData(
+            name: (string) $this->validated('name'),
+            email: (string) $this->validated('email'),
+            role: Role::from((string) $this->validated('role')),
+        );
     }
 }

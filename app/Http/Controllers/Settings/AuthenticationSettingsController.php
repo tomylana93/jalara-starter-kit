@@ -36,11 +36,7 @@ class AuthenticationSettingsController extends Controller
         AuthenticationSettings $settings,
         UpdateAuthenticationSettings $updateAuthenticationSettings,
     ): RedirectResponse {
-        $updateAuthenticationSettings->handle($settings, [
-            'requireEmailVerification' => $request->boolean('requireEmailVerification'),
-            'passwordPolicy' => (string) $request->validated('passwordPolicy'),
-            'sessionLifetimeMinutes' => (int) $request->validated('sessionLifetimeMinutes'),
-        ]);
+        $updateAuthenticationSettings->handle($settings, $request->toData());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.authentication.message.updated')]);
 

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Documentation;
 
+use App\Data\Documentation\DocumentationData;
 use App\Enums\DocumentationStatus;
 use App\Models\Documentation;
 use App\Support\DocumentationContent;
@@ -12,27 +13,26 @@ final readonly class SaveDocumentation
         private ResolveUniqueDocumentationSlug $resolveSlug,
     ) {}
 
-    /**
-     * @param  array{documentation_category_id: string, title: string, slug?: string|null, status: string, content: array<string, mixed>}  $attributes
-     */
-    public function handle(array $attributes, ?Documentation $documentation = null): Documentation
+    public function handle(DocumentationData $data, ?Documentation $documentation = null): Documentation
     {
         $documentation ??= new Documentation;
         $slug = $documentation->published_at === null
-            ? $this->resolveSlug->handle(($attributes['slug'] ?? null) ?: $attributes['title'], $documentation)
+            ? $this->resolveSlug->handle($data->slug ?: $data->title, $documentation)
             : $documentation->slug;
-        $status = DocumentationStatus::from($attributes['status']);
 
         $documentation->fill([
-            ...$attributes,
+            'documentation_category_id' => $data->documentationCategoryId,
+            'title' => $data->title,
             'slug' => $slug,
-            'searchable_text' => DocumentationContent::text($attributes['content']),
-            'published_at' => $status === DocumentationStatus::Published
+            'status' => $data->status,
+            'content' => $data->content,
+            'searchable_text' => DocumentationContent::text($data->content),
+            'published_at' => $data->status === DocumentationStatus::Published
                 ? ($documentation->published_at ?? now())
                 : $documentation->published_at,
             'position' => $documentation->exists
                 ? $documentation->position
-                : Documentation::query()->where('documentation_category_id', $attributes['documentation_category_id'])->max('position') + 1,
+                : Documentation::query()->where('documentation_category_id', $data->documentationCategoryId)->max('position') + 1,
         ])->save();
 
         return $documentation;
