@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Actions\Notifications\PaginateNotifications;
 use App\Http\Presenters\NotificationPresenter;
 use App\Http\Requests\Notifications\IndexNotificationRequest;
+use App\Http\Requests\Notifications\MarkNotificationReadRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,8 +51,13 @@ class NotificationController extends Controller
 
     /**
      * Mark one of the authenticated user's notifications as read.
+     *
+     * When the caller asks to open the notification, the same request also
+     * carries it to its destination. Marking and navigating must stay in one
+     * round trip: a separate client-side visit races the `back()` response
+     * below, which then re-renders the page the user just left.
      */
-    public function markAsRead(Request $request, string $notification): RedirectResponse
+    public function markAsRead(MarkNotificationReadRequest $request, string $notification): RedirectResponse
     {
         /*
          * Resolved through the relation rather than by route binding, so another
@@ -60,7 +67,40 @@ class NotificationController extends Controller
 
         $record->markAsRead();
 
+        $destination = $this->destination($record);
+
+        if ($request->boolean('open') && $destination !== null) {
+            return redirect()->to($destination);
+        }
+
         return back();
+    }
+
+    /**
+     * Resolve where a notification points, ignoring anything that would leave
+     * the application. Payloads are written by this application's own
+     * notifications, so an external host means the record is untrustworthy.
+     */
+    private function destination(DatabaseNotification $notification): ?string
+    {
+        $url = NotificationPresenter::present($notification)['url'];
+
+        if ($url === null) {
+            return null;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if ($host === false) {
+            return null;
+        }
+
+        /* A relative path carries no host and is always internal. */
+        if ($host === null) {
+            return $url;
+        }
+
+        return $host === parse_url((string) config('app.url'), PHP_URL_HOST) ? $url : null;
     }
 
     /**

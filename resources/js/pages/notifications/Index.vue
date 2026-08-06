@@ -113,14 +113,14 @@ const markAllAsRead = (): void => {
     router.patch(readAll(), {}, { preserveScroll: true });
 };
 
+/*
+ * The read and the navigation travel in the same request: the server redirects
+ * to the destination it holds. Two visits fired side by side race each other,
+ * and the `back()` response of the read wins, which flickers the destination
+ * and lands the user back on this page.
+ */
 const open = (item: NotificationItem): void => {
-    if (item.read_at === null) {
-        markAsRead(item);
-    }
-
-    if (item.url !== null) {
-        router.visit(item.url);
-    }
+    router.patch(read(item.id), { open: true });
 };
 </script>
 

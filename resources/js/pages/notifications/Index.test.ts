@@ -212,17 +212,23 @@ it('hides the read actions when everything is already read', () => {
     );
 });
 
-it('opens a notification that carries a url and records the read', async () => {
+/*
+ * A second visit alongside the read would race the read's own redirect, so the
+ * click must leave exactly one request behind and no client-side navigation.
+ */
+it('opens a notification through the read request alone', async () => {
     const patch = vi.spyOn(router, 'patch').mockImplementation(() => undefined);
     const visit = vi.spyOn(router, 'visit').mockImplementation(() => undefined);
 
     const wrapper = mountPage(payload([item({ id: 'a1', url: '/dashboard' })]));
     await wrapper.get('[data-test="notification-open-a1"]').trigger('click');
 
+    expect(patch).toHaveBeenCalledTimes(1);
     expect(patch.mock.calls[0]?.[0]).toMatchObject({
         url: '/notifications/a1/read',
     });
-    expect(visit).toHaveBeenCalledWith('/dashboard');
+    expect(patch.mock.calls[0]?.[1]).toEqual({ open: true });
+    expect(visit).not.toHaveBeenCalled();
 });
 
 it('offers no open action for a notification without a url', () => {

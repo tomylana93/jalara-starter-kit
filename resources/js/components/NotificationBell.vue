@@ -110,13 +110,20 @@ const markAllAsRead = (): void => {
 /*
  * A notification may carry no destination, so the row stays a plain item and
  * only records the read state.
+ *
+ * When it does carry one, the read and the navigation travel in the same
+ * request: the server redirects to the destination it holds. Two visits fired
+ * side by side race each other, and the `back()` response of the read wins,
+ * which flickers the destination and lands the user back where they were.
  */
 const open = (item: NotificationItem): void => {
-    markAsRead(item);
+    if (item.url === null) {
+        markAsRead(item);
 
-    if (item.url !== null) {
-        router.visit(item.url);
+        return;
     }
+
+    router.patch(read(item.id), { open: true });
 };
 </script>
 
