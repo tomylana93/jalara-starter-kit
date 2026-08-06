@@ -2,6 +2,7 @@
 
 namespace App\Actions\Notifications;
 
+use App\Data\Notifications\LoadNotificationBellResult;
 use App\Models\User;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;

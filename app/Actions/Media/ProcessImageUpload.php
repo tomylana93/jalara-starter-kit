@@ -2,6 +2,7 @@
 
 namespace App\Actions\Media;
 
+use App\Exceptions\Media\StoredImageWriteFailed;
 use App\Models\ImageUpload;
 use Illuminate\Support\Facades\Image;
 

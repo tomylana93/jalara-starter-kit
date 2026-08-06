@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Chat;
 
-use App\Actions\Chat\TrackChatPageContext;
 use App\Concerns\ResolvesAuthenticatedUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Chat\ChatPageContextRequest;
+use App\Support\Chat\TrackChatPageContext;
 use Illuminate\Http\JsonResponse;
 
 /**

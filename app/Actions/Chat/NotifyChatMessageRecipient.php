@@ -7,6 +7,7 @@ use App\Models\Chat\Message;
 use App\Models\Chat\Participant;
 use App\Notifications\ChatMessageNotification;
 use App\Settings\ChatSettings;
+use App\Support\Chat\TrackChatPageContext;
 use Illuminate\Notifications\DatabaseNotification;
 
 /**

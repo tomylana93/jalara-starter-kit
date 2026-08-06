@@ -4,9 +4,9 @@ namespace App\Actions\Documentation;
 
 use App\Models\Documentation;
 
-class CreateDocumentation
+final readonly class CreateDocumentation
 {
-    public function __construct(private readonly SaveDocumentation $saveDocumentation) {}
+    public function __construct(private SaveDocumentation $saveDocumentation) {}
 
     /**
      * Store a new document.

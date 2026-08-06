@@ -4,7 +4,7 @@ namespace App\Actions\Documentation;
 
 use App\Models\DocumentationCategory;
 
-class CreateDocumentationCategory
+final class CreateDocumentationCategory
 {
     /**
      * Append a category to the end of the manual ordering.

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Authorization;
+namespace App\Data\Authorization;
 
 final readonly class AuthorizationSyncResult
 {
