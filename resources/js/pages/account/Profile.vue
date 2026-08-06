@@ -12,17 +12,13 @@ import { Label } from '@/components/ui/label';
 import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
 import { useInitials } from '@/composables/useInitials';
 import { useResumableUploads } from '@/composables/useResumableUploads';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { edit } from '@/routes/account/profile';
 import {
     destroy as avatarDestroy,
     store as avatarStore,
 } from '@/routes/account/profile/avatar';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 defineProps<{
     canDisableAccount: boolean;
@@ -35,18 +31,9 @@ defineOptions({
      * as extraneous attributes.
      */
     inheritAttrs: false,
-    layout: (props: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'account.profile.title',
-                    props.locale,
-                    props.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'account.profile.title', href: edit() },
+    ]),
 });
 
 const page = usePage();

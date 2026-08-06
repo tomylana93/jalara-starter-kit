@@ -12,7 +12,8 @@ import {
     MessageScrollerProvider,
     MessageScrollerViewport,
 } from '@/components/ui/message-scroller';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index } from '@/routes/chat/audit';
 import type { ChatAuditLog, ChatMessage, ChatProfile } from '@/types';
 
@@ -23,11 +24,6 @@ type AuditConversation = {
     message_count: number;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     conversation: AuditConversation;
     messages: { data: ChatMessage[] };
@@ -35,18 +31,9 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'chat.audit.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'chat.audit.title', href: index() },
+    ]),
 });
 
 const { t } = useTranslations();

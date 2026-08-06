@@ -8,8 +8,9 @@ import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { useChat } from '@/composables/useChat';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
 import { useUploadGuard } from '@/composables/useUploadGuard';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { chatRequest } from '@/lib/chatClient';
 import { index } from '@/routes/chat';
 import {
@@ -22,11 +23,6 @@ type ScrollPayload<TItem> = {
     data: TItem[];
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     conversations: ScrollPayload<ChatConversation>;
     messages: ScrollPayload<ChatMessage>;
@@ -34,18 +30,7 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'chat.page.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [{ key: 'chat.page.title', href: index() }]),
 });
 
 /* Comfortably inside the server's TrackChatPageContext window. */

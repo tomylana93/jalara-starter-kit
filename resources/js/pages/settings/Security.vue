@@ -3,14 +3,15 @@ import { Form, Head } from '@inertiajs/vue3';
 import { TriangleAlert } from '@lucide/vue';
 import { ref } from 'vue';
 import SecuritySettingsController from '@/actions/App/Http/Controllers/Settings/SecuritySettingsController';
+import BooleanField from '@/components/BooleanField.vue';
 import InputError from '@/components/InputError.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/security';
 
@@ -20,36 +21,15 @@ type SecuritySettings = {
     maintenanceEnabled: boolean;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     settings: SecuritySettings;
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.security.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.security.title', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();
@@ -113,28 +93,16 @@ const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
                     <InputError :message="errors.suspensionDurationMinutes" />
                 </div>
 
-                <div class="grid gap-2">
-                    <input
-                        type="hidden"
-                        name="maintenanceEnabled"
-                        :value="maintenanceEnabled ? '1' : '0'"
-                    />
-                    <div class="flex items-center justify-between gap-4">
-                        <Label for="maintenanceEnabled">
-                            {{
-                                t('setting.security.label.maintenance_enabled')
-                            }}
-                        </Label>
-                        <Switch
-                            id="maintenanceEnabled"
-                            v-model="maintenanceEnabled"
-                            :aria-invalid="Boolean(errors.maintenanceEnabled)"
-                            class="aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
-                            @update:model-value="validate('maintenanceEnabled')"
-                        />
-                    </div>
-                    <InputError :message="errors.maintenanceEnabled" />
-                </div>
+                <BooleanField
+                    v-model="maintenanceEnabled"
+                    name="maintenanceEnabled"
+                    :label="t('setting.security.label.maintenance_enabled')"
+                    :description="
+                        t('setting.security.help.maintenance_enabled')
+                    "
+                    :error="errors.maintenanceEnabled"
+                    @validate="validate('maintenanceEnabled')"
+                />
 
                 <Alert>
                     <TriangleAlert class="size-4" />

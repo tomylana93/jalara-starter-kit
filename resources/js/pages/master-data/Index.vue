@@ -10,15 +10,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index } from '@/routes/master-data';
 import { index as usersIndex } from '@/routes/master-data/users';
 import type { RouteDefinition } from '@/wayfinder';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 type MasterDataCard = {
     key: string;
@@ -29,18 +25,9 @@ type MasterDataCard = {
 };
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'master_data.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'master_data.layout.title', href: index() },
+    ]),
 });
 
 const { t } = useTranslations();
