@@ -75,6 +75,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="applicationName">
                         {{ t('setting.general.label.application_name') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.application_name') }}
+                    </p>
                     <Input
                         id="applicationName"
                         name="applicationName"
@@ -92,6 +95,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="description">
                         {{ t('setting.general.label.description') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.description') }}
+                    </p>
                     <Textarea
                         id="description"
                         name="description"
@@ -109,6 +115,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="defaultLocale">
                         {{ t('setting.general.label.default_locale') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.default_locale') }}
+                    </p>
                     <input
                         type="hidden"
                         name="defaultLocale"
@@ -142,6 +151,9 @@ const dateFormatLabel = computed(() =>
                     <Label for="dateFormat">
                         {{ t('setting.general.label.date_format') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.general.help.date_format') }}
+                    </p>
                     <input
                         type="hidden"
                         name="dateFormat"

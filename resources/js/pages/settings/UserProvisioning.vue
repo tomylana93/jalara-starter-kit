@@ -68,6 +68,14 @@ const { t } = useTranslations();
                 </Badge>
             </div>
 
+            <!--
+                Only meaningful once something is stored: it explains why the
+                field below is empty rather than showing the current value.
+            -->
+            <p v-if="hasDefaultPassword" class="text-sm text-muted-foreground">
+                {{ t('setting.user_provisioning.help.stored') }}
+            </p>
+
             <Form
                 v-bind="UserProvisioningSettingsController.update.form()"
                 reset-on-success
@@ -84,6 +92,11 @@ const { t } = useTranslations();
                             )
                         }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{
+                            t('setting.user_provisioning.help.default_password')
+                        }}
+                    </p>
                     <PasswordInput
                         id="defaultPassword"
                         ref="passwordInput"

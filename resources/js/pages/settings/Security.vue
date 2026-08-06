@@ -59,6 +59,11 @@ const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
                             )
                         }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{
+                            t('setting.security.help.max_failed_login_attempts')
+                        }}
+                    </p>
                     <Input
                         id="maxFailedLoginAttempts"
                         type="text"
@@ -79,6 +84,13 @@ const maintenanceEnabled = ref(props.settings.maintenanceEnabled);
                             )
                         }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{
+                            t(
+                                'setting.security.help.suspension_duration_minutes',
+                            )
+                        }}
+                    </p>
                     <Input
                         id="suspensionDurationMinutes"
                         type="text"

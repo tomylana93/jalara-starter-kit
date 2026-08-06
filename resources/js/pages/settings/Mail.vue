@@ -50,6 +50,9 @@ const { t } = useTranslations();
                     <Label for="fromName">
                         {{ t('setting.mail.label.from_name') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.mail.help.from_name') }}
+                    </p>
                     <Input
                         id="fromName"
                         name="fromName"
@@ -65,6 +68,9 @@ const { t } = useTranslations();
                     <Label for="fromAddress">
                         {{ t('setting.mail.label.from_address') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.mail.help.from_address') }}
+                    </p>
                     <Input
                         id="fromAddress"
                         type="text"

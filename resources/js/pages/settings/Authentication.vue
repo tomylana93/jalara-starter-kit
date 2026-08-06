@@ -87,6 +87,9 @@ const passwordPolicyLabel = computed(
                     <Label for="passwordPolicy">
                         {{ t('setting.authentication.label.password_policy') }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{ t('setting.authentication.help.password_policy') }}
+                    </p>
                     <input
                         type="hidden"
                         name="passwordPolicy"
@@ -124,6 +127,13 @@ const passwordPolicyLabel = computed(
                             )
                         }}
                     </Label>
+                    <p class="text-sm text-muted-foreground">
+                        {{
+                            t(
+                                'setting.authentication.help.session_lifetime_minutes',
+                            )
+                        }}
+                    </p>
                     <Input
                         id="sessionLifetimeMinutes"
                         type="text"
