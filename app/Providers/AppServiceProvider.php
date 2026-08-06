@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\ExceptionResponse;
+use Inertia\Inertia;
 use LogicException;
 
 class AppServiceProvider extends ServiceProvider
@@ -58,6 +60,44 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureRateLimiting();
         $this->configureVite();
+        $this->configureErrorPages();
+    }
+
+    /**
+     * Render error responses as full Inertia pages rather than bare responses.
+     *
+     * A plain response to an Inertia visit is not recognised as a page, so the
+     * client falls back to its modal error overlay - the whole application
+     * stays behind a dialog instead of being replaced by the error screen.
+     *
+     * `withSharedData()` resolves the Inertia middleware explicitly, because an
+     * exception may be thrown before or outside it; without it these pages lose
+     * branding, locale, and the permission flags they render from. It is the
+     * reason this is registered here rather than as a plain `respond()` callback
+     * in `bootstrap/app.php`, where that method does not exist.
+     */
+    protected function configureErrorPages(): void
+    {
+        Inertia::handleExceptionsUsing(function (ExceptionResponse $response): ?ExceptionResponse {
+            /* API clients keep their JSON body; an Inertia visit sends `Accept: text/html`. */
+            if ($response->request->is('api/*') || $response->request->expectsJson()) {
+                return null;
+            }
+
+            /* Maintenance is a product state, so its screen renders in every environment. */
+            if ($response->statusCode() === 503) {
+                return $response->render('Maintenance')->withSharedData();
+            }
+
+            /* A real failure is more useful as the local debug modal. */
+            if (app()->environment('local')) {
+                return null;
+            }
+
+            return in_array($response->statusCode(), [403, 404, 500], true)
+                ? $response->render('ErrorPage', ['status' => $response->statusCode()])->withSharedData()
+                : null;
+        });
     }
 
     /**

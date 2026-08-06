@@ -215,10 +215,6 @@ return [
         ],
     ],
 
-    'maintenance' => [
-        'message' => 'Aplikasi sedang dalam pemeliharaan. Silakan coba lagi nanti.',
-    ],
-
     'security' => [
         'title' => 'Keamanan',
         'description' => 'Penanganan login gagal dan mode pemeliharaan',
@@ -234,7 +230,7 @@ return [
         ],
         'alert' => [
             'maintenance_title' => 'Mode pemeliharaan',
-            'maintenance' => 'Login, logout, dan halaman pengaturan tetap dapat diakses, dan akun yang memiliki permission pengaturan tetap memiliki akses penuh.',
+            'maintenance' => 'Login, logout, pemulihan kata sandi, dan halaman pengaturan tetap dapat diakses, dan akun yang memiliki permission pengaturan tetap memiliki akses penuh.',
         ],
         'button' => [
             'save' => 'Simpan',

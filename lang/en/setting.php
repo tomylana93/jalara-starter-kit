@@ -215,10 +215,6 @@ return [
         ],
     ],
 
-    'maintenance' => [
-        'message' => 'The application is under maintenance. Please try again later.',
-    ],
-
     'security' => [
         'title' => 'Security',
         'description' => 'Failed login handling and maintenance mode',
@@ -234,7 +230,7 @@ return [
         ],
         'alert' => [
             'maintenance_title' => 'Maintenance mode',
-            'maintenance' => 'Login, logout, and the settings screens stay reachable, and accounts holding the settings permission keep full access.',
+            'maintenance' => 'Signing in and out, password recovery, and the settings screens stay reachable, and accounts holding the settings permission keep full access.',
         ],
         'button' => [
             'save' => 'Save',

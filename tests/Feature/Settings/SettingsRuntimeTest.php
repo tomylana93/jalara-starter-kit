@@ -16,8 +16,11 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\assertAuthenticatedAs;
+use function Pest\Laravel\assertGuest;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 
@@ -221,25 +224,72 @@ it('applies the configured login throttle without changing account status', func
         ->and($user->suspended_until)->toBeNull();
 });
 
-it('blocks the application while maintenance is enabled', function () {
+it('blocks the application with the maintenance page while maintenance is enabled', function () {
+    $settings = app(SecuritySettings::class);
+    $settings->maintenanceEnabled = true;
+    $settings->save();
+
+    /*
+     * The component assertion is the point: a bare 503 body is not recognised
+     * as a page by the Inertia client, which then shows it in its error modal
+     * instead of replacing the screen.
+     */
+    actingAs(User::factory()->create())
+        ->get(route('dashboard'))
+        ->assertStatus(503)
+        ->assertInertia(fn (Assert $page) => $page->component('Maintenance'));
+});
+
+it('keeps API clients on a JSON body while maintenance is enabled', function () {
     $settings = app(SecuritySettings::class);
     $settings->maintenanceEnabled = true;
     $settings->save();
 
     actingAs(User::factory()->create())
-        ->get(route('dashboard'))
-        ->assertStatus(503);
+        ->getJson(route('api.v1.me'))
+        ->assertStatus(503)
+        ->assertJsonPath('message', __('maintenance.message'));
 });
 
-it('keeps login, logout, and health checks reachable during maintenance', function () {
+it('keeps sign-in, sign-out, password recovery, and health checks reachable during maintenance', function () {
     $settings = app(SecuritySettings::class);
     $settings->maintenanceEnabled = true;
     $settings->save();
 
-    get(route('login'))->assertOk();
-    get('/up')->assertOk();
+    $manager = settingsManager();
 
-    actingAs(User::factory()->create())->post(route('logout'))->assertRedirect();
+    get('/up')->assertOk();
+    get(route('login'))->assertOk();
+    get(route('password.request'))->assertOk();
+    get(route('password.reset', ['token' => 'reset-token']))->assertOk();
+
+    post(route('password.email'), ['email' => $manager->email])->assertRedirect();
+
+    post(route('login.store'), [
+        'email' => $manager->email,
+        'password' => 'password',
+    ])->assertValid();
+
+    assertAuthenticatedAs($manager);
+
+    post(route('logout'))->assertRedirect(route('home'));
+
+    get(route('home'))->assertRedirect(route('login'));
+});
+
+it('refuses a sign-in from an account without the settings permission during maintenance', function () {
+    $settings = app(SecuritySettings::class);
+    $settings->maintenanceEnabled = true;
+    $settings->save();
+
+    $user = User::factory()->create();
+
+    post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertInvalid(['email' => __('maintenance.message')]);
+
+    assertGuest();
 });
 
 it('lets settings managers bypass maintenance', function () {
