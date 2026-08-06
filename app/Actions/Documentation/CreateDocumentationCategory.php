@@ -2,19 +2,18 @@
 
 namespace App\Actions\Documentation;
 
+use App\Data\Documentation\DocumentationCategoryData;
 use App\Models\DocumentationCategory;
 
 final class CreateDocumentationCategory
 {
     /**
      * Append a category to the end of the manual ordering.
-     *
-     * @param  array{name: string}  $attributes
      */
-    public function handle(array $attributes): DocumentationCategory
+    public function handle(DocumentationCategoryData $data): DocumentationCategory
     {
         return DocumentationCategory::query()->create([
-            ...$attributes,
+            'name' => $data->name,
             'position' => DocumentationCategory::query()->max('position') + 1,
         ]);
     }

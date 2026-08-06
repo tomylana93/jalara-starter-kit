@@ -58,11 +58,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request, CreateManagedUser $createManagedUser): RedirectResponse
     {
         try {
-            $createManagedUser->handle([
-                'name' => (string) $request->validated('name'),
-                'email' => (string) $request->validated('email'),
-                'role' => (string) $request->validated('role'),
-            ]);
+            $createManagedUser->handle($request->toData());
         } catch (DefaultUserPasswordNotConfigured $defaultUserPasswordNotConfigured) {
             /* Provisioning needs a default password configured in settings. */
             Inertia::flash('toast', [
@@ -102,12 +98,7 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user, UpdateUser $updateUser): RedirectResponse
     {
-        $updateUser->handle($user, [
-            'name' => (string) $request->validated('name'),
-            'email' => (string) $request->validated('email'),
-            'status' => (string) $request->validated('status'),
-            'role' => (string) $request->validated('role'),
-        ]);
+        $updateUser->handle($user, $request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',

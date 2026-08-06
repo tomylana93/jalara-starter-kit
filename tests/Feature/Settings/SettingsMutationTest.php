@@ -8,7 +8,6 @@ use App\Actions\Settings\UpdateMailSettings;
 use App\Actions\Settings\UpdateSecuritySettings;
 use App\Data\Settings\UpdateAuthenticationSettingsData;
 use App\Data\Settings\UpdateBrandingSettingsData;
-use App\Data\Settings\UpdateChatSettingsData;
 use App\Data\Settings\UpdateGeneralSettingsData;
 use App\Data\Settings\UpdateMailSettingsData;
 use App\Data\Settings\UpdateSecuritySettingsData;

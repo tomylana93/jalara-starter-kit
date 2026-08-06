@@ -37,7 +37,7 @@ class DocumentationWriteController extends Controller
      */
     public function store(StoreDocumentationRequest $request, CreateDocumentation $createDocumentation): RedirectResponse
     {
-        $createDocumentation->handle($request->documentationAttributes());
+        $createDocumentation->handle($request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -65,7 +65,7 @@ class DocumentationWriteController extends Controller
      */
     public function update(UpdateDocumentationRequest $request, Documentation $documentation, UpdateDocumentation $updateDocumentation): RedirectResponse
     {
-        $updateDocumentation->handle($documentation, $request->documentationAttributes());
+        $updateDocumentation->handle($documentation, $request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',
