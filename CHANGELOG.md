@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.1.0...v1.2.0) (2026-08-06)
+
+
+### Features
+
+* action-boundary data layer and architecture cleanup ([3099900](https://github.com/tomylana93/jalara-starter-kit/commit/3099900802fb929b5725b17ebf96ed65c111488c))
+* complete the action-boundary data layer ([2271ff4](https://github.com/tomylana93/jalara-starter-kit/commit/2271ff438bda09b7b4f0a5e88475f429310892e3))
+* **settings:** type the settings actions with data objects ([2dda4d7](https://github.com/tomylana93/jalara-starter-kit/commit/2dda4d7d71c126b8ebaf34d9debfe35a2d58a584))
+
+
+### Bug Fixes
+
+* **settings:** render the help text every settings field already had ([3bc936e](https://github.com/tomylana93/jalara-starter-kit/commit/3bc936ebfc33e887bf7ebb719ed58782b1845074))
+
 ## [1.1.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.0.0...v1.1.0) (2026-08-06)
 
 
