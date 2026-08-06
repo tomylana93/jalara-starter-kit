@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Data\Settings\UpdateBrandingSettingsData;
 use App\Enums\AppLayoutPreset;
 use App\Enums\AuthLayoutPreset;
 use App\Enums\BrandingIdentityMode;
@@ -29,5 +30,23 @@ class UpdateBrandingSettingsRequest extends FormRequest
             'colorTheme' => ['required', 'string', Rule::enum(ColorThemePreset::class)],
             'fontPair' => ['required', 'string', Rule::enum(FontPairPreset::class)],
         ];
+    }
+
+    /**
+     * The validated branding, with every preset already resolved to its enum.
+     */
+    public function toData(): UpdateBrandingSettingsData
+    {
+        $footerText = $this->validated('footerText');
+
+        return new UpdateBrandingSettingsData(
+            companyName: (string) $this->validated('companyName'),
+            footerText: $footerText === null ? null : (string) $footerText,
+            identityMode: BrandingIdentityMode::from((string) $this->validated('identityMode')),
+            authLayout: AuthLayoutPreset::from((string) $this->validated('authLayout')),
+            appLayout: AppLayoutPreset::from((string) $this->validated('appLayout')),
+            colorTheme: ColorThemePreset::from((string) $this->validated('colorTheme')),
+            fontPair: FontPairPreset::from((string) $this->validated('fontPair')),
+        );
     }
 }

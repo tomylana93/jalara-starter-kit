@@ -57,15 +57,7 @@ class BrandingSettingsController extends Controller
         BrandingSettings $settings,
         UpdateBrandingSettings $updateBrandingSettings,
     ): RedirectResponse {
-        $updateBrandingSettings->handle($settings, [
-            'companyName' => (string) $request->validated('companyName'),
-            'footerText' => $request->validated('footerText'),
-            'identityMode' => (string) $request->validated('identityMode'),
-            'authLayout' => (string) $request->validated('authLayout'),
-            'appLayout' => (string) $request->validated('appLayout'),
-            'colorTheme' => (string) $request->validated('colorTheme'),
-            'fontPair' => (string) $request->validated('fontPair'),
-        ]);
+        $updateBrandingSettings->handle($settings, $request->toData());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.branding.message.updated')]);
 

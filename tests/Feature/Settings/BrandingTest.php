@@ -2,6 +2,11 @@
 
 use App\Actions\Settings\UpdateBrandingSettings;
 use App\Actions\Settings\UpdateGeneralSettings;
+use App\Data\Settings\UpdateBrandingSettingsData;
+use App\Data\Settings\UpdateGeneralSettingsData;
+use App\Enums\AppLayoutPreset;
+use App\Enums\AuthLayoutPreset;
+use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
 use App\Enums\FontPairPreset;
 use App\Http\Presenters\BrandingPresenter;
@@ -11,20 +16,24 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\get;
 
-/**
- * @param  array<string, mixed>  $overrides
- */
-function updateBranding(array $overrides = []): void
-{
-    app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), array_merge([
-        'companyName' => 'Jalara Group',
-        'footerText' => null,
-        'identityMode' => 'icon-text',
-        'authLayout' => 'simple',
-        'appLayout' => 'sidebar',
-        'colorTheme' => 'neutral',
-        'fontPair' => 'instrument-sans',
-    ], $overrides));
+function updateBranding(
+    string $companyName = 'Jalara Group',
+    ?string $footerText = null,
+    BrandingIdentityMode $identityMode = BrandingIdentityMode::IconText,
+    AuthLayoutPreset $authLayout = AuthLayoutPreset::Simple,
+    AppLayoutPreset $appLayout = AppLayoutPreset::Sidebar,
+    ColorThemePreset $colorTheme = ColorThemePreset::Neutral,
+    FontPairPreset $fontPair = FontPairPreset::InstrumentSans,
+): void {
+    app(UpdateBrandingSettings::class)->handle(app(BrandingSettings::class), new UpdateBrandingSettingsData(
+        companyName: $companyName,
+        footerText: $footerText,
+        identityMode: $identityMode,
+        authLayout: $authLayout,
+        appLayout: $appLayout,
+        colorTheme: $colorTheme,
+        fontPair: $fontPair,
+    ));
 }
 
 it('falls back to the Jalara identity before the branding settings resolve', function () {
@@ -40,7 +49,7 @@ it('falls back to the Jalara identity before the branding settings resolve', fun
 });
 
 it('lets stored branding override the fallback identity', function () {
-    updateBranding(['companyName' => 'Jalara Group', 'footerText' => 'Copyright Jalara Group.']);
+    updateBranding(companyName: 'Jalara Group', footerText: 'Copyright Jalara Group.');
 
     $branding = get(route('login'))->viewData('page')['props']['branding'];
 
@@ -75,13 +84,13 @@ it('exposes common heading and body font pairs', function () {
 });
 
 it('shares the branding presets as string values', function () {
-    updateBranding([
-        'footerText' => 'All rights reserved.',
-        'authLayout' => 'split',
-        'appLayout' => 'header',
-        'colorTheme' => 'emerald',
-        'fontPair' => 'playfair-display-source-sans',
-    ]);
+    updateBranding(
+        footerText: 'All rights reserved.',
+        authLayout: AuthLayoutPreset::Split,
+        appLayout: AppLayoutPreset::Header,
+        colorTheme: ColorThemePreset::Emerald,
+        fontPair: FontPairPreset::PlayfairDisplaySourceSans,
+    );
 
     get(route('login'))->assertInertia(fn (Assert $page) => $page
         ->where('branding.companyName', 'Jalara Group')
@@ -108,7 +117,7 @@ it('shares scalars rather than settings or enum objects', function () {
 });
 
 it('renders the branding attributes on the root element', function () {
-    updateBranding(['colorTheme' => 'violet', 'fontPair' => 'space-grotesk-inter']);
+    updateBranding(colorTheme: ColorThemePreset::Violet, fontPair: FontPairPreset::SpaceGroteskInter);
 
     get(route('login'))
         ->assertSee('data-color-theme="violet"', false)
@@ -118,20 +127,20 @@ it('renders the branding attributes on the root element', function () {
 it('renders the application name as the document title independently of branding', function () {
     $general = app(GeneralSettings::class);
 
-    app(UpdateGeneralSettings::class)->handle($general, [
-        'applicationName' => 'Jalara App',
-        'description' => $general->description,
-        'defaultLocale' => $general->defaultLocale->value,
-        'dateFormat' => $general->dateFormat->value,
-    ]);
+    app(UpdateGeneralSettings::class)->handle($general, new UpdateGeneralSettingsData(
+        applicationName: 'Jalara App',
+        description: $general->description,
+        defaultLocale: $general->defaultLocale,
+        dateFormat: $general->dateFormat,
+    ));
 
-    updateBranding(['companyName' => 'Jalara Group']);
+    updateBranding(companyName: 'Jalara Group');
 
     get(route('login'))
         ->assertSee('Jalara App</title>', false)
         ->assertDontSee('Jalara Group</title>', false);
 
-    updateBranding(['companyName' => 'Renamed Company']);
+    updateBranding(companyName: 'Renamed Company');
 
     get(route('login'))
         ->assertSee('Jalara App</title>', false)
@@ -141,12 +150,12 @@ it('renders the application name as the document title independently of branding
 it('shares the application name and description with the auth layouts', function () {
     $general = app(GeneralSettings::class);
 
-    app(UpdateGeneralSettings::class)->handle($general, [
-        'applicationName' => 'Jalara App',
-        'description' => 'Operational starter kit',
-        'defaultLocale' => $general->defaultLocale->value,
-        'dateFormat' => $general->dateFormat->value,
-    ]);
+    app(UpdateGeneralSettings::class)->handle($general, new UpdateGeneralSettingsData(
+        applicationName: 'Jalara App',
+        description: 'Operational starter kit',
+        defaultLocale: $general->defaultLocale,
+        dateFormat: $general->dateFormat,
+    ));
 
     get(route('login'))->assertInertia(fn (Assert $page) => $page
         ->where('name', 'Jalara App')
@@ -155,7 +164,7 @@ it('shares the application name and description with the auth layouts', function
 });
 
 it('shares the footer text with the layouts', function () {
-    updateBranding(['footerText' => 'Copyright Jalara Group.']);
+    updateBranding(footerText: 'Copyright Jalara Group.');
 
     get(route('login'))->assertInertia(fn (Assert $page) => $page
         ->where('branding.footerText', 'Copyright Jalara Group.'),
@@ -163,7 +172,7 @@ it('shares the footer text with the layouts', function () {
 });
 
 it('shares the released application version alongside the footer text', function () {
-    updateBranding(['footerText' => null]);
+    updateBranding(footerText: null);
 
     get(route('login'))->assertInertia(fn (Assert $page) => $page
         ->where('version', config('app.version'))

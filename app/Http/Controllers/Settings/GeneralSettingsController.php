@@ -39,12 +39,7 @@ class GeneralSettingsController extends Controller
         GeneralSettings $settings,
         UpdateGeneralSettings $updateGeneralSettings,
     ): RedirectResponse {
-        $updateGeneralSettings->handle($settings, [
-            'applicationName' => (string) $request->validated('applicationName'),
-            'description' => $request->validated('description'),
-            'defaultLocale' => (string) $request->validated('defaultLocale'),
-            'dateFormat' => (string) $request->validated('dateFormat'),
-        ]);
+        $updateGeneralSettings->handle($settings, $request->toData());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('setting.general.message.updated')]);
 
