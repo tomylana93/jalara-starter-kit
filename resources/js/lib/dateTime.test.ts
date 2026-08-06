@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEST_TIME_ZONE, withTimeZone } from '@/test/timeZone';
-import { DATE_TIME_FALLBACK, formatBrowserDateTime } from './dateTime';
+import {
+    DATE_TIME_FALLBACK,
+    formatBrowserDateTime,
+    formatBrowserTime,
+    formatRelativeTime,
+} from './dateTime';
 
 /*
  * 22:30 UTC on the 30th is already 05:30 on the 31st in the pinned timezone
@@ -92,5 +97,84 @@ describe('formatBrowserDateTime', () => {
         expect(formatBrowserDateTime('not-a-date', 'Y-m-d')).toBe(
             DATE_TIME_FALLBACK,
         );
+    });
+});
+
+describe('formatRelativeTime', () => {
+    /* Anchored so "now" is a fixed instant and the thresholds stay assertable. */
+    const now = new Date('2026-07-30T12:00:00.000Z');
+    const ago = (seconds: number): string =>
+        new Date(now.getTime() - seconds * 1000).toISOString();
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(now);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('reads anything under a minute as the present moment', () => {
+        expect(formatRelativeTime(ago(30), 'en')).toBe('now');
+    });
+
+    it('counts minutes, hours and days as they pass', () => {
+        expect(formatRelativeTime(ago(5 * 60), 'en')).toBe('5 minutes ago');
+        expect(formatRelativeTime(ago(3 * 3600), 'en')).toBe('3 hours ago');
+        expect(formatRelativeTime(ago(2 * 86400), 'en')).toBe('2 days ago');
+    });
+
+    it('falls back to a date once a week has passed', () => {
+        withTimeZone(TEST_TIME_ZONE, () => {
+            expect(formatRelativeTime(ago(30 * 86400), 'en')).toBe(
+                'Jun 30, 2026',
+            );
+        });
+    });
+
+    it('phrases the distance in the requested locale', () => {
+        expect(formatRelativeTime(ago(5 * 60), 'id')).toBe('5 menit yang lalu');
+    });
+
+    it('returns a safe fallback for a missing or unparseable instant', () => {
+        expect(formatRelativeTime(null, 'en')).toBe(DATE_TIME_FALLBACK);
+        expect(formatRelativeTime('', 'en')).toBe(DATE_TIME_FALLBACK);
+        expect(formatRelativeTime('not-a-date', 'en')).toBe(DATE_TIME_FALLBACK);
+    });
+});
+
+describe('formatBrowserTime', () => {
+    it('renders the clock in the browser timezone, not UTC', () => {
+        withTimeZone(TEST_TIME_ZONE, () => {
+            expect(formatBrowserTime(lateEveningUtc)).toBe('05:30');
+        });
+
+        withTimeZone('UTC', () => {
+            expect(formatBrowserTime(lateEveningUtc)).toBe('22:30');
+        });
+    });
+
+    /* The reason this helper exists: a locale clock would say "5:05 PM" here. */
+    it('keeps a 24 hour clock past noon', () => {
+        withTimeZone(TEST_TIME_ZONE, () => {
+            expect(formatBrowserTime('2026-07-30T10:05:00.000000Z')).toBe(
+                '17:05',
+            );
+        });
+    });
+
+    it('pads a single digit hour', () => {
+        withTimeZone('UTC', () => {
+            expect(formatBrowserTime('2026-07-30T09:05:00.000000Z')).toBe(
+                '09:05',
+            );
+        });
+    });
+
+    it('returns a safe fallback for a missing or unparseable instant', () => {
+        expect(formatBrowserTime(null)).toBe(DATE_TIME_FALLBACK);
+        expect(formatBrowserTime('')).toBe(DATE_TIME_FALLBACK);
+        expect(formatBrowserTime('not-a-date')).toBe(DATE_TIME_FALLBACK);
     });
 });

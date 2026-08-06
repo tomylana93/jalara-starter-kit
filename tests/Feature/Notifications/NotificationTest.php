@@ -182,6 +182,8 @@ it('paginates the notification page ten at a time, newest first', function () {
             ->where('notifications.meta.to', 10)
             ->where('notifications.data.0.title', 'Title 12')
             ->where('filter', 'all')
+            /* The page spells timestamps out, so it needs the configured preset. */
+            ->has('dateFormat')
         );
 
     actingAs($user)

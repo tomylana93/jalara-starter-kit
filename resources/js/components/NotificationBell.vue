@@ -14,6 +14,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from '@/composables/useTranslations';
+import { formatRelativeTime } from '@/lib/dateTime';
 import { index, read, readAll } from '@/routes/notifications';
 import type { NotificationItem } from '@/types';
 
@@ -90,6 +91,14 @@ useEchoNotification<NotificationItem>(
         live.value = [notification, ...live.value];
     },
 );
+
+/*
+ * Computed as the row renders and never refreshed on a timer: an arrival, a
+ * read, or an Inertia visit all re-render the bell, and nobody is reading a
+ * dropdown they left open and idle.
+ */
+const relativeTime = (item: NotificationItem): string =>
+    formatRelativeTime(item.created_at, page.props.locale);
 
 const markAsRead = (item: NotificationItem): void => {
     if (item.read_at !== null) {
@@ -195,6 +204,12 @@ const open = (item: NotificationItem): void => {
                     ></span>
                     <span class="truncate text-sm font-medium">
                         {{ item.title }}
+                    </span>
+                    <span
+                        class="ml-auto shrink-0 text-[0.625rem] text-muted-foreground tabular-nums"
+                        :data-test="`notification-time-${item.id}`"
+                    >
+                        {{ relativeTime(item) }}
                     </span>
                 </span>
                 <span class="line-clamp-2 text-xs text-muted-foreground">

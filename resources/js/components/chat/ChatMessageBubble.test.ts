@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 import ChatMessageBubble from '@/components/chat/ChatMessageBubble.vue';
+import { TEST_TIME_ZONE, withTimeZone } from '@/test/timeZone';
 import type { ChatMessage } from '@/types';
 
 /**
@@ -94,26 +95,99 @@ describe('ChatMessageBubble', () => {
         expect(wrapper.emitted('react')?.[0]?.[1]).toBeNull();
     });
 
-    it('shows read state only on the latest outgoing message', () => {
+    it('marks every outgoing message with its delivery state', () => {
+        const outgoing = {
+            ...message,
+            sender_id: 'me',
+            image: null,
+            reactions: [],
+        };
+
+        const read = mount(ChatMessageBubble, {
+            props: { message: outgoing, currentUserId: 'me', read: true },
+        });
+
+        expect(
+            read
+                .get('[data-test="chat-read-receipt"]')
+                .attributes('aria-label'),
+        ).toBe('chat.label.read');
+        expect(read.find('[data-test="chat-reaction-picker"]').exists()).toBe(
+            false,
+        );
+
+        const sent = mount(ChatMessageBubble, {
+            props: { message: outgoing, currentUserId: 'me', read: false },
+        });
+
+        expect(
+            sent
+                .get('[data-test="chat-read-receipt"]')
+                .attributes('aria-label'),
+        ).toBe('chat.label.sent');
+    });
+
+    /*
+     * `app.css` paints every lucide icon with the brand color, and an outgoing
+     * bubble is painted with that same color. Only an explicit utility on the
+     * icon keeps the marks readable, and nothing but this assertion notices when
+     * it goes missing: the failure is invisible ink, not a broken render.
+     */
+    it('keeps the delivery marks off the brand color', () => {
         const wrapper = mount(ChatMessageBubble, {
             props: {
-                message: {
-                    ...message,
-                    sender_id: 'me',
-                    image: null,
-                    reactions: [],
-                },
+                message: { ...message, sender_id: 'me', image: null },
                 currentUserId: 'me',
-                latestOutgoing: true,
                 read: true,
             },
         });
 
-        expect(wrapper.find('[data-test="chat-read-receipt"]').text()).toBe(
-            'chat.label.read',
-        );
         expect(
-            wrapper.find('[data-test="chat-reaction-picker"]').exists(),
-        ).toBe(false);
+            wrapper.get('[data-test="chat-read-receipt"] svg').classes(),
+        ).toContain('text-current');
+    });
+
+    it('renders the sent time on a 24 hour clock', () => {
+        withTimeZone(TEST_TIME_ZONE, () => {
+            const wrapper = mount(ChatMessageBubble, {
+                props: {
+                    message: {
+                        ...message,
+                        image: null,
+                        created_at: '2026-08-01T10:05:00.000000Z',
+                    },
+                    currentUserId: 'me',
+                },
+            });
+
+            /* A locale clock would read "5:05 PM" here. */
+            expect(wrapper.text()).toContain('17:05');
+        });
+    });
+
+    it('leaves an incoming message without a delivery state', () => {
+        const wrapper = mount(ChatMessageBubble, {
+            props: {
+                message: { ...message, image: null },
+                currentUserId: 'me',
+            },
+        });
+
+        expect(wrapper.find('[data-test="chat-read-receipt"]').exists()).toBe(
+            false,
+        );
+    });
+
+    it('keeps the body free of the trailing meta', () => {
+        const wrapper = mount(ChatMessageBubble, {
+            props: {
+                message: { ...message, image: null },
+                currentUserId: 'me',
+            },
+        });
+
+        expect(wrapper.get('[data-test="chat-message-body"]').text()).toBe(
+            'A picture',
+        );
     });
 });

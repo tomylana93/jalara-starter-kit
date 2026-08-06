@@ -91,3 +91,83 @@ export const formatBrowserDateTime = (
             return `${year}-${month}-${day} ${time}`;
     }
 };
+
+/**
+ * Format a UTC ISO 8601 instant as a browser-local clock time.
+ *
+ * Fixed to a 24 hour clock: `hour: '2-digit'` alone follows the locale, which
+ * turns into a 12 hour clock with a meridiem the moment the viewer reads
+ * English - too wide for a message bubble, and inconsistent with every other
+ * timestamp this application renders.
+ */
+export const formatBrowserTime = (value: string | null | undefined): string => {
+    if (typeof value !== 'string' || value === '') {
+        return DATE_TIME_FALLBACK;
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return DATE_TIME_FALLBACK;
+    }
+
+    const { hour, minute } = partsOf(date, NUMERIC_LOCALE, '2-digit');
+
+    return `${hour}:${minute}`;
+};
+
+/* Where each relative unit stops, in seconds. Beyond the last one, a date reads better than a count. */
+const MINUTE = 60;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
+
+/**
+ * Format a UTC ISO 8601 instant as a distance from now, in the viewer's locale.
+ *
+ * `Intl.RelativeTimeFormat` carries every phrasing this needs, so no
+ * translation key backs this: `numeric: 'auto'` is what turns the zero case
+ * into "now" rather than "in 0 seconds". Anything older than a week is a date
+ * the reader wants to see, not a count of days to decode.
+ *
+ * The result is computed at call time and never refreshed on its own; callers
+ * that must stay accurate while idle have to re-render themselves.
+ */
+export const formatRelativeTime = (
+    value: string | null | undefined,
+    locale: string,
+): string => {
+    if (typeof value !== 'string' || value === '') {
+        return DATE_TIME_FALLBACK;
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return DATE_TIME_FALLBACK;
+    }
+
+    const seconds = Math.round((date.getTime() - Date.now()) / 1000);
+    const elapsed = Math.abs(seconds);
+    const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+    if (elapsed < MINUTE) {
+        return relative.format(0, 'second');
+    }
+
+    if (elapsed < HOUR) {
+        return relative.format(Math.trunc(seconds / MINUTE), 'minute');
+    }
+
+    if (elapsed < DAY) {
+        return relative.format(Math.trunc(seconds / HOUR), 'hour');
+    }
+
+    if (elapsed < WEEK) {
+        return relative.format(Math.trunc(seconds / DAY), 'day');
+    }
+
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+        date,
+    );
+};

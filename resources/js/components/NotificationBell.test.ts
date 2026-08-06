@@ -255,3 +255,18 @@ it('links to the full notification page', () => {
         wrapper.find('[data-test="notification-view-all"]').attributes('href'),
     ).toBe('/notifications');
 });
+
+it('dates each notification relative to now', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T10:05:00+00:00'));
+
+    inertiaPageProps.notificationBell = { items: [item()], unreadCount: 1 };
+
+    const wrapper = mount(NotificationBell);
+
+    expect(wrapper.get('[data-test="notification-time-a1"]').text()).toBe(
+        '5 minutes ago',
+    );
+
+    vi.useRealTimers();
+});

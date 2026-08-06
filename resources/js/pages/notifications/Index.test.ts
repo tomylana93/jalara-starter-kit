@@ -45,7 +45,7 @@ const targetUrl = (target: unknown): string =>
 const mountPage = (
     notifications: NotificationPayload,
     filter: NotificationFilter = 'all',
-) => mount(Index, { props: { notifications, filter } });
+) => mount(Index, { props: { notifications, filter, dateFormat: 'd/m/Y' } });
 
 beforeEach(() => {
     inertiaPageProps.auth.user = { id: 'user-1', name: 'Ada' };

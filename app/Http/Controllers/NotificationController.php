@@ -7,6 +7,7 @@ use App\Http\Presenters\NotificationPresenter;
 use App\Http\Requests\Notifications\IndexNotificationRequest;
 use App\Http\Requests\Notifications\MarkNotificationReadRequest;
 use App\Models\User;
+use App\Settings\GeneralSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -31,7 +32,7 @@ class NotificationController extends Controller
     /**
      * Show the authenticated user's notification history.
      */
-    public function index(IndexNotificationRequest $request, PaginateNotifications $paginateNotifications): Response
+    public function index(IndexNotificationRequest $request, PaginateNotifications $paginateNotifications, GeneralSettings $generalSettings): Response
     {
         $user = $this->user($request);
 
@@ -46,6 +47,8 @@ class NotificationController extends Controller
         return Inertia::render('notifications/Index', [
             'notifications' => NotificationPresenter::presentPage($paginator),
             'filter' => $filter,
+            /* Timestamps travel as UTC ISO 8601; the browser applies this. */
+            'dateFormat' => $generalSettings->dateFormat->value,
         ]);
     }
 
