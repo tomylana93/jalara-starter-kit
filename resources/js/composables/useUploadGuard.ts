@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/vue3';
 import type { ComputedRef } from 'vue';
-import { computed, onUnmounted, reactive, readonly } from 'vue';
+import { computed, onUnmounted, reactive } from 'vue';
 
 export type UploadHandle = {
     /** Report upload progress as a percentage between 0 and 100. */
@@ -184,6 +184,3 @@ export function useUploadGuard(): UseUploadGuardReturn {
         beginUpload,
     };
 }
-
-/** Exposed for tests that need to assert the guard starts from a clean slate. */
-export const uploadGuardState = readonly(state);

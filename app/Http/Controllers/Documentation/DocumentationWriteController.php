@@ -78,7 +78,7 @@ class DocumentationWriteController extends Controller
     /**
      * Permanently delete a document.
      */
-    public function destroy(Request $request, Documentation $documentation, DeleteDocumentation $deleteDocumentation): RedirectResponse
+    public function destroy(Documentation $documentation, DeleteDocumentation $deleteDocumentation): RedirectResponse
     {
         Gate::authorize('delete', $documentation);
 

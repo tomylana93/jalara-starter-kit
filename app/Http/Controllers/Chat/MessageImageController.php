@@ -16,7 +16,6 @@ class MessageImageController extends Controller
     use ResolvesAuthenticatedUser;
 
     public function show(
-        Request $request,
         Message $message,
         ServeChatMessageImage $serveChatMessageImage,
     ): BinaryFileResponse {
