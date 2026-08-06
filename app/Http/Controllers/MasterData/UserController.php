@@ -14,6 +14,7 @@ use App\Http\Requests\MasterData\StoreUserRequest;
 use App\Http\Requests\MasterData\UpdateUserRequest;
 use App\Models\User;
 use App\Settings\GeneralSettings;
+use App\Settings\UserProvisioningSettings;
 use App\Tables\TableQuery;
 use App\Tables\UsersTable;
 use Illuminate\Http\RedirectResponse;
@@ -26,8 +27,11 @@ class UserController extends Controller
     /**
      * Show the server-side user table.
      */
-    public function index(IndexUserRequest $request, GeneralSettings $generalSettings): Response
-    {
+    public function index(
+        IndexUserRequest $request,
+        GeneralSettings $generalSettings,
+        UserProvisioningSettings $userProvisioningSettings,
+    ): Response {
         $table = new UsersTable($request->user());
 
         return Inertia::render('master-data/users/Index', [
@@ -36,6 +40,9 @@ class UserController extends Controller
             ),
             'filterOptions' => UserManagementPresenter::filterOptions(),
             'canCreate' => Gate::allows('create', User::class),
+            /* Importing cannot provision anything without it, so the affordance
+               explains itself rather than failing on submit. */
+            'hasDefaultPassword' => $userProvisioningSettings->hasDefaultPassword(),
             'dateFormat' => $generalSettings->dateFormat->value,
         ]);
     }

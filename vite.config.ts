@@ -32,7 +32,13 @@ export default defineConfig({
     plugins: [
         laravelLang(),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.ts'],
+            input: [
+                'resources/css/app.css',
+                /* Print-only, inlined into the PDF blade views at render time
+                   rather than linked, so Chromium never has to fetch it. */
+                'resources/css/pdf.css',
+                'resources/js/app.ts',
+            ],
             refresh: true,
             buildDirectory: assetOutput.buildDirectory,
             hotFile: assetOutput.hotFile,

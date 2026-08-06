@@ -58,6 +58,21 @@ final class BackupArchives
         return $this->all()->first();
     }
 
+    /**
+     * The destination an archive is written to when the application chooses.
+     *
+     * Spatie writes every backup to every configured disk; the first is the one
+     * that always exists, so an upload lands there and the rest of the ladder
+     * stays Spatie's business.
+     */
+    public function primaryDiskName(): string
+    {
+        /** @var array<int, string> $disks */
+        $disks = (array) config('backup.backup.destination.disks', []);
+
+        return $disks[0] ?? 'backups';
+    }
+
     public function delete(BackupArchive $archive): void
     {
         Storage::disk($archive->diskName)->delete($archive->path);

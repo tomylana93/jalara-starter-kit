@@ -480,7 +480,7 @@ it('downloads the selected users as a spreadsheet', function () {
     $second = User::factory()->create(['name' => 'Grace Hopper']);
 
     actingAs($manager)
-        ->get(route('master-data.users.export', ['ids' => [$second->id, $first->id]]))
+        ->get(route('master-data.users.export.excel', ['ids' => [$second->id, $first->id]]))
         ->assertOk()
         ->assertDownload('users.xlsx');
 });
@@ -605,7 +605,7 @@ it('leaves no temporary seed file behind', function () {
 
 it('rejects an export selection that cannot have come from one page', function (array $query) {
     actingAs(userManager())
-        ->get(route('master-data.users.export', $query))
+        ->get(route('master-data.users.export.excel', $query))
         ->assertSessionHasErrors();
 })->with([
     'no selection' => [[]],
@@ -618,7 +618,7 @@ it('rejects a duplicated export selection', function () {
     $manager = userManager();
 
     actingAs($manager)
-        ->get(route('master-data.users.export', ['ids' => [$manager->id, $manager->id]]))
+        ->get(route('master-data.users.export.excel', ['ids' => [$manager->id, $manager->id]]))
         ->assertSessionHasErrors();
 });
 
@@ -627,18 +627,18 @@ it('rejects an export selection larger than a page of rows', function () {
     $ids = User::factory()->count(ExportUsersRequest::MAX_IDS)->create()->pluck('id')->all();
 
     actingAs($manager)
-        ->get(route('master-data.users.export', ['ids' => [...$ids, $manager->id]]))
+        ->get(route('master-data.users.export.excel', ['ids' => [...$ids, $manager->id]]))
         ->assertSessionHasErrors('ids');
 });
 
 it('protects the export behind the view users permission', function () {
     $manager = userManager();
 
-    get(route('master-data.users.export', ['ids' => [$manager->id]]))
+    get(route('master-data.users.export.excel', ['ids' => [$manager->id]]))
         ->assertRedirectToRoute('login');
 
     actingAs(User::factory()->create())
-        ->get(route('master-data.users.export', ['ids' => [$manager->id]]))
+        ->get(route('master-data.users.export.excel', ['ids' => [$manager->id]]))
         ->assertForbidden();
 });
 

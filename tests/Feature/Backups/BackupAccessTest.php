@@ -44,6 +44,27 @@ it('forbids a user without the backup permission on every write route', function
         ->withSession(['auth.password_confirmed_at' => time()])
         ->delete(route('settings.backups.destroy', ['filename' => 'anything.zip']))
         ->assertForbidden();
+
+    /*
+     * Both routes hand the permission far more than a download does: one puts a
+     * restorable archive on the destination, the other replays one over the
+     * live database.
+     */
+    actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('settings.backups.upload'))
+        ->assertForbidden();
+
+    actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('settings.backups.restore', ['filename' => 'anything.zip']))
+        ->assertForbidden();
+});
+
+it('requires a recent password confirmation for a restore', function () {
+    actingAs(backupManager())
+        ->post(route('settings.backups.restore', ['filename' => 'anything.zip']))
+        ->assertRedirectToRoute('password.confirm');
 });
 
 it('requires a recent password confirmation', function () {

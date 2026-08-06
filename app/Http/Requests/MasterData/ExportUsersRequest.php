@@ -3,6 +3,7 @@
 namespace App\Http\Requests\MasterData;
 
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -31,7 +32,39 @@ class ExportUsersRequest extends FormRequest
         return [
             'ids' => ['required', 'array', 'min:1', 'max:'.self::MAX_IDS],
             'ids.*' => ['string', 'uuid', 'distinct', 'exists:users,id'],
+            /*
+             * Only the PDF reads this. A spreadsheet writes native UTC instants
+             * and lets the workbook display them, but a document is a picture of
+             * what the operator saw, and the browser that renders it runs on the
+             * server - so the reader's zone has to travel with the request.
+             */
+            'timezone' => ['nullable', 'string', 'timezone'],
         ];
+    }
+
+    /**
+     * The reader's own timezone, falling back to UTC.
+     *
+     * A client that sends nothing still gets a defensible document rather than
+     * one silently stamped in whatever zone the server happens to run in.
+     */
+    public function timeZone(): string
+    {
+        $timezone = $this->validated('timezone');
+
+        return is_string($timezone) && $timezone !== '' ? $timezone : 'UTC';
+    }
+
+    /**
+     * The authenticated actor, which authorize() has already established.
+     */
+    public function actor(): User
+    {
+        $actor = $this->user();
+
+        throw_if(! $actor instanceof User, AuthorizationException::class);
+
+        return $actor;
     }
 
     /**

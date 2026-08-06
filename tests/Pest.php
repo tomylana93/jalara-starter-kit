@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Settings\AuthenticationSettings;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
@@ -162,6 +163,40 @@ function backupManager(): User
     );
 
     return $user;
+}
+
+/**
+ * Write a real ZIP to a temporary path and return it.
+ *
+ * Restores and uploads are decided by what is inside an archive, so a fake file
+ * with a `.zip` name proves nothing about either: it fails to open, and every
+ * check downstream passes vacuously by never running. Tests here build the
+ * entries they mean to assert on.
+ *
+ * @param  array<string, string>  $entries  archive path => contents
+ */
+function backupArchiveFile(array $entries): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'backup-archive-').'.zip';
+
+    $zip = new ZipArchive;
+    $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    foreach ($entries as $entry => $contents) {
+        $zip->addFromString($entry, $contents);
+    }
+
+    $zip->close();
+
+    return $path;
+}
+
+/**
+ * The archive as it arrives from a browser file input.
+ */
+function uploadedArchive(string $path, string $name = 'archive.zip'): UploadedFile
+{
+    return new UploadedFile($path, $name, 'application/zip', null, true);
 }
 
 /**

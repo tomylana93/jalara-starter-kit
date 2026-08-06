@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BackupRunStatus;
+use App\Enums\BackupRunType;
 use Carbon\CarbonInterface;
 use Database\Factories\BackupRunFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -14,17 +15,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One backup attempt, whether started by the schedule or by an administrator.
+ * One backup or restore attempt, whether started by the schedule or by an
+ * administrator.
  *
  * The row is the single source of truth for a run: the state the page polls,
- * the archive it produced, and the lock that stops two backups writing to the
- * same destination at once. Scheduled and manual runs deliberately share this
- * table and this lock - separate paths would let them collide, and would leave
- * the history page describing only half of what the system actually did.
+ * the archive it produced, and the lock that stops two of them touching the same
+ * data at once. Scheduled backups, manual backups and restores deliberately
+ * share this table and this lock - separate paths would let them collide, and
+ * would leave the history page describing only half of what the system did.
  *
  * @property string $id
  * @property string|null $user_id
  * @property string|null $lock_key
+ * @property BackupRunType $type
  * @property BackupRunStatus $status
  * @property string|null $filename
  * @property int|null $size_in_bytes
@@ -52,8 +55,9 @@ class BackupRun extends Model
     /**
      * The single value the active-run lock takes.
      *
-     * One fixed key rather than one per user: the point is that the application
-     * runs at most one backup at a time, no matter who or what asked for it.
+     * One fixed key rather than one per user or per type: the point is that the
+     * application runs at most one backup or restore at a time, no matter who or
+     * what asked for it.
      */
     public const string ACTIVE_LOCK_KEY = 'backup:run';
 
@@ -105,6 +109,7 @@ class BackupRun extends Model
     protected function casts(): array
     {
         return [
+            'type' => BackupRunType::class,
             'status' => BackupRunStatus::class,
             'size_in_bytes' => 'integer',
             'started_at' => 'datetime',

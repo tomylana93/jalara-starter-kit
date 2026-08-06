@@ -6,18 +6,22 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | app/Actions/** | .ai/rules/actions.md |
 | app/** | .ai/rules/app.md |
+| app/Actions/Backups/** | .ai/rules/backups.md |
 | resources/js/components/** | .ai/rules/components.md |
 | config/** | .ai/rules/config.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/js/components/data-table/** | .ai/rules/data-table.md |
 | app/Data/** | .ai/rules/data.md |
+| app/Exports/** | .ai/rules/exports.md |
 | database/factories/** | .ai/rules/factories.md |
 | tests/Feature/** | .ai/rules/feature.md |
 | composer.json, README.md | .ai/rules/general.md |
+| app/Imports/** | .ai/rules/imports.md |
 | resources/js/**/*.test.ts, resources/js/** | .ai/rules/js.md |
 | database/migrations/** | .ai/rules/migrations.md |
 | tests/PHPStan/** | .ai/rules/p-h-p-stan.md |
 | resources/js/pages/** | .ai/rules/pages.md |
+| resources/views/pdf/** | .ai/rules/pdf.md |
 | app/Http/Presenters/** | .ai/rules/presenters.md |
 | app/Http/Requests/** | .ai/rules/requests.md |
 | routes/** | .ai/rules/routes.md |

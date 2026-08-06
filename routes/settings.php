@@ -50,6 +50,7 @@ Route::middleware([
         Route::get('/', [BackupController::class, 'index'])->name('index');
 
         Route::post('/', [BackupController::class, 'store'])->name('store');
+        Route::post('upload', [BackupController::class, 'upload'])->name('upload');
 
         /*
          * The filename is a route parameter but never a path: the controller
@@ -58,6 +59,7 @@ Route::middleware([
          * line of defence rather than the primary one.
          */
         Route::get('{filename}/download', [BackupController::class, 'download'])->name('download');
+        Route::post('{filename}/restore', [BackupController::class, 'restore'])->name('restore');
         Route::delete('{filename}', [BackupController::class, 'destroy'])->name('destroy');
     });
 

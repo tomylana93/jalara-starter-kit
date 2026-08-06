@@ -29,11 +29,14 @@ class EnforceMaintenanceMode
             return $next($request);
         }
 
-        $message = __('setting.maintenance.message');
-
-        return $request->expectsJson()
-            ? response()->json(['message' => $message], 503)
-            : response($message, 503);
+        /*
+         * Aborting rather than returning a response is what lets this render as
+         * a full Inertia page: `AppServiceProvider::configureErrorPages()` turns
+         * the 503 into the `Maintenance` component, while the JSON rule in
+         * `bootstrap/app.php` keeps API clients on the same `message` body they
+         * received before.
+         */
+        abort(503, __('maintenance.message'));
     }
 
     /**
@@ -46,6 +49,19 @@ class EnforceMaintenanceMode
 
     /**
      * Determine whether the route stays reachable during maintenance.
+     *
+     * Sign-in and password recovery are matched by pattern because Fortify names
+     * a form and its submission separately. Allowing `login` but not
+     * `login.store` renders the sign-in screen and then rejects it, and the
+     * `manage settings` bypass cannot help because the request is still
+     * unauthenticated at that point — which locks out every account, including
+     * the one holding the switch that turns maintenance off.
+     *
+     * `home` is listed because Fortify sends a sign-out to `/`, and that route
+     * only dispatches to the dashboard or the sign-in screen. Blocking it
+     * answers a sign-out with the maintenance notice instead of the sign-in
+     * screen; it exposes nothing, because the dashboard it may point to
+     * enforces maintenance on its own.
      */
     private function isAlwaysReachable(Request $request): bool
     {
@@ -53,6 +69,16 @@ class EnforceMaintenanceMode
             return true;
         }
 
-        return $request->routeIs('login', 'logout', 'settings.*');
+        return $request->routeIs(
+            'home',
+            'login',
+            'login.*',
+            'logout',
+            'password.request',
+            'password.email',
+            'password.reset',
+            'password.update',
+            'settings.*',
+        );
     }
 }

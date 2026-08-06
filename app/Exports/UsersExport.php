@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\User;
+use App\Support\Users\SelectedUsers;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -111,15 +112,7 @@ final class UsersExport
      */
     private function users(array $ids): Collection
     {
-        $position = array_flip($ids);
-
-        return User::query()
-            ->select(['id', 'name', 'email', 'status', 'created_at'])
-            ->with('roles:id,name')
-            ->whereIn('id', $ids)
-            ->get()
-            ->sortBy(fn (User $user): int => $position[$user->id] ?? PHP_INT_MAX)
-            ->values();
+        return SelectedUsers::inSelectionOrder($ids);
     }
 
     /**

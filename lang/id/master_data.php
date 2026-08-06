@@ -21,6 +21,40 @@ return [
             'description' => 'Ubah nama, email, role, atau status akses user yang sudah ada.',
         ],
 
+        'import' => [
+            'title' => 'Import user',
+            'description' => 'Membuat banyak user sekaligus dari sebuah spreadsheet. File diterima seluruhnya atau ditolak seluruhnya.',
+
+            'help' => 'Template memperlihatkan kolom yang diharapkan. Kolom yang tidak dikenal diabaikan, dan setiap baris menjadi user baru.',
+
+            'label' => [
+                'file' => 'Spreadsheet',
+            ],
+
+            'button' => [
+                'open' => 'Import',
+                'template' => 'Unduh template',
+                'submit' => 'Import user',
+            ],
+
+            'message' => [
+                'imported' => ':count user berhasil dibuat.',
+                'password_missing' => 'Default password harus diatur lebih dulu di pengaturan user provisioning sebelum user bisa di-import.',
+            ],
+
+            'error' => [
+                'more' => 'Dan :count masalah lainnya.',
+            ],
+
+            'validation' => [
+                'unreadable' => 'File tidak bisa dibaca sebagai spreadsheet XLSX.',
+                'columns' => 'Baris header tidak memuat kolom :columns.',
+                'empty' => 'Spreadsheet tidak memuat baris data.',
+                'too_many_rows' => 'Satu import menerima maksimal :max baris.',
+                'row' => 'Baris :row: :message',
+            ],
+        ],
+
         'label' => [
             'name' => 'Nama',
             'email' => 'Email',
@@ -43,7 +77,14 @@ return [
             'save' => 'Simpan',
             'cancel' => 'Batal',
             'edit' => 'Ubah',
-            'export' => 'Ekspor XLSX',
+            'export' => 'Ekspor',
+            'export_excel' => 'Excel (XLSX)',
+            'export_pdf' => 'PDF',
+        ],
+
+        'document' => [
+            'generated_at' => 'Dibuat pada',
+            'generated_by' => 'Dibuat oleh',
         ],
 
         'message' => [

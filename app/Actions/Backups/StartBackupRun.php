@@ -3,6 +3,7 @@
 namespace App\Actions\Backups;
 
 use App\Enums\BackupRunStatus;
+use App\Enums\BackupRunType;
 use App\Jobs\Backups\RunBackupJob;
 use App\Models\BackupRun;
 use App\Models\User;
@@ -29,6 +30,7 @@ final class StartBackupRun
         $run->forceFill([
             'user_id' => $user?->getKey(),
             'lock_key' => BackupRun::ACTIVE_LOCK_KEY,
+            'type' => BackupRunType::Backup,
             'status' => BackupRunStatus::Pending,
         ]);
 

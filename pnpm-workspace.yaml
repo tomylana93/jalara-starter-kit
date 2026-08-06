@@ -1,7 +1,13 @@
 packages:
   - '.'
 
+# Puppeteer's install script downloads its own Chrome build. It is declined on
+# purpose: PDF rendering points Browsershot at a Chrome the environment already
+# provides (Playwright's in CI, the operator's in production), so allowing the
+# download would fetch a second copy in every job that installs dependencies.
+# See README's system prerequisites for what production has to supply instead.
 allowBuilds:
+  puppeteer: false
   unrs-resolver: true
   vue-demi: true
 

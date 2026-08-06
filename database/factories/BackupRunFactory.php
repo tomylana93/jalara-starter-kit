@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\BackupRunStatus;
+use App\Enums\BackupRunType;
 use App\Models\BackupRun;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -25,6 +26,7 @@ class BackupRunFactory extends Factory
         return [
             'user_id' => null,
             'lock_key' => null,
+            'type' => BackupRunType::Backup,
             'status' => BackupRunStatus::Completed,
             'filename' => fake()->date('Y-m-d-H-i-s').'.zip',
             'size_in_bytes' => fake()->numberBetween(1024, 1024 * 1024),
@@ -45,6 +47,16 @@ class BackupRunFactory extends Factory
             'filename' => null,
             'size_in_bytes' => null,
             'completed_at' => null,
+        ]);
+    }
+
+    /**
+     * A restore of an existing archive rather than a backup that produced one.
+     */
+    public function restore(): static
+    {
+        return $this->state(fn (): array => [
+            'type' => BackupRunType::Restore,
         ]);
     }
 

@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Backups;
 
 use App\Actions\Backups\StartBackupRun;
+use App\Actions\Backups\StartRestoreRun;
+use App\Actions\Backups\UploadBackup;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\BackupPresenter;
+use App\Http\Requests\Backups\UploadBackupRequest;
 use App\Models\BackupRun;
 use App\Settings\GeneralSettings;
 use App\Support\Backups\BackupArchive;
 use App\Support\Backups\BackupArchives;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -89,6 +93,56 @@ class BackupController extends Controller
 
         return Storage::disk($archive->diskName)
             ->download($archive->path, $archive->filename);
+    }
+
+    /**
+     * Take in an archive produced elsewhere.
+     *
+     * The request has already established that the file is an archive of this
+     * application, entry by entry. Nothing here trusts the client's filename
+     * beyond using it as a label.
+     */
+    public function upload(UploadBackupRequest $request, UploadBackup $uploadBackup): RedirectResponse
+    {
+        /** @var UploadedFile $file */
+        $file = $request->file('archive');
+
+        $uploadBackup->handle($file);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('backup.message.uploaded')]);
+
+        return to_route('settings.backups.index');
+    }
+
+    /**
+     * Queue a restore of one archive.
+     *
+     * Queued rather than performed here for the same reason a backup is, and
+     * more so: this unpacks an archive, replaces the database and copies media
+     * back, which no request timeout should be deciding the outcome of. The
+     * page's poll then reports it like any other run.
+     *
+     * The filename is resolved against the real listing, exactly as `download`
+     * does, so a value naming anything else simply matches nothing.
+     */
+    public function restore(string $filename, Request $request, BackupArchives $archives, StartRestoreRun $startRestoreRun): RedirectResponse
+    {
+        $archive = $archives->find($filename);
+
+        abort_if(! $archive instanceof BackupArchive, 404);
+
+        $run = $startRestoreRun->handle($archive, $request->user());
+
+        if (! $run instanceof BackupRun) {
+            /* The lock is held by a backup or another restore. */
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('backup.message.already_running')]);
+
+            return to_route('settings.backups.index');
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('backup.message.restore_started')]);
+
+        return to_route('settings.backups.index');
     }
 
     /**

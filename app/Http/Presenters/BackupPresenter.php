@@ -35,6 +35,7 @@ final class BackupPresenter
     /**
      * @return array{
      *     id: string,
+     *     type: string,
      *     status: string,
      *     filename: string|null,
      *     size_in_bytes: int|null,
@@ -49,6 +50,8 @@ final class BackupPresenter
     {
         return [
             'id' => $run->id,
+            /* A backup and a restore share this table; the page must say which. */
+            'type' => $run->type->value,
             'status' => $run->status->value,
             'filename' => $run->filename,
             'size_in_bytes' => $run->size_in_bytes,

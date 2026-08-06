@@ -5,6 +5,7 @@ import { initializeTheme } from '@/composables/useAppearance';
 import AccountLayout from '@/layouts/account/Layout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
+import StatusLayout from '@/layouts/StatusLayout.vue';
 import { applicationTitle, fallbackApplicationName } from '@/lib/branding';
 import { initializeFlashToast } from '@/lib/flashToast';
 
@@ -25,6 +26,14 @@ createInertiaApp({
         applicationTitle(title, page.props.name ?? fallbackName),
     layout: (name) => {
         switch (true) {
+            /*
+             * State screens carry no application chrome: they are reached when
+             * the application cannot be used, so a sidebar linking into it
+             * would be dead weight.
+             */
+            case name === 'Maintenance':
+            case name === 'ErrorPage':
+                return StatusLayout;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('account/'):
