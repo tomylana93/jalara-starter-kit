@@ -21,6 +21,7 @@ const archive = {
 
 const completedRun = {
     id: 'run-1',
+    type: 'backup' as const,
     status: 'completed' as const,
     filename: archive.filename,
     size_in_bytes: 2048,
@@ -31,8 +32,12 @@ const completedRun = {
     created_at: '2026-01-01T00:00:00.000000Z',
 };
 
-const mountIndex = (overrides: Record<string, unknown> = {}) =>
+const mountIndex = (
+    overrides: Record<string, unknown> = {},
+    attachTo?: HTMLElement,
+) =>
     mount(Index, {
+        attachTo,
         props: {
             dateFormat: 'd/m/Y',
             archives: [archive],
@@ -171,4 +176,90 @@ it('does not poll on an idle page', async () => {
     await vi.advanceTimersByTimeAsync(30000);
 
     expect(routerReload).not.toHaveBeenCalled();
+});
+
+it('tells a restore apart from a backup in the history', () => {
+    const wrapper = mountIndex({
+        runs: [
+            completedRun,
+            { ...completedRun, id: 'run-2', type: 'restore' as const },
+        ],
+    });
+
+    expect(
+        wrapper.findAll('[data-test="run-type"]').map((cell) => cell.text()),
+    ).toEqual(['backup.type.backup', 'backup.type.restore']);
+});
+
+/*
+ * Restoring replaces the database, so it goes through the same confirm-then-send
+ * flow as deleting - including the closed-before-confirm ordering that Reka
+ * imposes on every dialog action.
+ */
+it('restores an archive only after the confirmation is accepted', async () => {
+    const wrapper = mountIndex();
+
+    await wrapper.find('[data-test="restore-archive"]').trigger('click');
+
+    expect(routerPost).not.toHaveBeenCalled();
+
+    const dialog = wrapper.findAllComponents(AlertDialog).at(1);
+    dialog?.vm.$emit('update:open', false);
+    await wrapper.vm.$nextTick();
+
+    await wrapper
+        .find('[data-test="confirm-restore-archive"]')
+        .trigger('click');
+
+    expect(routerPost).toHaveBeenCalledOnce();
+    expect(routerPost.mock.calls[0]?.[0]).toBe(
+        `/settings/backups/${archive.filename}/restore`,
+    );
+});
+
+/*
+ * A run in flight owns the single lock, so neither a restore nor an upload can
+ * start until it clears.
+ */
+it('disables restore and upload while a run is active', () => {
+    const wrapper = mountIndex({
+        activeRun: { ...completedRun, status: 'running' },
+    });
+
+    expect(
+        wrapper.find('[data-test="restore-archive"]').attributes('disabled'),
+    ).toBeDefined();
+    expect(
+        wrapper.find('[data-test="upload-backup"]').attributes('disabled'),
+    ).toBeDefined();
+});
+
+/*
+ * Resetting the form clears the File but not the input element, and an element
+ * still holding the same file fires no `change` when it is picked again. The
+ * remount is what makes a second attempt after a rejected upload possible.
+ */
+it('remounts the file input when the upload dialog is dismissed', async () => {
+    const wrapper = mountIndex({}, document.body);
+
+    await wrapper.find('[data-test="upload-backup"]').trigger('click');
+
+    const before = document.querySelector('[data-test="upload-archive-input"]');
+
+    expect(before).not.toBeNull();
+
+    await wrapper.vm.$nextTick();
+    document
+        .querySelector<HTMLElement>('[data-test="cancel-upload-archive"]')
+        ?.click();
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find('[data-test="upload-backup"]').trigger('click');
+
+    const after = document.querySelector('[data-test="upload-archive-input"]');
+
+    expect(after).not.toBeNull();
+    expect(after).not.toBe(before);
+
+    wrapper.unmount();
 });

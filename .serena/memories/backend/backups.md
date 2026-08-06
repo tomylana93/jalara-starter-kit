@@ -63,6 +63,22 @@
 - `error_code` is a translation key suffix under `backup.error.*`, never an
   exception message.
 
+## Restore and upload
+
+- `backup_runs` carries both directions: `BackupRunType::Backup` and `Restore`
+  share the table, the lock and the history page. A restore run's `filename` is
+  the archive it replays, not one it produced.
+- `StartRestoreRun` -> `RestoreBackupJob` (`database-long`, `tries = 1`) ->
+  `RestoreBackup`: copy the archive local, inspect it with
+  `BackupArchiveContents`, dump the current database next to the archive folder
+  (`<name>-pre-restore/`, last three kept), `db:wipe`, replay each dump whole
+  through `PDO::exec`, settle, merge the archived media back over `base_path()`.
+  Media is merged, never mirrored - files newer than the archive stay.
+- `BackupArchiveContents` is the security boundary for both upload and restore:
+  entries must sit under `db-dumps/` or a configured media prefix, and it is
+  path-shape only. Uploads land on the first configured destination disk.
+- Compressed dumps are refused rather than replayed, before anything is wiped.
+
 ## HTTP surface
 
 - `manage backups` is a separate permission from `manage settings`: the download

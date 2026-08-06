@@ -22,6 +22,14 @@ return new class extends Migration
             $table->foreignUuid('user_id')->nullable()->constrained()->nullOnDelete();
 
             /*
+             * Backups and restores share this table because they share the lock
+             * below: the application performs at most one of them at a time. The
+             * type is what stops the history describing a restore as a backup
+             * that produced no archive.
+             */
+            $table->string('type', 32)->index();
+
+            /*
              * Holds the single-flight lock at one fixed value while a run is
              * active. The unique index is what makes "only one backup at a time"
              * atomic instead of a read-then-write race between two
