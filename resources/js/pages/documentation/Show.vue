@@ -11,7 +11,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index, show } from '@/routes/documentation';
 import type {
     DocumentationReaderCategory,
@@ -30,22 +31,13 @@ defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'documentation.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-            {
-                title: layoutProps.documentation.title,
-                href: show(layoutProps.documentation.slug),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout<LayoutProps>((layoutProps) => [
+        { key: 'documentation.title', href: index() },
+        {
+            title: layoutProps.documentation.title,
+            href: show(layoutProps.documentation.slug),
+        },
+    ]),
 });
 
 const { t } = useTranslations();

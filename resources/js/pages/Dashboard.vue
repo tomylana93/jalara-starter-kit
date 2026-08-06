@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { dashboard } from '@/routes';
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
 
 defineOptions({
     /*
@@ -16,18 +12,9 @@ defineOptions({
      * as extraneous attributes.
      */
     inheritAttrs: false,
-    layout: (props: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'dashboard.page.title',
-                    props.locale,
-                    props.fallbackLocale,
-                ),
-                href: dashboard(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'dashboard.page.title', href: dashboard() },
+    ]),
 });
 
 const { t } = useTranslations();

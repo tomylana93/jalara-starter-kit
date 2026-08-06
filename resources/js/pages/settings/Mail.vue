@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/mail';
 
@@ -16,36 +17,15 @@ type MailSettings = {
     fromAddress: string;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 defineProps<{
     settings: MailSettings;
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.mail.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.mail.title', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();

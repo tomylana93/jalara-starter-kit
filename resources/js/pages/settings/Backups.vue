@@ -31,7 +31,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { formatBrowserDateTime } from '@/lib/dateTime';
 import { index as settingsIndex } from '@/routes/settings';
 import { destroy, download, index, store } from '@/routes/settings/backups';
@@ -55,11 +56,6 @@ type BackupRun = {
     created_at: string | null;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     dateFormat: string;
     archives: BackupArchive[];
@@ -68,26 +64,10 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'backup.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'backup.title', href: index() },
+    ]),
 });
 
 /**

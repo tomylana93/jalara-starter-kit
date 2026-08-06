@@ -56,7 +56,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as documentationIndex } from '@/routes/documentation';
 import { create, index as manageIndex } from '@/routes/documentation/manage';
 import {
@@ -76,37 +77,16 @@ import type {
     DocumentationTablePayload,
 } from '@/types/documentation';
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     categories: DocumentationManagementCategory[];
     documentations: DocumentationTablePayload;
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'documentation.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: documentationIndex(),
-            },
-            {
-                title: translate(
-                    'documentation.manage.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: manageIndex(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'documentation.title', href: documentationIndex() },
+        { key: 'documentation.manage.title', href: manageIndex() },
+    ]),
 });
 
 const page = usePage();

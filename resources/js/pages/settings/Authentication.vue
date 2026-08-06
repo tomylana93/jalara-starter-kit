@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AuthenticationSettingsController from '@/actions/App/Http/Controllers/Settings/AuthenticationSettingsController';
+import BooleanField from '@/components/BooleanField.vue';
 import InputError from '@/components/InputError.vue';
 import PageWrapper from '@/components/PageWrapper.vue';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/authentication';
 import type { SelectOption } from '@/types';
@@ -26,37 +27,16 @@ type AuthenticationSettings = {
     sessionLifetimeMinutes: number;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     settings: AuthenticationSettings;
     passwordPolicyOptions: SelectOption[];
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.authentication.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.authentication.title', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();
@@ -86,34 +66,22 @@ const passwordPolicyLabel = computed(
                 class="space-y-6"
                 v-slot="{ errors, processing, validate, validating }"
             >
-                <div class="grid gap-2">
-                    <input
-                        type="hidden"
-                        name="requireEmailVerification"
-                        :value="requireEmailVerification ? '1' : '0'"
-                    />
-                    <div class="flex items-center justify-between gap-4">
-                        <Label for="requireEmailVerification">
-                            {{
-                                t(
-                                    'setting.authentication.label.require_email_verification',
-                                )
-                            }}
-                        </Label>
-                        <Switch
-                            id="requireEmailVerification"
-                            v-model="requireEmailVerification"
-                            :aria-invalid="
-                                Boolean(errors.requireEmailVerification)
-                            "
-                            class="aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
-                            @update:model-value="
-                                validate('requireEmailVerification')
-                            "
-                        />
-                    </div>
-                    <InputError :message="errors.requireEmailVerification" />
-                </div>
+                <BooleanField
+                    v-model="requireEmailVerification"
+                    name="requireEmailVerification"
+                    :label="
+                        t(
+                            'setting.authentication.label.require_email_verification',
+                        )
+                    "
+                    :description="
+                        t(
+                            'setting.authentication.help.require_email_verification',
+                        )
+                    "
+                    :error="errors.requireEmailVerification"
+                    @validate="validate('requireEmailVerification')"
+                />
 
                 <div class="grid gap-2">
                     <Label for="passwordPolicy">

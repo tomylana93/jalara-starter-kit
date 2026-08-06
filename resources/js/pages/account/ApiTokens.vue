@@ -27,17 +27,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index } from '@/routes/account/api-tokens';
 import type { ApiToken } from '@/types/apiTokens';
 
 type Props = {
     tokens: ApiToken[];
-};
-
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
 };
 
 const props = defineProps<Props>();
@@ -49,18 +45,9 @@ defineOptions({
      * as extraneous attributes.
      */
     inheritAttrs: false,
-    layout: (props: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'account.layout.label.api_tokens',
-                    props.locale,
-                    props.fallbackLocale,
-                ),
-                href: index(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'account.layout.label.api_tokens', href: index() },
+    ]),
 });
 
 const page = usePage();

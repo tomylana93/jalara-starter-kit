@@ -13,7 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import UploadGuardOverlay from '@/components/UploadGuardOverlay.vue';
 import { useBranding } from '@/composables/useBranding';
 import { useResumableUploads } from '@/composables/useResumableUploads';
-import { translate, useTranslations } from '@/composables/useTranslations';
+import { useTranslations } from '@/composables/useTranslations';
+import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as settingsIndex } from '@/routes/settings';
 import { edit } from '@/routes/settings/branding';
 import {
@@ -32,11 +33,6 @@ type BrandingSettings = {
     fontPair: string;
 };
 
-type LayoutProps = {
-    locale: string;
-    fallbackLocale: string;
-};
-
 const props = defineProps<{
     settings: BrandingSettings;
     identityModeOptions: SelectOption[];
@@ -47,26 +43,10 @@ const props = defineProps<{
 }>();
 
 defineOptions({
-    layout: (layoutProps: LayoutProps) => ({
-        breadcrumbs: [
-            {
-                title: translate(
-                    'setting.layout.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: settingsIndex(),
-            },
-            {
-                title: translate(
-                    'setting.branding.title',
-                    layoutProps.locale,
-                    layoutProps.fallbackLocale,
-                ),
-                href: edit(),
-            },
-        ],
-    }),
+    layout: breadcrumbLayout(() => [
+        { key: 'setting.layout.title', href: settingsIndex() },
+        { key: 'setting.branding.title', href: edit() },
+    ]),
 });
 
 const { t } = useTranslations();
