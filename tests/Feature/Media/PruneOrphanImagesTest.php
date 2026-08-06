@@ -1,7 +1,7 @@
 <?php
 
 use App\Actions\Media\PruneOrphanImages;
-use App\Actions\Media\PruneOrphanImagesResult;
+use App\Data\Media\PruneOrphanImagesResult;
 use App\Enums\ImageUploadTarget;
 use App\Models\Chat\Message;
 use App\Models\ImageUpload;

@@ -282,6 +282,37 @@ it('swaps a document with its neighbour inside the same category only', function
         ->and($elsewhere->refresh()->position)->toBe(1);
 });
 
+/*
+ * The direction used to be checked inside the controller. It is now bound as a
+ * MoveDirection enum, so the router refuses an unknown value before any code
+ * runs. Without this the guard could quietly disappear: an unbound string
+ * parameter reads anything that is not `up` as `down` rather than failing.
+ */
+it('refuses a move in an unknown direction', function () {
+    $category = DocumentationCategory::factory()->create();
+    $first = Documentation::factory()->create(['documentation_category_id' => $category->id, 'position' => 1]);
+    $second = Documentation::factory()->create(['documentation_category_id' => $category->id, 'position' => 2]);
+
+    actingAs(userWithRole(Role::SuperAdmin))
+        ->post(route('documentation.manage.documents.move', [$second, 'sideways']))
+        ->assertNotFound();
+
+    expect($first->refresh()->position)->toBe(1)
+        ->and($second->refresh()->position)->toBe(2);
+});
+
+it('refuses a category move in an unknown direction', function () {
+    $first = DocumentationCategory::factory()->create(['position' => 1]);
+    $second = DocumentationCategory::factory()->create(['position' => 2]);
+
+    actingAs(userWithRole(Role::SuperAdmin))
+        ->post(route('documentation.manage.categories.move', [$second, 'sideways']))
+        ->assertNotFound();
+
+    expect($first->refresh()->position)->toBe(1)
+        ->and($second->refresh()->position)->toBe(2);
+});
+
 it('paginates the management list ten rows at a time', function () {
     $category = DocumentationCategory::factory()->create(['position' => 1]);
     Documentation::factory()->count(12)->sequence(fn ($sequence) => [

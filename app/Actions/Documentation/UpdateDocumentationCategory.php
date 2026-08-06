@@ -4,7 +4,7 @@ namespace App\Actions\Documentation;
 
 use App\Models\DocumentationCategory;
 
-class UpdateDocumentationCategory
+final class UpdateDocumentationCategory
 {
     /**
      * Rename a category; its position is only ever changed by a move.

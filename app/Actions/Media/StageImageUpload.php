@@ -4,6 +4,8 @@ namespace App\Actions\Media;
 
 use App\Enums\ImageUploadStatus;
 use App\Enums\ImageUploadTarget;
+use App\Exceptions\Media\ActiveImageUploadExists;
+use App\Exceptions\Media\StoredImageWriteFailed;
 use App\Models\ImageUpload;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;

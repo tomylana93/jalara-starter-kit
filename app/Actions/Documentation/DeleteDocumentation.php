@@ -4,7 +4,7 @@ namespace App\Actions\Documentation;
 
 use App\Models\Documentation;
 
-class DeleteDocumentation
+final class DeleteDocumentation
 {
     /**
      * Permanently remove a document.

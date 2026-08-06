@@ -6,7 +6,7 @@ use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Auth\Events\Login;
 
-class RecordSuccessfulLogin
+final class RecordSuccessfulLogin
 {
     public function handle(Login $event): void
     {

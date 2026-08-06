@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Notifications;
+namespace App\Data\Notifications;
 
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;

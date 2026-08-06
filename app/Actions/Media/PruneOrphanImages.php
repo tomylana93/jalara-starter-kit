@@ -2,6 +2,7 @@
 
 namespace App\Actions\Media;
 
+use App\Data\Media\PruneOrphanImagesResult;
 use App\Enums\BrandingAsset;
 use App\Models\Chat\Message;
 use App\Models\ImageUpload;

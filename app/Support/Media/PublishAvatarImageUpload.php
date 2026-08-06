@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Actions\Media;
+namespace App\Support\Media;
 
+use App\Actions\Media\SwapStoredImagePath;
 use App\Enums\UserStatus;
 use App\Models\ImageUpload;
 use App\Models\User;

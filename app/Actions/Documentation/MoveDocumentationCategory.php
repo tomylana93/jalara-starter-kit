@@ -2,23 +2,23 @@
 
 namespace App\Actions\Documentation;
 
+use App\Enums\MoveDirection;
 use App\Models\DocumentationCategory;
 use Illuminate\Support\Facades\DB;
 
-class MoveDocumentationCategory
+final class MoveDocumentationCategory
 {
     /**
      * Swap a category with its neighbour in the manual ordering.
      *
-     * The direction is `up` or `down`; anything else is rejected by the route
-     * before it reaches here, and would otherwise read as `down`.
+     * A category already at the edge has no neighbour and stays where it is.
      */
-    public function handle(DocumentationCategory $documentationCategory, string $direction): void
+    public function handle(DocumentationCategory $documentationCategory, MoveDirection $direction): void
     {
         DB::transaction(function () use ($documentationCategory, $direction): void {
             $adjacent = DocumentationCategory::query()
-                ->where('position', $direction === 'up' ? '<' : '>', $documentationCategory->position)
-                ->orderBy('position', $direction === 'up' ? 'desc' : 'asc')
+                ->where('position', $direction->comparison(), $documentationCategory->position)
+                ->orderBy('position', $direction->ordering())
                 ->first();
 
             if ($adjacent === null) {

@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Settings\SettingsResolver;
 use App\Settings\UserProvisioningSettings;
 
-class CreateUser
+final class CreateUser
 {
     /**
      * Create a verified user, or return the existing user for an idempotent retry.

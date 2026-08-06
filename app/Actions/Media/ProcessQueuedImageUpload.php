@@ -4,8 +4,13 @@ namespace App\Actions\Media;
 
 use App\Enums\ImageUploadStatus;
 use App\Enums\ImageUploadTarget;
+use App\Exceptions\Media\ImageUploadNoLongerPublishable;
 use App\Models\ImageUpload;
 use App\Models\User;
+use App\Support\Media\ImageUploadPublication;
+use App\Support\Media\PublishAvatarImageUpload;
+use App\Support\Media\PublishBrandingImageUpload;
+use App\Support\Media\PublishChatImageUpload;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;

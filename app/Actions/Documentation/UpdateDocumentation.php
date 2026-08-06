@@ -4,9 +4,9 @@ namespace App\Actions\Documentation;
 
 use App\Models\Documentation;
 
-class UpdateDocumentation
+final readonly class UpdateDocumentation
 {
-    public function __construct(private readonly SaveDocumentation $saveDocumentation) {}
+    public function __construct(private SaveDocumentation $saveDocumentation) {}
 
     /**
      * Apply the editor changes to an existing document.

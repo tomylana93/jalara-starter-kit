@@ -6,7 +6,7 @@ use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-class UpdateUser
+final class UpdateUser
 {
     /**
      * Apply the Master Data changes to an existing user.

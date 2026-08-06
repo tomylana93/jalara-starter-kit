@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Chat;
+namespace App\Support\Chat;
 
 use App\Jobs\Chat\DeliverChatMessageNotification;
 use App\Models\User;

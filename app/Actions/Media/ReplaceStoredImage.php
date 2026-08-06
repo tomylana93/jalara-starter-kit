@@ -2,6 +2,7 @@
 
 namespace App\Actions\Media;
 
+use App\Exceptions\Media\StoredImageWriteFailed;
 use Closure;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;

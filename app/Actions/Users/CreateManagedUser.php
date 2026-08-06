@@ -5,9 +5,9 @@ namespace App\Actions\Users;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-class CreateManagedUser
+final readonly class CreateManagedUser
 {
-    public function __construct(private readonly CreateUser $createUser) {}
+    public function __construct(private CreateUser $createUser) {}
 
     /**
      * Provision a user from Master Data and give it its single role.

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Actions\Media\ActiveImageUploadExists;
 use App\Actions\Media\StageImageUpload;
 use App\Actions\Settings\RemoveBrandingAsset;
 use App\Actions\Settings\UpdateBrandingSettings;
@@ -13,6 +12,7 @@ use App\Enums\BrandingIdentityMode;
 use App\Enums\ColorThemePreset;
 use App\Enums\FontPairPreset;
 use App\Enums\ImageUploadTarget;
+use App\Exceptions\Media\ActiveImageUploadExists;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\UpdateBrandingAssetRequest;
 use App\Http\Requests\Settings\UpdateBrandingSettingsRequest;

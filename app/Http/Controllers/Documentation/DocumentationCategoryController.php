@@ -6,12 +6,12 @@ use App\Actions\Documentation\CreateDocumentationCategory;
 use App\Actions\Documentation\DeleteDocumentationCategory;
 use App\Actions\Documentation\MoveDocumentationCategory;
 use App\Actions\Documentation\UpdateDocumentationCategory;
+use App\Enums\MoveDirection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Documentation\StoreDocumentationCategoryRequest;
 use App\Http\Requests\Documentation\UpdateDocumentationCategoryRequest;
 use App\Models\DocumentationCategory;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -70,10 +70,9 @@ class DocumentationCategoryController extends Controller
      * Reordering stays silent for the same reason document reordering does: it
      * is a repeated, immediately visible action.
      */
-    public function move(Request $request, DocumentationCategory $documentationCategory, string $direction, MoveDocumentationCategory $moveDocumentationCategory): RedirectResponse
+    public function move(DocumentationCategory $documentationCategory, MoveDirection $direction, MoveDocumentationCategory $moveDocumentationCategory): RedirectResponse
     {
         Gate::authorize('update', $documentationCategory);
-        abort_unless(in_array($direction, ['up', 'down'], true), 404);
 
         $moveDocumentationCategory->handle($documentationCategory, $direction);
 
