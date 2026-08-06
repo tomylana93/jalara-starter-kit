@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.2.0...v1.3.0) (2026-08-06)
+
+
+### Features
+
+* **backups:** restore an archive and upload one from elsewhere ([e07efae](https://github.com/tomylana93/jalara-starter-kit/commit/e07efae33095aba4b93a9dfc6069dab5267d182e))
+* **maintenance:** serve maintenance and error states as full pages ([5d934bb](https://github.com/tomylana93/jalara-starter-kit/commit/5d934bbea94b07e9b11c0c18de387fa1de503f23))
+* **master-data:** export selected users as pdf ([2a9299c](https://github.com/tomylana93/jalara-starter-kit/commit/2a9299cde6eeb06d5d61fc45513282c42b19494d))
+* **master-data:** import users from a spreadsheet ([ede7cc4](https://github.com/tomylana93/jalara-starter-kit/commit/ede7cc4543c43e7df7d2391c88d0dca4d7811100))
+* **master-data:** import users from a spreadsheet and export them as pdf ([cd4a7d6](https://github.com/tomylana93/jalara-starter-kit/commit/cd4a7d650bc9a0f384eb8fea0283188dde571190))
+
 ## [1.2.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.1.0...v1.2.0) (2026-08-06)
 
 
