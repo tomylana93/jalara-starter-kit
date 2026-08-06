@@ -172,7 +172,7 @@ it('shares the footer text with the layouts', function () {
 });
 
 it('shares the released application version alongside the footer text', function () {
-    updateBranding(footerText: null);
+    updateBranding();
 
     get(route('login'))->assertInertia(fn (Assert $page) => $page
         ->where('version', config('app.version'))

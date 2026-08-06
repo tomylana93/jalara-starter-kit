@@ -22,7 +22,7 @@ class DocumentationCategoryController extends Controller
      */
     public function store(StoreDocumentationCategoryRequest $request, CreateDocumentationCategory $createDocumentationCategory): RedirectResponse
     {
-        $createDocumentationCategory->handle(['name' => (string) $request->validated('name')]);
+        $createDocumentationCategory->handle($request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -37,7 +37,7 @@ class DocumentationCategoryController extends Controller
      */
     public function update(UpdateDocumentationCategoryRequest $request, DocumentationCategory $documentationCategory, UpdateDocumentationCategory $updateDocumentationCategory): RedirectResponse
     {
-        $updateDocumentationCategory->handle($documentationCategory, ['name' => (string) $request->validated('name')]);
+        $updateDocumentationCategory->handle($documentationCategory, $request->toData());
 
         Inertia::flash('toast', [
             'type' => 'success',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Documentation;
 
+use App\Data\Documentation\DocumentationData;
 use App\Enums\DocumentationStatus;
 use App\Models\Documentation;
 use App\Support\DocumentationContent;
@@ -27,18 +28,15 @@ class StoreDocumentationRequest extends FormRequest
         return $this->user()?->can('create', Documentation::class) ?? false;
     }
 
-    /**
-     * @return array{documentation_category_id: string, title: string, slug: string|null, status: string, content: array<string, mixed>}
-     */
-    public function documentationAttributes(): array
+    public function toData(): DocumentationData
     {
-        return [
-            'documentation_category_id' => $this->string('documentation_category_id')->toString(),
-            'title' => $this->string('title')->toString(),
-            'slug' => $this->filled('slug') ? $this->string('slug')->toString() : null,
-            'status' => $this->string('status')->toString(),
-            'content' => $this->array('content'),
-        ];
+        return new DocumentationData(
+            documentationCategoryId: $this->string('documentation_category_id')->toString(),
+            title: $this->string('title')->toString(),
+            slug: $this->filled('slug') ? $this->string('slug')->toString() : null,
+            status: DocumentationStatus::from($this->string('status')->toString()),
+            content: $this->array('content'),
+        );
     }
 
     /** @return array<string, mixed> */

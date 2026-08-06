@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Authorization\InitializeSuperAdmin as InitializeSuperAdminAction;
+use App\Data\Authorization\InitializeSuperAdminData;
 use App\Enums\UserStatus;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -32,14 +33,14 @@ class InitializeSuperAdmin extends Command
         }
 
         try {
-            $user = $initializeSuperAdmin->handle([
-                'name' => $name,
-                'email' => $email,
-                'phone' => is_string($phone) ? $phone : null,
-                'status' => UserStatus::from($status),
-                'email_verified' => (bool) $emailVerified,
-                'password' => is_string($password) && $password !== '' ? $password : null,
-            ], (bool) $this->option('reset-password'));
+            $user = $initializeSuperAdmin->handle(new InitializeSuperAdminData(
+                name: $name,
+                email: $email,
+                phone: is_string($phone) ? $phone : null,
+                status: UserStatus::from($status),
+                emailVerified: (bool) $emailVerified,
+                password: is_string($password) && $password !== '' ? $password : null,
+            ), (bool) $this->option('reset-password'));
         } catch (Throwable $throwable) {
             $this->components->error($throwable->getMessage());
 

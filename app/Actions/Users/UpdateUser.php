@@ -2,7 +2,7 @@
 
 namespace App\Actions\Users;
 
-use App\Enums\UserStatus;
+use App\Data\Users\UpdateUserData;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -13,18 +13,16 @@ final class UpdateUser
      *
      * An administratively changed email stays verified, and the single role is
      * replaced rather than appended.
-     *
-     * @param  array{name: string, email: string, status: string, role: string}  $attributes
      */
-    public function handle(User $user, array $attributes): User
+    public function handle(User $user, UpdateUserData $data): User
     {
-        return DB::transaction(function () use ($user, $attributes): User {
+        return DB::transaction(function () use ($user, $data): User {
             $user->fill([
-                'name' => $attributes['name'],
-                'email' => $attributes['email'],
+                'name' => $data->name,
+                'email' => $data->email,
             ]);
 
-            $user->status = UserStatus::from($attributes['status']);
+            $user->status = $data->status;
 
             /*
              * An expiry left over from an earlier suspension would silently
@@ -35,7 +33,7 @@ final class UpdateUser
 
             $user->save();
 
-            $user->syncRoles([$attributes['role']]);
+            $user->syncRoles([$data->role->value]);
 
             return $user;
         });
