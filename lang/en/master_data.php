@@ -21,6 +21,40 @@ return [
             'description' => 'Change the name, email, role, or access status of an existing user.',
         ],
 
+        'import' => [
+            'title' => 'Import users',
+            'description' => 'Create users in bulk from a spreadsheet. The file is accepted whole or rejected whole.',
+
+            'help' => 'The template shows the expected columns. Unknown columns are ignored, and every row becomes a new user.',
+
+            'label' => [
+                'file' => 'Spreadsheet',
+            ],
+
+            'button' => [
+                'open' => 'Import',
+                'template' => 'Download template',
+                'submit' => 'Import users',
+            ],
+
+            'message' => [
+                'imported' => ':count users have been created.',
+                'password_missing' => 'A default password has to be configured in the user provisioning settings before users can be imported.',
+            ],
+
+            'error' => [
+                'more' => 'And :count more problems.',
+            ],
+
+            'validation' => [
+                'unreadable' => 'The file could not be read as an XLSX spreadsheet.',
+                'columns' => 'The header row is missing the columns :columns.',
+                'empty' => 'The spreadsheet holds no rows.',
+                'too_many_rows' => 'One import accepts at most :max rows.',
+                'row' => 'Row :row: :message',
+            ],
+        ],
+
         'label' => [
             'name' => 'Name',
             'email' => 'Email',

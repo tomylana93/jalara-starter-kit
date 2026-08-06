@@ -63,12 +63,19 @@ const filterOptions = {
     ],
 };
 
-const mountIndex = (overrides: Record<string, unknown> = {}) =>
+/* Dialog content teleports out of the wrapper, so tests that reach into it
+   attach the component to the document and query from there. */
+const mountIndex = (
+    overrides: Record<string, unknown> = {},
+    attachTo?: HTMLElement,
+) =>
     mount(Index, {
+        attachTo,
         props: {
             users,
             filterOptions,
             canCreate: true,
+            hasDefaultPassword: true,
             dateFormat: 'd/m/Y',
             ...overrides,
         },
@@ -251,6 +258,74 @@ describe('master data user index', () => {
                     .attributes('href') ?? '',
             ),
         ).toBe('/master-data/users/export?ids[]=user-1&ids[]=user-2');
+    });
+
+    it('offers the import alongside the create action', () => {
+        const wrapper = mountIndex();
+
+        expect(wrapper.find('[data-test="import-users-button"]').exists()).toBe(
+            true,
+        );
+    });
+
+    it('hides the import without the create permission', () => {
+        const wrapper = mountIndex({ canCreate: false });
+
+        expect(wrapper.find('[data-test="import-users-button"]').exists()).toBe(
+            false,
+        );
+    });
+
+    it('disables the import until a default password is configured', () => {
+        const configured = mountIndex({ hasDefaultPassword: true });
+        const missing = mountIndex({ hasDefaultPassword: false });
+
+        expect(
+            configured
+                .get('[data-test="import-users-button"]')
+                .attributes('disabled'),
+        ).toBeUndefined();
+
+        const button = missing.get('[data-test="import-users-button"]');
+
+        expect(button.attributes('disabled')).toBeDefined();
+        /* The affordance has to say why, or it reads as a broken button. */
+        expect(button.attributes('title')).toBe(
+            'master_data.user.import.message.password_missing',
+        );
+    });
+
+    it('opens the import dialog with the template download', async () => {
+        const wrapper = mountIndex({}, document.body);
+
+        expect(
+            document.querySelector('[data-test="download-import-template"]'),
+        ).toBeNull();
+
+        await wrapper.get('[data-test="import-users-button"]').trigger('click');
+
+        expect(
+            document
+                .querySelector('[data-test="download-import-template"]')
+                ?.getAttribute('href'),
+        ).toBe('/master-data/users/import/template');
+        expect(
+            document
+                .querySelector('[data-test="import-users-input"]')
+                ?.getAttribute('type'),
+        ).toBe('file');
+    });
+
+    it('keeps the import submit disabled until a file is chosen', async () => {
+        const wrapper = mountIndex({}, document.body);
+
+        await wrapper.get('[data-test="import-users-button"]').trigger('click');
+
+        expect(
+            document
+                .querySelector('[data-test="confirm-import-users"]')
+                ?.hasAttribute('disabled'),
+        ).toBe(true);
     });
 
     it('exports a single selected row', async () => {

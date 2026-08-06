@@ -2,7 +2,9 @@
 
 use App\Enums\Permission;
 use App\Http\Controllers\MasterData\ExportUsersController;
+use App\Http\Controllers\MasterData\ImportUsersController;
 use App\Http\Controllers\MasterData\UserController;
+use App\Http\Controllers\MasterData\UserImportTemplateController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Support\Facades\Route;
 
@@ -17,8 +19,10 @@ Route::middleware(['auth', 'verified', 'permission:'.Permission::ViewUsers->valu
     ->group(function (): void {
         Route::inertia('/', 'master-data/Index')->name('index');
 
-        /* Declared first so the literal segment is not read as a {user}. */
+        /* Declared first so the literal segments are not read as a {user}. */
         Route::get('users/export', ExportUsersController::class)->name('users.export');
+        Route::get('users/import/template', UserImportTemplateController::class)->name('users.import.template');
+        Route::post('users/import', ImportUsersController::class)->name('users.import');
 
         Route::resource('users', UserController::class)
             ->only(['index', 'create', 'store', 'edit', 'update'])
