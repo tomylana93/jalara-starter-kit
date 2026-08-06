@@ -19,6 +19,11 @@
                 "artisan",
                 "boost:mcp"
             ]
+        },
+        "serena": {
+            "type": "remote",
+            "enabled": true,
+            "url": "http://localhost:9121/mcp"
         }
     }
 }
