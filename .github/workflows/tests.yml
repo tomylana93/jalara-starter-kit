@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - dev
   pull_request:
     types:
       - opened
@@ -19,18 +18,23 @@ permissions:
 # Superseded runs for the same branch or pull request are pointless work: only
 # the newest revision can still be merged.
 #
-# The group keys on the source branch rather than the pull request number so
-# that the `push` and `pull_request` runs a single push produces land in the
-# same group and cancel each other. The `synchronize` event is a consequence of
-# the push, so the pull request run is always the later of the two and is the
-# one that survives.
+# `push` deliberately covers `main` alone. Listing a working branch there too
+# would have every push produce a second run alongside the `synchronize` run its
+# own pull request triggers, and the older of the two would be cancelled — which
+# reads as a failed check against the commit even though nothing failed. A push
+# to a branch with no pull request open therefore runs nothing; opening the pull
+# request as a draft is what asks for the fast gate.
+#
+# The group still keys on the source branch rather than the pull request number,
+# so a `push` to `main` and any pull request targeting it from the same branch
+# name cannot run concurrently.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
-# The tiering rule for the whole workflow. Draft pull requests and pushes to an
-# ordinary branch get the fast gate; ready pull requests and `main` — the two
-# points where code is actually promoted — get the full one.
+# The tiering rule for the whole workflow. Draft pull requests get the fast gate;
+# ready pull requests and `main` — the two points where code is actually
+# promoted — get the full one.
 env:
   RUN_FULL: ${{ (github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}
 
