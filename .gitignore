@@ -1,4 +1,5 @@
 /.cache
+/deploy/config.sh
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
