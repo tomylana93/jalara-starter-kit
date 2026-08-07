@@ -10,6 +10,23 @@ agents all follow it.
   merged with a merge commit.
 - Draft pull requests and pushes to an ordinary branch run the fast CI gate.
   Ready pull requests and pushes to `main` run the full gate.
+- Every merge commit into `main` carries an empty body. GitHub copies the
+  pull-request title into it by default, and Release Please parses that copy as a
+  conventional commit in its own right, so the changelog lists the same change
+  twice: once for the real commit and once for the merge that brought it. The
+  repository setting cannot express this — GitHub accepts only
+  `PR_TITLE`+`PR_BODY`, `PR_TITLE`+`BLANK`, and `MERGE_MESSAGE`+`PR_TITLE`, and
+  the first two move the title into the subject instead of removing it — so the
+  merge itself clears the body:
+
+  ```shell
+  gh pr merge <number> --merge \
+      --subject "Merge pull request #<number> from <branch>" \
+      --body ""
+  ```
+
+  Merging from the web interface prefills the title in the body; clear it before
+  confirming. This applies to the release pull request too.
 
 ## Conventional Commits
 
