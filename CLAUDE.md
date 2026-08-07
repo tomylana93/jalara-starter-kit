@@ -205,8 +205,11 @@ agents all follow it.
 
 - Work happens on `dev`. `main` receives `dev` through a pull request that is
   merged with a merge commit.
-- Draft pull requests and pushes to an ordinary branch run the fast CI gate.
-  Ready pull requests and pushes to `main` run the full gate.
+- Draft pull requests run the fast CI gate. Ready pull requests and pushes to
+  `main` run the full gate. Pushes to a working branch run nothing on their own:
+  a branch push and its own pull request's `synchronize` event would otherwise
+  produce two runs in one concurrency group, and the cancelled one reads as a
+  failed check. Open the pull request as a draft to get CI on a branch.
 - Every merge commit into `main` carries an empty body. GitHub copies the
   pull-request title into it by default, and Release Please parses that copy as a
   conventional commit in its own right, so the changelog lists the same change
