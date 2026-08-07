@@ -5,7 +5,6 @@
 
 ### Features
 
-* **deploy:** add manual VPS deployment scripts ([399772a](https://github.com/tomylana93/jalara-starter-kit/commit/399772ad17205e16d1446ca170413a1b2da2f1a3))
 * **deploy:** add manual VPS deployment scripts ([a5bcf70](https://github.com/tomylana93/jalara-starter-kit/commit/a5bcf70953a24abd9704b05dc5cb9e9acbd11d3a))
 
 
