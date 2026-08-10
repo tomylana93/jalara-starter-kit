@@ -14,5 +14,4 @@
 - Required task verification sequence: `mem:task_completion`.
 - Commit-message, pull-request, application-version, and release automation conventions: `mem:release_process`.
 - Top-level paths: `app/` backend application code; `routes/` web/console routes; `database/` migrations/factories/seeders; `resources/js/` Inertia Vue application; `resources/css/app.css` Tailwind entrypoint; `tests/` Pest suites.
-- Preserve the existing directory structure and reuse existing components/patterns; do not add dependencies or new base folders without user approval.
-- Custom agent rules originate in `.ai/` and are published into agent-specific outputs by Laravel Boost; Laravel ecosystem code changes require version-specific Boost documentation lookup.
+- This memory is the graph root and top-level source map only. Always-on workflow lives in `.ai/guidelines/`, path-selectable constraints in `.ai/rules/` (found via `.ai/rules/index.md`), and focused procedures in `.ai/skills/`; do not restate any of them here.

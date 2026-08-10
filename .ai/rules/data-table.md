@@ -16,3 +16,12 @@ Never add a row-model factory (`createSortedRowModel`, `createFilteredRowModel`,
 There is no `manualFiltering` option here: it belongs to `columnFilteringFeature`, which is deliberately unregistered. Filtering is entirely server-side.
 
 v9 fixes the table's column `TValue` at `unknown`, so `DataTable.vue` is generic over `TData extends RowData` only — reintroducing a `TValue` parameter cannot satisfy `useTable`.
+
+## Selection, column visibility, and filters are table-owned and domain-free
+`DataTable` owns `rowSelection` as controlled state and requires a `getRowId` prop so identity is the domain UUID, never the row index; it emits `selection-change` with those UUIDs. Selection means "these rows, this server page": it clears whenever the effective query or the set of row ids changes, and survives a column-visibility change.
+
+`DataTableColumnHeader` takes the structural `SortableColumn` type, not `Column<TData, TValue>` — a generic SFC passed through `h()` cannot unify its generics and fails type-check.
+
+Hideable columns declare an already-translated `meta.label` (augmented onto TanStack's `ColumnMeta` in `data-table/types.ts`); the visibility menu is built from `getAllColumns().filter(c => c.getCanHide())`, so select/actions never appear. The empty row's colspan must use `getVisibleLeafColumns().length`.
+
+Filters stay domain free: the page passes `TableFilterConfig[]` (key, label, options) and the table only routes the key back into `TableQuery.filters`. Filters render before the Columns menu, ride the `pendingQuery` snapshot, reset to page 1, and join `selectionScope` so a filter change clears the selection. An emptied filter key is deleted rather than sent as an empty list.

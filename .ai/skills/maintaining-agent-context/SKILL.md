@@ -12,14 +12,24 @@ regenerate.
 
 - Inspect the working tree, `boost.json`, `.ai/`, `.serena/`, and the generated
   agent outputs before editing.
+- This repository supports exactly two agents, Claude Code and Codex. `boost.json`
+  must list exactly `claude_code` and `codex`. Never add a third agent, and never
+  reintroduce client configuration, plugins, hooks, or ignore entries for one.
 - Treat `.ai/guidelines/` and `.ai/skills/` as the custom Boost sources.
   Treat `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/` as
-  generated outputs.
+  generated outputs. `.agents/skills/grill-me/` is the exception: it is a
+  hand-maintained Codex-only skill that Boost neither composes nor overwrites,
+  because it is absent from both `.ai/skills/` and the `boost.json` skill list.
 - Treat `.ai/rules/` as a third, tool-owned store: committed, path-scoped rules
   written only through the `record-rule` MCP tool, which owns file placement,
-  frontmatter, and `index.md`. It is neither a Boost source you hand-author nor
-  a generated output you regenerate, so leave it untouched by
-  `composer run agents:update` and never edit it by hand.
+  frontmatter, and `index.md`. Recorded rules are neither a Boost source you
+  hand-author nor a generated output you regenerate, so never edit them by hand.
+- `.ai/rules/boost/` is the one part of that store publication owns. Because
+  `composer run agents:update` sets `BOOST_RULES_SCOPED_GUIDELINES=true`, Boost
+  extracts path-scoped package guidance into that managed subtree and rewrites
+  `.ai/rules/index.md` to list it, instead of duplicating it inline in the
+  generated agent files. Regenerate it, never hand-edit it, and never record a
+  custom rule inside it.
 - Boost exposes no update or delete operation for a recorded rule. Removing or
   rewriting one is therefore a direct-edit exception that requires explicit
   per-change developer approval, and it must end by regenerating `index.md`
@@ -27,6 +37,18 @@ regenerate.
   `No rules recorded yet.` is valid.
 - Change generated outputs only through
   `composer run agents:update`; do not patch them independently.
+- Upstream Boost skills ship text naming agents this repository does not
+  support. `composer run agents:update` therefore ends in a deterministic
+  sanitizer that strips those references from the published assets. Fix such a
+  reference by teaching the sanitizer, never by editing the published file: a
+  hand edit is overwritten by the next publication. The sanitizer fails loudly
+  when a rule it owns no longer matches, so an upstream format change surfaces
+  as an error instead of silently leaving the reference behind.
+- `composer run agents:check` is the read-only counterpart. It asserts the
+  two-agent selection, the absence of unsupported-agent references, the shared
+  handoff structure and verification gate across the Codex, grill-me, and
+  `/apply-plan` surfaces, and the presence of the managed scoped-rule subtree in
+  the index.
 - Invoke dependency-backed repository tooling through Composer scripts. Add or
   update the Composer entry point before documenting a direct vendor binary or
   Artisan command; keep Serena memory operations Serena-native.
@@ -86,9 +108,10 @@ regenerate.
 ## Publish and Verify
 
 1. Run `composer run agents:update`.
-2. Confirm the custom guideline and skills appear in every configured agent
-   output without manually enumerating unrelated installed skills.
-3. Run the update again and confirm it produces no further tracked diff.
-4. Run the Serena memory checks when memories changed.
-5. Run `git diff --check`, review the complete diff, and report exactly which
+2. Confirm the custom guideline and skills appear in both configured agent
+   outputs without manually enumerating unrelated installed skills.
+3. Run `composer run agents:check` and resolve every reported violation.
+4. Run the update again and confirm it produces no further tracked diff.
+5. Run the Serena memory checks when memories changed.
+6. Run `git diff --check`, review the complete diff, and report exactly which
    validation commands ran.

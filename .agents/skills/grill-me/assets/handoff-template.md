@@ -1,45 +1,54 @@
 ## HANDOFF
 
-**Task:** <one sentence, imperative, in the developer's language>
+**Task:** <one sentence, imperative>
 **Repository:** `<repo>`
 **Branch:** `<branch>`
 **Base commit:** `<full sha>`
 **Working tree at analysis:** `clean` | `<list of dirty files>`
 
-### Tujuan dan kriteria penerimaan
+### Goals and acceptance criteria
 - [ ] <observable, testable outcome>
-- [ ] <one line per criterion; no implementation detail>
+- [ ] <behaviour that must not change>
 
-### Konteks terverifikasi
-- `<path>:<line>` / `<symbol or section>` - <what it proves>
-- <external documentation source> - <version-specific fact it establishes>
+### Verified context
+- `<path>:<line>` / `<symbol or section>` - <what it proves and why it matters>
+- <package version or documentation source> - <version-specific fact it establishes>
 
-### Asumsi dan unknowns
+### Assumptions and unknowns
 - Assumption: <stated assumption the implementor may rely on>
 - Unverified: <inference not yet proven, and how it would be proven>
 
-### Rencana perubahan
+### Change plan
 1. `<path>`
-   - Symbol/area: `<Class::method or section>`
+   - Symbol/area: `<Class::method or section>`   (symbol anchors, not line numbers)
    - Change: <what changes>
    - Reason: <why, tied to an acceptance criterion>
    - Contract to preserve: <what must not break>
 
-### Di luar scope
+### Out of scope
 - <adjacent work deliberately excluded>
 - Do not add dependencies.
 - Do not touch unrelated dirty files.
 
-### Tes
+### Tests
 - Add/update: `<test file>`
 - Positive case: <what proves the feature works>
 - Negative/authorization case: <what proves the guard holds>
 - Focused command: `<command>`
 
 ### Verification gate
-- PHP changed: `composer run rector`, then `composer run format:agent`
-- Frontend changed: `pnpm run lint`, then `pnpm run format`
+- Source changed (PHP or frontend): `composer run fix`
+- Agent infrastructure changed: `composer run agents:update`, then
+  `composer run agents:check`, then `composer run agents:update` again with no
+  further tracked diff
+- Memory changed: `serena memories check`, and
+  `serena memories check --include-unmarked --fuzzy-matching`
 - Final: `composer run ci:check`
+
+### Memory/context update
+- Target: `mem:<name>` or `<path>`   (name it; do not write "if relevant")
+- Invariant to record: <the rule, verbatim enough to write without re-deriving>
+- Or state: "No new durable invariant; no memory update."
 
 ### Freshness check
 - Compare HEAD against the base commit above.
@@ -50,9 +59,10 @@
   security surface, new dependency, destructive migration, scope growth) must
   go back to the developer before implementing.
 
-### Kriteria selesai
+### Completion criteria
 - [ ] All acceptance criteria met
 - [ ] Focused tests pass
 - [ ] `composer run ci:check` passes
 - [ ] Diff touches only the approved scope
-- [ ] Memory updated only after a green gate, and only for new invariants
+- [ ] Named memory/context target updated after the green gate, or explicitly
+      declared unnecessary

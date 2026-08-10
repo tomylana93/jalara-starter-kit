@@ -161,7 +161,12 @@
             "pest"
         ],
         "agents:update": [
-            "@php artisan boost:update --no-interaction"
+            "@putenv BOOST_RULES_SCOPED_GUIDELINES=true",
+            "@php artisan boost:update --no-interaction",
+            "@php .ai/scripts/agent-context.php sanitize"
+        ],
+        "agents:check": [
+            "@php .ai/scripts/agent-context.php check"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
@@ -169,7 +174,7 @@
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan boost:update --ansi"
+            "@agents:update"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""

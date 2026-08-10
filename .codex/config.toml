@@ -23,18 +23,15 @@ leaving the section blank.
 
 ## Routing the handoff
 
-There are three implementors in this repository:
+There are two implementors in this repository, and only two:
 
 - **Claude Code** - the default implementor. Highest capability, but subject to a
   five-hour usage limit. The developer pastes the handoff and runs `/apply-plan`.
-- **agy (Antigravity/Gemini)** - the light implementor. Use for small, targeted
-  changes: a rename, a single-file edit, a formatting or test-only change. The
-  developer pastes the handoff and asks agy to use its `apply-plan` skill.
-- **Codex (you)** - the fallback implementor when Claude is rate-limited and the
-  change is too large for agy.
+- **Codex (you)** - the only fallback implementor, used when Claude is
+  rate-limited.
 
 After printing the handoff, ask the developer one short question naming these
-three options and recommend one, with a one-line reason. Then stop and wait.
+two options and recommend one, with a one-line reason. Then stop and wait.
 
 Implement only after the developer explicitly answers "Codex". That answer
 authorizes the scope described in your handoff and nothing else. It is not
@@ -87,8 +84,10 @@ developer can copy it in one selection:
 - Focused command: `php artisan test --compact --filter=...`
 
 ### Verification gate
-- PHP changed: `composer run rector`, then `composer run format:agent`
-- Frontend changed: `pnpm run lint`, then `pnpm run format`
+- Source changed (PHP or frontend): `composer run fix`
+- Agent infrastructure changed: `composer run agents:update`, then
+  `composer run agents:check`, then `composer run agents:update` again with no
+  further tracked diff
 - Memory changed: `serena memories check`, and
   `serena memories check --include-unmarked --fuzzy-matching`
 - Final: `composer run ci:check`

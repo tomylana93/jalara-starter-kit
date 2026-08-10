@@ -38,7 +38,6 @@ yarn-error.log
 /output/playwright
 /e2e/.auth
 /.fleet
-/.gemini
 /.idea
 /.nova
 # `settings.json` is tracked on purpose: it points the editor's commit-message

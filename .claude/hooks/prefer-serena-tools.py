@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """PreToolUse gate: route code reads and edits through Serena's symbolic tools.
 
-The shared Serena MCP server runs with ``--context ide`` because Codex and agy
-connect to the same process, so the stronger tool-routing prompt that ships
+The shared Serena MCP server runs with ``--context ide`` because Codex connects
+to the same process, so the stronger tool-routing prompt that ships
 with Serena's ``claude-code`` context never reaches this client. Guideline text
 alone loses to the built-in tool descriptions, which sit right at the point of
 decision. This hook moves the rule to that same point.
