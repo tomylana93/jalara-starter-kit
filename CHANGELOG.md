@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.4.0...v2.0.0) (2026-08-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **data-table:** ColumnDef now takes the feature set as its first generic, so column factories must be typed ColumnDef<DataTableFeatures, Row>[]. DataTable is generic over TData only, because v9 fixes the table's column TValue at unknown and a TValue parameter can no longer satisfy useTable.
+
+### Features
+
+* **ui:** add the shadcn-vue drawer primitive ([8432818](https://github.com/tomylana93/jalara-starter-kit/commit/84328180704980936cc2838252f21ead55b63c09))
+
+
+### Bug Fixes
+
+* **deps:** bump transitive nanoid to 3.3.18 to clear GHSA-2v37-7h3g-55p8 ([6027d1c](https://github.com/tomylana93/jalara-starter-kit/commit/6027d1cd35ed8b421250e17ad8ba4df6bbb51b25))
+
+
+### Code Refactoring
+
+* **data-table:** migrate to TanStack Vue Table v9 ([6113efe](https://github.com/tomylana93/jalara-starter-kit/commit/6113efeeb61f40c8a8499012905b1902a11e4c74))
+
 ## [1.4.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.3.0...v1.4.0) (2026-08-07)
 
 
