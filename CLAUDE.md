@@ -15,13 +15,15 @@
 
 ## Implementor Routing
 
+- This repository supports exactly two agents: Claude Code and Codex. Do not
+  reintroduce a third implementor, a light-implementor tier, or client
+  configuration for an agent outside that pair.
 - Codex plans first and closes every analysis with a `## HANDOFF` block, then
 
-  asks the developer which implementor takes it.
-- Claude Code is the default implementor and runs `/apply-plan`. agy is the
-  light implementor for small, well-specified changes and applies a handoff
-  through its `apply-plan` skill. Codex implements its own plan only as the
-  fallback when Claude is rate-limited and the change exceeds agy's scope.
+  asks the developer which of the two implementors takes it.
+- Claude Code is the default implementor and runs `/apply-plan`. Codex is the
+  only fallback, and implements its own plan solely when the developer picks it
+  explicitly — typically because Claude is rate-limited.
 - Implementing a handoff authorizes its stated scope and nothing else. Adding a
   dependency, touching a security surface, running a destructive operation, or
   growing the plan goes back to the developer first.
@@ -137,6 +139,16 @@
   `composer run ci:full` swaps in coverage and adds the Playwright suite with
   its single production build. Change a gate by changing the job script, never
   by editing one aggregate in isolation.
+- `composer run ci:full` is required in addition to the standard gate after
+  changing CI, release, coverage, installer, or Playwright configuration. Those
+  surfaces are invisible to the fast tier: its `coverage:check` stage needs a
+  local PCOV or Xdebug driver, and its Playwright stage is the only thing that
+  exercises the production build.
+- Agent infrastructure changed (`.ai/`, `boost.json`, generated agent outputs):
+  run `composer run agents:update`, then `composer run agents:check`, then
+  `composer run agents:update` a second time and confirm it leaves no further
+  tracked diff. Publication is the only writer of the generated outputs; never
+  patch them by hand.
 - Always run the required `composer run ci:check` final gate. If it exposes a
   failure outside the original task scope, treat that failure as required
   follow-up work: isolate its cause, make the smallest safe fix while
@@ -148,6 +160,13 @@
 
 Every durable finding has exactly one canonical destination. Classify it before
 recording it, and never mirror the same knowledge into a second store.
+
+Run the classification before the write, not after it. Naming the destination is
+a precondition for recording anything durable: if you cannot say which single row
+below owns the finding and why the other rows do not, you do not yet know enough
+to record it. A finding that seems to fit two rows fits the more specific one —
+a glob-selectable constraint is a Project Rule even when a memory already
+mentions the domain.
 
 | The finding is                                                            | Destination                    |
 | ------------------------------------------------------------------------- | ------------------------------ |
@@ -177,9 +196,14 @@ recording it, and never mirror the same knowledge into a second store.
 - Write a rule with the `record-rule` tool, never by hand: it owns file
   placement, frontmatter, and the index. Pass a `glob`, a short `title`, and a
   few-line `note`.
-- Path-scoped framework guidance under `.ai/rules/boost` is not in use;
-  `boost.rules.scoped_guidelines` stays disabled, so package guidelines remain
-  inline in the generated agent files. Do not expect that directory to exist.
+- Path-scoped framework guidance is in use. `composer run agents:update` runs
+  Boost with `BOOST_RULES_SCOPED_GUIDELINES=true`, so package guidance that
+  applies only to specific globs is extracted into the Boost-managed
+  `.ai/rules/boost/` subtree and listed in `.ai/rules/index.md` instead of being
+  duplicated inline in the generated agent files. That subtree is regenerated on
+  every publication: never hand-edit it, and never record a custom rule inside
+  it. Rules written with `record-rule` live beside it, outside `boost/`, and
+  publication leaves them alone.
 
 ## Memory Discipline
 
@@ -187,6 +211,11 @@ recording it, and never mirror the same knowledge into a second store.
 - Record durable invariants and discovery shortcuts, not secrets, logs,
   transient state, obvious facts, or task-local notes. A constraint the
   placement matrix assigns to `.ai/rules/` never also becomes a memory.
+- When a finding already lives in the wrong store, relocate it in this order:
+  record it in the owning store, verify it is reachable through that store's own
+  retrieval path, then remove the duplicate. Never delete the source first, and
+  never leave the same knowledge live in two stores once the relocation is
+  finished.
 - Keep `mem:core` as the graph root and place focused knowledge in topic
   memories linked with marked `mem:` references.
 - After memory changes, check referential integrity with
@@ -353,7 +382,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Project Rules
 
-- This project keeps committed, area-grouped rules in `.ai/rules` (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule.
+- This project contains committed, area-grouped rules in `.ai/rules` when that directory exists (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
 - Record durable rules with `record-rule` so the next agent or teammate inherits them instead of working them out again. Pass a `glob` (e.g. `app/Http/Controllers/**`), a short `title`, and a few-line `note`. Always use `record-rule`, never your native memory or notes tool — native memory is personal and session-scoped; only `.ai/rules` is shared with the team and persists in the repo.
 
 ## Artisan
@@ -423,23 +452,9 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - If you're creating a generic PHP class, use `php artisan make:class`.
 - Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
 
-### Model Creation
-
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
-
-## APIs & Eloquent Resources
-
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
-
 ## URL Generation
 
 - When generating links to other pages, prefer named routes and the `route()` function.
-
-## Testing
-
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
 
 ## Vite Error
 
@@ -457,15 +472,6 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 
 - If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
 - Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
-
-=== pest/core rules ===
-
-## Pest
-
-- This project uses Pest for testing. Create tests: `php artisan make:test --pest {name}`.
-- The `{name}` argument should not include the test suite directory. Use `php artisan make:test --pest SomeFeatureTest` instead of `php artisan make:test --pest Feature/SomeFeatureTest`.
-- Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
-- Do NOT delete tests without approval.
 
 === inertia-vue/core rules ===
 

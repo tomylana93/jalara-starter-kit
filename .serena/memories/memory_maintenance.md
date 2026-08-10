@@ -27,6 +27,17 @@ Keep guidance durable and generalizable, not task-local.
 Add or update memories only with stable, non-obvious project conventions that avoid complex rediscovery in the future.
 Do not add: quick-read facts; generic language/framework knowledge; one-off task notes; volatile line-level details; behavior likely to change soon.
 
+## Classify before writing
+
+Before any durable write, name exactly one owner and say why the others do not apply:
+always-on workflow → `.ai/guidelines/`; trigger-scoped procedure → `.ai/skills/`;
+constraint selectable from an affected file glob → Project Rule via `record-rule`;
+orientation, source map, or cross-domain invariant needed *before* paths are known → Serena memory;
+code-visible, tooling-owned, generic framework knowledge, or task-local → nowhere.
+A finding that seems to fit two owners belongs to the more specific one.
+When relocating, record the destination first, verify it is reachable through that store's own
+retrieval path, then remove the duplicate. Never remove a source before its replacement exists.
+
 ## Store boundary
 
 Serena memory stores project maps, cross-domain invariants, and discovery shortcuts needed *before* the affected paths are known.

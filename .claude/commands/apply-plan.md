@@ -79,7 +79,7 @@ When in doubt, it is material. A wrong stop costs one message; a wrong adaptatio
 ## Step 4 — Implement
 
 Make the smallest coherent change that satisfies the acceptance criteria, following
-existing project patterns and reusing existing components. Honour the plan's "Di luar
+existing project patterns and reusing existing components. Honour the plan's "Out of
 scope" list literally.
 
 ## Step 5 — Tests
@@ -96,9 +96,13 @@ php artisan test --compact --filter=...
 
 In order, and only for the surfaces you touched:
 
-1. PHP changed: `composer run rector`, then `composer run format:agent`
-2. Frontend changed: `pnpm run lint`, then `pnpm run format`
-3. Always: `composer run ci:check`
+1. Source changed (PHP or frontend): `composer run fix`
+2. Agent infrastructure changed: `composer run agents:update`, then
+   `composer run agents:check`, then `composer run agents:update` again with no
+   further tracked diff
+3. Memory changed: `serena memories check`, and
+   `serena memories check --include-unmarked --fuzzy-matching`
+4. Always: `composer run ci:check`
 
 If `ci:check` surfaces a failure outside the plan's scope, treat it as required follow-up:
 isolate the cause, make the smallest safe fix, preserve unrelated changes, rerun. Stop only

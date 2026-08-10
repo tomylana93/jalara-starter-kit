@@ -1,15 +1,13 @@
 # Release Process
 
-- Durable conventions live in `.ai/guidelines/release-workflow.md`; it is the single source of truth published into `AGENTS.md`/`CLAUDE.md` and referenced by `.vscode/settings.json` for editor commit-message and pull-request generation.
-- `dev` is the working branch; `main` receives it through a pull request merged with a merge commit. Merge commits stay exempt from commit-message validation.
-- Every non-merge commit and every pull-request title is an English Conventional Commit with an optional scope: one of `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `revert`. Dependabot guarantees the literal `chore(deps):` prefix through `commit-message.prefix: chore(deps)` without `include: scope`. English is mandatory authoring guidance; CI programmatically enforces Conventional Commit structure and allowed types, not natural-language detection.
-- The `conventional commits` job in `.github/workflows/tests.yml` validates the PR title plus `git log --no-merges base..head`; it is shell-only, with no third-party action.
-- Release Please targets `main` from `.github/workflows/release-please.yml`, triggered by `workflow_run` on a successful `tests` run, so nothing is released from unverified code. Bootstrap SHA `de8e57123d469ec15c8fd3a89f48a3da7fc0e23f`, initial version `0.1.0`, default SemVer.
-- Release type `simple` is chosen because its `version.txt` updater uses `createIfMissing: false`: with no `version.txt` committed, nothing extra is generated and `version.json` is the only runtime version file, updated through the generic JSON extra-file updater.
-- `config('app.version')` parses `version.json` defensively (falls back to `0.0.0`) and `HandleInertiaRequests::share` publishes it as the `version` shared prop; `AppFooter` renders it as plain `v<version>` text above the branding footer text and stays visible when that text is absent.
-- Automation is opt-in: it stays inert unless the repository variable `RELEASE_ENABLED` is `true` and the fine-grained `RELEASE_PLEASE_TOKEN` secret (Contents, Pull requests, Issues read/write) exists. The token guard is a step, because `secrets` is unavailable in a job-level `if`.
-- A single root `simple` manifest release is componentless: do not set `package-name` in `release-please-config.json`. A configured package component does not match the componentless `release-please--branches--main` branch and can leave a merged release PR at `autorelease: pending` without publishing.
-- Treat a successful Release Please workflow as complete only after the expected Git tag and non-draft GitHub Release exist and the merged release PR has `autorelease: tagged`; a successful job may still have logically aborted publication.
-- Pull-request descriptions contain exactly Summary, Testing, and Release impact.
-- `.gitignore` excludes `/.vscode/*` but re-includes `!/.vscode/settings.json`; excluding the directory itself would make the negation unreachable.
+Commit, pull-request, branching, and release conventions are owned by `.ai/guidelines/release-workflow.md` and load on every task. This memory holds only the automation internals that are not stated there and that a diagnosis would otherwise have to rediscover.
+
+- Release type `simple` is chosen because its `version.txt` updater uses `createIfMissing: false`: with no `version.txt` committed, nothing extra is generated and `version.json` stays the only runtime version file, updated through the generic JSON extra-file updater.
+- A single root `simple` manifest release is componentless: do not set `package-name` in `release-please-config.json`. A configured package component does not match the componentless `release-please--branches--main` branch and can leave a merged release PR at `autorelease: pending` without ever publishing.
+- Treat a successful Release Please workflow as complete only after the expected Git tag and a non-draft GitHub Release exist and the merged release PR reads `autorelease: tagged`; a green job may still have logically aborted publication.
+- The `RELEASE_PLEASE_TOKEN` guard is a workflow *step*, not a job-level `if`, because `secrets` is unavailable in a job-level condition.
+- `.github/workflows/release-please.yml` is triggered by `workflow_run` on a successful `tests` run, which is the mechanism behind "nothing is released from unverified code".
+- The `conventional commits` job in `.github/workflows/tests.yml` is shell-only with no third-party action; it validates the pull-request title plus `git log --no-merges base..head`. Dependabot satisfies it through `commit-message.prefix: chore(deps)` without `include: scope`.
+- `config('app.version')` parses `version.json` defensively and falls back to `0.0.0`; `HandleInertiaRequests::share` publishes it as the `version` shared prop, and `AppFooter` renders it as plain `v<version>` text that stays visible when the branding footer text is absent.
+- `.gitignore` excludes `/.vscode/*` and re-includes `!/.vscode/settings.json`. Excluding the directory itself instead would make the negation unreachable.
 - CI tiering and gate composition: `mem:suggested_commands`.

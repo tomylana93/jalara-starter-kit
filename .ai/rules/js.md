@@ -18,3 +18,6 @@ Firing `router.patch(action)` and `router.visit(destination)` from one handler r
 A foreground applied through an arbitrary variant (e.g. the bubble's `*:data-[slot=bubble-content]:text-primary-foreground`) is a different token, so `[class~=...]` never matches it and the icon stays brand-colored — invisible on a `bg-primary` surface.
 
 Put `text-current` on any lucide icon rendered over a brand-painted surface. The whole rule block is wrapped in `:where()`, so one explicit utility wins. The failure renders as invisible ink, not an error, so assert the class in a test.
+
+## jsdom force-mounts dropdown content, so a closed-menu assertion proves nothing
+Under jsdom, `DropdownMenuContent` is force mounted, so a menu item is findable without ever opening the menu. A test that asserts an item is absent therefore proves nothing about authorization gating. Assert on the trigger's presence instead.

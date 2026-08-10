@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/vue-table';
 import { h } from 'vue';
 import { DataTableColumnHeader } from '@/components/data-table';
+import type { DataTableFeatures } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatBrowserDateTime } from '@/lib/dateTime';
@@ -51,7 +52,7 @@ export const createUserColumns = (
     t: Translator,
     dateFormat: string,
     locale?: string,
-): ColumnDef<UserRow>[] => [
+): ColumnDef<DataTableFeatures, UserRow>[] => [
     {
         id: 'select',
         enableSorting: false,

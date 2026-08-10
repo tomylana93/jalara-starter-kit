@@ -1,6 +1,8 @@
 # Conventions
 
-- Laravel: thin controllers, validation in Form Requests or reusable concerns, authorization in policies, Eloquent over raw queries, named routes and `route()`/`to_route()` for URLs.
-- Vue: Composition API with `<script setup lang="ts">`, single root template, strict types, `@/` imports, shared components before new one-off UI.
-- Wayfinder-generated `resources/js/actions`, `resources/js/routes`, and `resources/js/wayfinder` are generated artifacts; call their typed functions from frontend code rather than hardcoded URLs. They are gitignored and normally produced by the `wayfinder()` Vite plugin, which sets `formVariants: true`; the CLI-regeneration constraint that follows from that is a Project Rule on `routes/**`.
-- Private-method retention, extraction, inlining, removal, and placement rules are owned by `mem:architecture/private_methods`.
+Routing anchor only; this memory holds no conventions of its own.
+
+- Always-on Laravel, PHP, Vue, Inertia, Pint, Wayfinder, and testing conventions are published into `AGENTS.md`/`CLAUDE.md` by Laravel Boost from `.ai/guidelines/` and the package guideline set. Read them there; they are already in context on every task.
+- Constraints that only bind once a specific path is in scope live in `.ai/rules/`. Match the file you are about to touch against `.ai/rules/index.md`, including the Boost-managed `.ai/rules/boost/` rows.
+- Architectural placement of behavior across Actions, Data objects, Support, presenters, and models: `mem:backend/core`.
+- Frontend component, layout, and route-integration structure: `mem:frontend/core`.

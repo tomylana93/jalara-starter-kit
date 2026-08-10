@@ -93,8 +93,8 @@ with its checkboxes and gates intact. Fill each field from the grilled plan; do
 not leave placeholder text behind. Every answer the developer gave in the
 interview must be reflected in the handoff, not silently dropped.
 
-Close by asking the developer which implementor takes it: Claude Code, agy, or
-Codex.
+Close by asking the developer which of the two implementors takes it: Claude
+Code (the default) or Codex (the only fallback).
 
 ## Boundaries
 

@@ -1,14 +1,15 @@
-<script setup lang="ts" generic="TData, TValue">
+<script setup lang="ts" generic="TData extends RowData">
 import { ChevronDown } from '@lucide/vue';
 import type {
     ColumnDef,
+    ColumnVisibilityState,
     PaginationState,
+    RowData,
     RowSelectionState,
     SortingState,
     Updater,
-    VisibilityState,
 } from '@tanstack/vue-table';
-import { FlexRender, getCoreRowModel, useVueTable } from '@tanstack/vue-table';
+import { FlexRender, useTable } from '@tanstack/vue-table';
 import { watchDebounced } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,8 @@ import {
 import { useTranslations } from '@/composables/useTranslations';
 import DataTableFilter from './DataTableFilter.vue';
 import DataTablePagination from './DataTablePagination.vue';
+import type { DataTableFeatures } from './features';
+import { dataTableFeatures } from './features';
 import type {
     TableFilterConfig,
     TableFilters,
@@ -41,7 +44,11 @@ import type {
 } from './types';
 
 const props = defineProps<{
-    columns: ColumnDef<TData, TValue>[];
+    /*
+     * v9 fixes the table's column `TValue` at `unknown`, so a per-cell value
+     * generic here could never be satisfied by `useTable`.
+     */
+    columns: ColumnDef<DataTableFeatures, TData>[];
     payload: TablePayload<TData>;
     /* Stable domain identity; a row index would break selection across pages. */
     getRowId: (row: TData) => string;
@@ -151,14 +158,15 @@ const pagination = computed<PaginationState>(() => ({
 }));
 
 const rowSelection = ref<RowSelectionState>({});
-const columnVisibility = ref<VisibilityState>({});
+const columnVisibility = ref<ColumnVisibilityState>({});
 
 const resolveUpdater = <T,>(updater: Updater<T>, current: T): T =>
     typeof updater === 'function'
         ? (updater as (old: T) => T)(current)
         : updater;
 
-const table = useVueTable({
+const table = useTable({
+    features: dataTableFeatures,
     get data() {
         return props.payload.data;
     },
@@ -168,11 +176,9 @@ const table = useVueTable({
     get rowCount() {
         return props.payload.meta.total;
     },
-    getRowId: (row) => props.getRowId(row),
-    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row: TData) => props.getRowId(row),
     manualPagination: true,
     manualSorting: true,
-    manualFiltering: true,
     state: {
         get sorting() {
             return sorting.value;
@@ -332,8 +338,7 @@ const selectedCount = computed(() => table.getSelectedRowModel().rows.length);
                         >
                             <FlexRender
                                 v-if="!header.isPlaceholder"
-                                :render="header.column.columnDef.header"
-                                :props="header.getContext()"
+                                :header="header"
                             />
                         </TableHead>
                     </TableRow>
@@ -352,10 +357,7 @@ const selectedCount = computed(() => table.getSelectedRowModel().rows.length);
                                 v-for="cell in row.getVisibleCells()"
                                 :key="cell.id"
                             >
-                                <FlexRender
-                                    :render="cell.column.columnDef.cell"
-                                    :props="cell.getContext()"
-                                />
+                                <FlexRender :cell="cell" />
                             </TableCell>
                         </TableRow>
                     </template>
