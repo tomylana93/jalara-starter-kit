@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import DataTable from './DataTable.vue';
 import DataTableColumnHeader from './DataTableColumnHeader.vue';
 import DataTablePagination from './DataTablePagination.vue';
+import type { DataTableFeatures } from './features';
 import type { TableFilterConfig, TablePayload } from './types';
 
 type Row = {
@@ -13,7 +14,7 @@ type Row = {
     name: string;
 };
 
-const columns: ColumnDef<Row>[] = [
+const columns: ColumnDef<DataTableFeatures, Row>[] = [
     {
         id: 'select',
         enableSorting: false,
@@ -94,7 +95,7 @@ const mountTable = (
     tablePayload: TablePayload<Row> = payload(),
     filterConfigs: TableFilterConfig[] = filters,
 ) =>
-    mount(DataTable<Row, unknown>, {
+    mount(DataTable<Row>, {
         props: {
             columns,
             payload: tablePayload,
@@ -120,6 +121,43 @@ describe('DataTable', () => {
         /* Server order is preserved even though the state claims ascending. */
         expect(rows[0]?.text()).toContain('Zoe');
         expect(rows[1]?.text()).toContain('Aaron');
+    });
+
+    it('never re-derives the server result set locally', async () => {
+        /*
+         * The payload deliberately contradicts its own state: rows arrive
+         * unsorted while the state claims a descending sort, and more rows are
+         * returned than the page size allows. Registering a sorted or
+         * paginated row model in `features.ts` would reorder or truncate them
+         * here, so this fails the moment the table stops being server-driven.
+         */
+        const wrapper = mountTable(
+            payload({
+                data: [
+                    { id: 'uuid-b', name: 'Zoe' },
+                    { id: 'uuid-a', name: 'Aaron' },
+                    { id: 'uuid-c', name: 'Mia' },
+                ],
+                meta: { ...payload().meta, perPage: 2 },
+                state: { ...payload().state, direction: 'desc', perPage: 2 },
+            }),
+        );
+
+        expect(wrapper.findAll('tbody tr').map((row) => row.text())).toEqual([
+            expect.stringContaining('Zoe'),
+            expect.stringContaining('Aaron'),
+            expect.stringContaining('Mia'),
+        ]);
+
+        /* Sorting is delegated: it asks the server rather than reordering. */
+        await wrapper.get('[data-test="sort-name"]').trigger('click');
+
+        expect(wrapper.emitted('query-change')?.at(0)?.[0]).toMatchObject({
+            sort: 'name',
+            direction: 'asc',
+            page: 1,
+        });
+        expect(wrapper.findAll('tbody tr').at(0)?.text()).toContain('Zoe');
     });
 
     it('identifies rows by the domain id rather than the row index', () => {
@@ -412,7 +450,7 @@ describe('DataTable', () => {
     });
 
     it('shows the supplied empty copy when provided', () => {
-        const wrapper = mount(DataTable<Row, unknown>, {
+        const wrapper = mount(DataTable<Row>, {
             props: {
                 columns,
                 payload: payload({ data: [] }),

@@ -1,16 +1,3 @@
-import type { RowData } from '@tanstack/vue-table';
-
-declare module '@tanstack/vue-table' {
-    /**
-     * The visibility menu is domain-free, so a hideable column carries its own
-     * already-translated label here.
-     */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    interface ColumnMeta<TData extends RowData, TValue> {
-        label?: string;
-    }
-}
-
 export type TableSortDirection = 'asc' | 'desc';
 
 /**
