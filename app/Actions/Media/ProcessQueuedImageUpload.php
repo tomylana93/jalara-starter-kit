@@ -11,6 +11,7 @@ use App\Support\Media\ImageUploadPublication;
 use App\Support\Media\PublishAvatarImageUpload;
 use App\Support\Media\PublishBrandingImageUpload;
 use App\Support\Media\PublishChatImageUpload;
+use App\Support\Media\PublishDocumentationImageUpload;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -25,6 +26,7 @@ final readonly class ProcessQueuedImageUpload
         private PublishAvatarImageUpload $publishAvatarImageUpload,
         private PublishBrandingImageUpload $publishBrandingImageUpload,
         private PublishChatImageUpload $publishChatImageUpload,
+        private PublishDocumentationImageUpload $publishDocumentationImageUpload,
     ) {}
 
     /**
@@ -118,6 +120,7 @@ final readonly class ProcessQueuedImageUpload
             ImageUploadTarget::Avatar => $this->publishAvatarImageUpload,
             ImageUploadTarget::Branding => $this->publishBrandingImageUpload,
             ImageUploadTarget::ChatImage => $this->publishChatImageUpload,
+            ImageUploadTarget::DocumentationImage => $this->publishDocumentationImageUpload,
         };
     }
 

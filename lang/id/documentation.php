@@ -112,6 +112,7 @@ return [
         'invalid_content' => 'Struktur isi dokumentasi tidak valid.',
         'invalid_heading' => 'Dokumentasi hanya mendukung heading tingkat 1 sampai 3.',
         'invalid_link' => 'Tautan hanya boleh memakai HTTP, HTTPS, atau path internal.',
+        'invalid_image' => 'Gambar hanya boleh berasal dari unggahan dokumentasi dan wajib memiliki teks alternatif.',
         'category_in_use' => 'Kategori masih memiliki dokumentasi. Pindahkan atau hapus dokumentasinya terlebih dahulu.',
     ],
 ];

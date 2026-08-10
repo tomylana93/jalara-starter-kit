@@ -1,9 +1,79 @@
 import type { Editor } from '@tiptap/vue-3';
-import { mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
+import type * as ImageUploads from '@/lib/imageUploads';
+import { ImageUploadError } from '@/lib/imageUploads';
 import type { RichTextDocument } from '@/types/editor';
 import RichTextEditor from './RichTextEditor.vue';
+
+const uploadMocks = vi.hoisted(() => ({
+    startImageUpload: vi.fn(),
+    pollImageUpload: vi.fn(),
+    cancelImageUpload: vi.fn(),
+}));
+
+/* The transport is exercised by its own tests; here only the editor's use of it matters. */
+vi.mock('@/lib/imageUploads', async (importOriginal) => ({
+    ...(await importOriginal<typeof ImageUploads>()),
+    ...uploadMocks,
+}));
+
+const imageUploadRoute = {
+    url: '/documentation/manage/images',
+    method: 'post',
+} as const;
+
+const acceptedUpload = {
+    id: 'upload-1',
+    target: 'documentation-image',
+    target_key: null,
+    status: 'pending',
+    error_code: null,
+    created_at: null,
+    poll_url: '/media/image-uploads/upload-1',
+    cancel_url: '/media/image-uploads/upload-1',
+    url: null,
+    message: null,
+    conversation: null,
+};
+
+function mountEditorWithUploads() {
+    return mount(RichTextEditor, {
+        props: { modelValue, imageUploadRoute },
+        global: { stubs },
+        attachTo: document.body,
+    });
+}
+
+/** Drive the hidden file input the way a real file picker would. */
+async function selectImageFile(
+    wrapper: ReturnType<typeof mountEditorWithUploads>,
+): Promise<void> {
+    const field = wrapper.get('[data-test="rich-text-image-input"]');
+    const element = field.element as HTMLInputElement;
+
+    Object.defineProperty(element, 'files', {
+        value: [new File(['bytes'], 'diagram.png', { type: 'image/png' })],
+        configurable: true,
+    });
+
+    await field.trigger('change');
+    await flushPromises();
+    await nextTick();
+}
+
+/** Collect alt text and hand over a file, stopping before the upload resolves. */
+async function startImageInsertion(
+    wrapper: ReturnType<typeof mountEditorWithUploads>,
+    alt = 'Approval flow diagram',
+): Promise<void> {
+    await wrapper.get('[data-test="rich-text-image-trigger"]').trigger('click');
+    await nextTick();
+    await wrapper.get('[data-test="rich-text-image-alt"]').setValue(alt);
+    await wrapper.get('[data-test="rich-text-image-submit"]').trigger('submit');
+    await nextTick();
+}
 
 const passthroughStub = { template: '<div><slot /></div>' };
 
@@ -448,5 +518,158 @@ describe('rich text editor', () => {
 
         expect(tableTrigger().attributes()).not.toHaveProperty('disabled');
         expect(link().attributes()).not.toHaveProperty('disabled');
+    });
+
+    describe('image uploads', () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+            uploadMocks.startImageUpload.mockResolvedValue(acceptedUpload);
+            uploadMocks.pollImageUpload.mockResolvedValue({
+                ...acceptedUpload,
+                status: 'ready',
+                url: 'http://localhost/storage/documentation/upload-1/diagram.webp',
+            });
+            uploadMocks.cancelImageUpload.mockResolvedValue(null);
+        });
+
+        it('offers no image control until a consumer supplies an endpoint', () => {
+            const withoutRoute = mountEditor();
+
+            expect(
+                withoutRoute
+                    .find('[data-test="rich-text-image-trigger"]')
+                    .exists(),
+            ).toBe(false);
+            expect(
+                withoutRoute
+                    .find('[data-test="rich-text-image-input"]')
+                    .exists(),
+            ).toBe(false);
+
+            expect(
+                mountEditorWithUploads()
+                    .find('[data-test="rich-text-image-trigger"]')
+                    .exists(),
+            ).toBe(true);
+        });
+
+        it('inserts an image node carrying the published url and the collected alt text', async () => {
+            const wrapper = mountEditorWithUploads();
+            await nextTick();
+
+            await startImageInsertion(wrapper);
+            await selectImageFile(wrapper);
+
+            expect(uploadMocks.startImageUpload).toHaveBeenCalledWith(
+                imageUploadRoute.url,
+                expect.any(File),
+                expect.anything(),
+            );
+
+            const image = editorOf(wrapper)
+                .getJSON()
+                .content?.find((node) => node.type === 'image');
+
+            expect(image?.attrs).toEqual({
+                src: 'http://localhost/storage/documentation/upload-1/diagram.webp',
+                alt: 'Approval flow diagram',
+            });
+        });
+
+        it('refuses to hand over a file before alt text has been given', async () => {
+            const wrapper = mountEditorWithUploads();
+            await nextTick();
+
+            await wrapper
+                .get('[data-test="rich-text-image-trigger"]')
+                .trigger('click');
+            await nextTick();
+
+            expect(
+                wrapper
+                    .get('[data-test="rich-text-image-submit"]')
+                    .attributes(),
+            ).toHaveProperty('disabled');
+        });
+
+        it('shows the rejection message and inserts nothing when the file is refused', async () => {
+            uploadMocks.startImageUpload.mockRejectedValue(
+                new ImageUploadError(422, {
+                    errors: {
+                        image: ['The image must be a PNG, JPEG, or WebP.'],
+                    },
+                }),
+            );
+
+            const wrapper = mountEditorWithUploads();
+            await nextTick();
+
+            await startImageInsertion(wrapper);
+            await selectImageFile(wrapper);
+
+            expect(
+                wrapper.get('[data-test="rich-text-image-error"]').text(),
+            ).toBe('The image must be a PNG, JPEG, or WebP.');
+            expect(
+                editorOf(wrapper)
+                    .getJSON()
+                    .content?.some((node) => node.type === 'image'),
+            ).toBe(false);
+        });
+
+        it('reports a failed upload through the shared media error vocabulary', async () => {
+            uploadMocks.pollImageUpload.mockResolvedValue({
+                ...acceptedUpload,
+                status: 'failed',
+                error_code: 'processing_failed',
+            });
+
+            const wrapper = mountEditorWithUploads();
+            await nextTick();
+
+            await startImageInsertion(wrapper);
+            await selectImageFile(wrapper);
+
+            expect(
+                wrapper.get('[data-test="rich-text-image-error"]').text(),
+            ).toBe('media.upload.error.processing_failed');
+        });
+
+        it('abandons an upload still in flight when the author cancels', async () => {
+            let releasePolling = (): void => {};
+            uploadMocks.pollImageUpload.mockImplementation(
+                () =>
+                    new Promise((resolve) => {
+                        releasePolling = () => resolve(null);
+                    }),
+            );
+
+            const wrapper = mountEditorWithUploads();
+            await nextTick();
+
+            await startImageInsertion(wrapper);
+            await selectImageFile(wrapper);
+
+            /* Still processing: the status strip is the only progress surface. */
+            expect(
+                wrapper.get('[data-test="rich-text-image-status"]').text(),
+            ).toContain('media.upload.status.processing');
+
+            await wrapper
+                .get('[data-test="rich-text-image-cancel"]')
+                .trigger('click');
+            releasePolling();
+            await flushPromises();
+            await nextTick();
+
+            expect(uploadMocks.cancelImageUpload).toHaveBeenCalledWith(
+                acceptedUpload.cancel_url,
+            );
+            expect(
+                editorOf(wrapper)
+                    .getJSON()
+                    .content?.some((node) => node.type === 'image'),
+            ).toBe(false);
+        });
     });
 });

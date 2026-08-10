@@ -112,6 +112,7 @@ return [
         'invalid_content' => 'The documentation content structure is invalid.',
         'invalid_heading' => 'Documentation only supports heading levels 1 through 3.',
         'invalid_link' => 'Links must use HTTP, HTTPS, or an internal path.',
+        'invalid_image' => 'Images must come from a documentation upload and must carry alt text.',
         'category_in_use' => 'The category still contains documentation. Move or delete those documents first.',
     ],
 ];

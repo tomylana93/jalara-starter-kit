@@ -5,6 +5,7 @@ import { TableKit } from '@tiptap/extension-table';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import { onBeforeUnmount } from 'vue';
+import { DocumentationImage } from '@/extensions/documentationImage';
 import type { RichTextDocument } from '@/types/editor';
 
 const props = defineProps<{ content: RichTextDocument }>();
@@ -33,6 +34,7 @@ const editor = useEditor({
     extensions: [
         StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
         SafeLink,
+        DocumentationImage,
         TableKit,
     ],
     editorProps: { attributes: { class: 'rich-text-content' } },

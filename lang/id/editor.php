@@ -27,6 +27,7 @@ return [
         'quote' => 'Kutipan',
         'code' => 'Kode',
         'link' => 'Tautan',
+        'image' => 'Gambar',
         'undo' => 'Urungkan',
         'redo' => 'Ulangi',
     ],
@@ -42,6 +43,16 @@ return [
         'delete_column' => 'Hapus kolom',
         'toggle_header_row' => 'Alihkan baris header',
         'delete_table' => 'Hapus tabel',
+    ],
+
+    'image' => [
+        'title' => 'Teks alternatif gambar',
+        'description' => 'Jelaskan isi gambar untuk pembaca yang tidak dapat melihatnya. Setelah ini Anda dapat memilih berkas PNG, JPEG, atau WebP.',
+        'label' => 'Teks alternatif',
+        'placeholder' => 'Contoh: Diagram alur proses persetujuan',
+        'submit' => 'Pilih gambar',
+        'cancel' => 'Batal',
+        'uploading' => 'Mengunggah gambar.',
     ],
 
     'link' => [

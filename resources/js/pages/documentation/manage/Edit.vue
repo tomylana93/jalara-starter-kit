@@ -20,6 +20,7 @@ import { breadcrumbLayout } from '@/lib/breadcrumbs';
 import { index as documentationIndex } from '@/routes/documentation';
 import { create, index as manageIndex } from '@/routes/documentation/manage';
 import { edit, store, update } from '@/routes/documentation/manage/documents';
+import { store as storeDocumentationImage } from '@/routes/documentation/manage/images';
 import type {
     DocumentationCategoryOption,
     DocumentationEditorValue,
@@ -209,7 +210,10 @@ onBeforeUnmount(() => {
                         <InputError :message="form.errors.status" />
                     </div>
                 </div>
-                <RichTextEditor v-model="editorContent" />
+                <RichTextEditor
+                    v-model="editorContent"
+                    :image-upload-route="storeDocumentationImage()"
+                />
                 <InputError :message="form.errors.content" />
                 <div class="flex justify-end gap-3">
                     <Button

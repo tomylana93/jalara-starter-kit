@@ -46,6 +46,9 @@
     .rich-text-content td {
         @apply border p-2 align-top;
     }
+    .rich-text-content img {
+        @apply h-auto max-w-full rounded-lg border;
+    }
     .rich-text-content a {
         @apply text-primary underline underline-offset-4;
     }

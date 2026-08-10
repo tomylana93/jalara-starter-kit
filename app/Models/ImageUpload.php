@@ -133,8 +133,9 @@ class ImageUpload extends Model
     /**
      * The lock value an exclusive target holds while an upload is active.
      *
-     * Chat images are not exclusive and therefore never take a lock, which is
-     * what allows several pending messages to carry images at once.
+     * Chat and documentation images are not exclusive and therefore never take
+     * a lock, which is what allows several pending messages — or several images
+     * dropped into one document — to be uploaded at once.
      */
     public static function lockKeyFor(ImageUploadTarget $target, string $userId, ?string $targetKey): ?string
     {
@@ -150,7 +151,7 @@ class ImageUpload extends Model
         return match ($target) {
             ImageUploadTarget::Avatar => sprintf('avatar:%s', $userId),
             ImageUploadTarget::Branding => sprintf('branding:%s', $targetKey),
-            ImageUploadTarget::ChatImage => null,
+            ImageUploadTarget::ChatImage, ImageUploadTarget::DocumentationImage => null,
         };
     }
 
