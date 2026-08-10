@@ -16,17 +16,19 @@ enum ImageUploadTarget: string
     case Avatar = 'avatar';
     case Branding = 'branding';
     case ChatImage = 'chat-image';
+    case DocumentationImage = 'documentation-image';
 
     /**
      * The disk the published image is written to.
      *
      * Chat images stay private and are served through an authorized endpoint;
-     * avatars and branding are public assets.
+     * avatars, branding, and documentation images are public assets, because
+     * documentation bodies are readable by every verified reader.
      */
     public function disk(): string
     {
         return match ($this) {
-            self::Avatar, self::Branding => 'public',
+            self::Avatar, self::Branding, self::DocumentationImage => 'public',
             self::ChatImage => 'local',
         };
     }
@@ -35,14 +37,15 @@ enum ImageUploadTarget: string
      * Whether a second active upload for the same target must be refused.
      *
      * Avatar and branding each address one replaceable slot, so a concurrent
-     * upload would race over it. Every chat image is its own new message and
-     * therefore has nothing to contend with.
+     * upload would race over it. Every chat image is its own new message, and
+     * every documentation image is its own new node, so neither has anything to
+     * contend with.
      */
     public function isExclusive(): bool
     {
         return match ($this) {
             self::Avatar, self::Branding => true,
-            self::ChatImage => false,
+            self::ChatImage, self::DocumentationImage => false,
         };
     }
 
@@ -55,7 +58,7 @@ enum ImageUploadTarget: string
     {
         return match ($this) {
             self::Avatar => [512, 512],
-            self::ChatImage => [1600, 1600],
+            self::ChatImage, self::DocumentationImage => [1600, 1600],
             self::Branding => ($asset ?? throw new InvalidArgumentException(
                 'A branding upload must name the asset it belongs to.',
             ))->maxDimensions(),

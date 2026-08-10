@@ -5,8 +5,8 @@ import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vitest/config';
-import { resolveAssetOutput } from './vite/asset-output';
-import { laravelLang } from './vite/plugins/laravel-lang';
+import { resolveAssetOutput } from './vite/asset-output.ts';
+import { laravelLang } from './vite/plugins/laravel-lang.ts';
 
 const assetOutput = resolveAssetOutput(process.env);
 

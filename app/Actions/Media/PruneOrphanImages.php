@@ -5,9 +5,11 @@ namespace App\Actions\Media;
 use App\Data\Media\PruneOrphanImagesResult;
 use App\Enums\BrandingAsset;
 use App\Models\Chat\Message;
+use App\Models\Documentation;
 use App\Models\ImageUpload;
 use App\Models\User;
 use App\Settings\BrandingSettings;
+use App\Support\DocumentationContent;
 use FilesystemIterator;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
@@ -36,7 +38,7 @@ final readonly class PruneOrphanImages
      * @var array<string, array<int, string>>
      */
     private const array MANAGED_PREFIXES = [
-        'public' => ['avatars', 'branding'],
+        'public' => ['avatars', 'branding', DocumentationContent::IMAGE_DIRECTORY],
         'local' => ['chat', ImageUpload::SOURCE_DIRECTORY],
     ];
 
@@ -184,6 +186,21 @@ final readonly class PruneOrphanImages
                 $referenced['public:'.$path] = true;
             }
         }
+
+        /*
+         * A documentation image has no owning column: the only thing pointing
+         * at it is an image node inside a stored Tiptap document. Drafts count
+         * as much as published documents — an unpublished body is still work
+         * the author expects to find intact.
+         */
+        Documentation::query()
+            ->select(['id', 'content'])
+            ->lazyById(200)
+            ->each(function (Documentation $documentation) use (&$referenced): void {
+                foreach (DocumentationContent::imagePaths($documentation->content) as $path) {
+                    $referenced[DocumentationContent::IMAGE_DISK.':'.$path] = true;
+                }
+            });
 
         Message::query()
             ->whereNotNull('image_path')

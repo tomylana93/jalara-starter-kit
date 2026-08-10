@@ -5,8 +5,10 @@ use App\Enums\Role;
 use App\Models\Documentation;
 use App\Models\DocumentationCategory;
 use App\Models\User;
+use App\Support\DocumentationContent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 
@@ -513,3 +515,90 @@ it('excludes the current draft from its own collision checks when updating', fun
 
     expect($documentation->refresh()->slug)->toBe('guide');
 });
+
+/**
+ * A document whose body is a single image node.
+ *
+ * @return array<string, mixed>
+ */
+function documentationImageContent(string $src, mixed $alt = 'Approval flow diagram'): array
+{
+    $attrs = ['src' => $src];
+
+    if ($alt !== null) {
+        $attrs['alt'] = $alt;
+    }
+
+    return ['type' => 'doc', 'content' => [['type' => 'image', 'attrs' => $attrs]]];
+}
+
+/** The URL an upload published under the managed documentation prefix would have. */
+function managedImageSrc(string $file = 'diagram.webp'): string
+{
+    return Storage::disk(DocumentationContent::IMAGE_DISK)
+        ->url(DocumentationContent::IMAGE_DIRECTORY.'/01948d3a/'.$file);
+}
+
+it('stores an image node that points at a managed documentation upload', function () {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+
+    actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Approval guide',
+            'status' => DocumentationStatus::Published->value,
+            'content' => documentationImageContent(managedImageSrc()),
+        ])
+        ->assertRedirect(route('documentation.manage.index'))
+        ->assertSessionHasNoErrors();
+
+    $documentation = Documentation::query()->sole();
+
+    expect($documentation->content['content'][0]['type'])->toBe('image')
+        ->and($documentation->content['content'][0]['attrs']['src'])->toBe(managedImageSrc())
+        ->and($documentation->content['content'][0]['attrs']['alt'])->toBe('Approval flow diagram');
+});
+
+it('rejects an image node the application did not publish itself', function (mixed $src) {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+
+    actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Rejected image',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationImageContent(is_string($src) ? $src : ''),
+        ])
+        ->assertSessionHasErrors('content');
+
+    expect(Documentation::query()->count())->toBe(0);
+})->with([
+    'a remote url' => 'https://tracker.example/pixel.png',
+    'a data url' => 'data:image/png;base64,iVBORw0KGgo=',
+    'another managed prefix' => fn () => Storage::disk('public')->url('avatars/someone/avatar.png'),
+    'a traversal out of the prefix' => fn () => managedImageSrc('../../avatars/escape.png'),
+    'a query string payload' => fn () => managedImageSrc('diagram.webp?track=1'),
+    'an empty src' => '',
+]);
+
+it('rejects an image node without usable alt text', function (mixed $alt) {
+    $admin = userWithRole(Role::SuperAdmin);
+    $category = DocumentationCategory::factory()->create();
+
+    actingAs($admin)
+        ->post(route('documentation.manage.documents.store'), [
+            'documentation_category_id' => $category->id,
+            'title' => 'Missing alt',
+            'status' => DocumentationStatus::Draft->value,
+            'content' => documentationImageContent(managedImageSrc(), $alt),
+        ])
+        ->assertSessionHasErrors('content');
+
+    expect(Documentation::query()->count())->toBe(0);
+})->with([
+    'no alt attribute at all' => null,
+    'blank alt' => '   ',
+    'alt beyond the length limit' => fn () => str_repeat('a', 301),
+]);

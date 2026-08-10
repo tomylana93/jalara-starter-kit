@@ -61,7 +61,9 @@ class ImageUploadResource extends JsonResource
         }
 
         return match ($this->target) {
-            ImageUploadTarget::Avatar, ImageUploadTarget::Branding => Storage::disk(
+            ImageUploadTarget::Avatar,
+            ImageUploadTarget::Branding,
+            ImageUploadTarget::DocumentationImage => Storage::disk(
                 $this->target->disk(),
             )->url($this->result_path),
             ImageUploadTarget::ChatImage => null,

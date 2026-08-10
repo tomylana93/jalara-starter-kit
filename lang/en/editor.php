@@ -27,6 +27,7 @@ return [
         'quote' => 'Quote',
         'code' => 'Code',
         'link' => 'Link',
+        'image' => 'Image',
         'undo' => 'Undo',
         'redo' => 'Redo',
     ],
@@ -42,6 +43,16 @@ return [
         'delete_column' => 'Delete column',
         'toggle_header_row' => 'Toggle header row',
         'delete_table' => 'Delete table',
+    ],
+
+    'image' => [
+        'title' => 'Image alt text',
+        'description' => 'Describe the image for readers who cannot see it. You can pick a PNG, JPEG, or WebP file next.',
+        'label' => 'Alt text',
+        'placeholder' => 'For example: Approval process flow diagram',
+        'submit' => 'Choose image',
+        'cancel' => 'Cancel',
+        'uploading' => 'Uploading image.',
     ],
 
     'link' => [

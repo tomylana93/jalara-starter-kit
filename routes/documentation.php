@@ -3,6 +3,7 @@
 use App\Enums\Role;
 use App\Http\Controllers\Documentation\DocumentationCategoryController;
 use App\Http\Controllers\Documentation\DocumentationController;
+use App\Http\Controllers\Documentation\DocumentationImageController;
 use App\Http\Controllers\Documentation\DocumentationManagementController;
 use App\Http\Controllers\Documentation\DocumentationSearchController;
 use App\Http\Controllers\Documentation\DocumentationWriteController;
@@ -15,6 +16,7 @@ Route::middleware(['auth', 'verified'])->prefix('documentation')->name('document
         Route::get('/', [DocumentationManagementController::class, 'index'])->name('index');
         Route::get('create', [DocumentationWriteController::class, 'create'])->name('create');
         Route::post('documents', [DocumentationWriteController::class, 'store'])->name('documents.store');
+        Route::post('images', DocumentationImageController::class)->name('images.store');
         Route::get('documents/{documentation}/edit', [DocumentationWriteController::class, 'edit'])->name('documents.edit');
         Route::put('documents/{documentation}', [DocumentationWriteController::class, 'update'])->name('documents.update');
         Route::delete('documents/{documentation}', [DocumentationWriteController::class, 'destroy'])->name('documents.destroy');

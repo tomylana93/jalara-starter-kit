@@ -88,3 +88,57 @@ test('creates, publishes, reads, and finds internal documentation', async ({
 
     await expect(page).toHaveURL(/\/documentation\/playwright-guide$/);
 });
+
+/** A genuinely valid 1x1 PNG the upload endpoint will accept. */
+const imageFixture = {
+    name: 'diagram.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+    ),
+};
+
+test('uploads an editor image and serves it to a reader', async ({ page }) => {
+    const title = 'Playwright Image Guide';
+    const alt = 'Approval flow diagram';
+
+    await page.goto('/documentation/manage');
+    await page.locator('#category-name').fill('Screenshots');
+    await page.getByRole('button', { name: 'Add category' }).click();
+    await expect(page.getByText('Screenshots', { exact: true })).toBeVisible();
+
+    await page.locator('[data-test="create-documentation"]').click();
+    await page.locator('#title').fill(title);
+    await page.locator('[data-test="documentation-category-trigger"]').click();
+    await page
+        .locator('[data-test="documentation-category-option"]')
+        .filter({ hasText: 'Screenshots' })
+        .click();
+    await page.locator('[data-test="documentation-status-trigger"]').click();
+    await page.locator('[data-test="documentation-status-published"]').click();
+
+    /* Alt text is collected before the file, so the picker is the second step. */
+    await page.locator('[data-test="rich-text-image-trigger"]').click();
+    await page.locator('[data-test="rich-text-image-alt"]').fill(alt);
+    await page.locator('[data-test="rich-text-image-submit"]').click();
+    await page
+        .locator('[data-test="rich-text-image-input"]')
+        .setInputFiles(imageFixture);
+
+    /* The node only appears once the queue has published a URL to point at. */
+    const inserted = page.locator('[data-test="rich-text-editor"] img');
+    await expect(inserted).toBeVisible({ timeout: 30_000 });
+    await expect(inserted).toHaveAttribute('alt', alt);
+
+    await page.locator('[data-test="save-documentation"]').click();
+    await expect(page).toHaveURL(/\/documentation\/manage$/);
+    await expect(
+        page.getByText('The documentation has been created.'),
+    ).toBeVisible();
+
+    await page.goto('/documentation/playwright-image-guide');
+    const rendered = page.locator('.rich-text-content img');
+    await expect(rendered).toBeVisible();
+    await expect(rendered).toHaveAttribute('alt', alt);
+});

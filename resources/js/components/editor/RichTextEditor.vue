@@ -3,6 +3,7 @@ import {
     Bold,
     ChevronDown,
     Code,
+    ImagePlus,
     Italic,
     Link as LinkIcon,
     List,
@@ -56,6 +57,7 @@ import {
 import { Field, FieldLabel, FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
+import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -66,7 +68,17 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTranslations } from '@/composables/useTranslations';
+import { DocumentationImage } from '@/extensions/documentationImage';
+import type { ImageUploadRecord } from '@/lib/imageUploads';
+import {
+    cancelImageUpload,
+    ImageUploadError,
+    pollImageUpload,
+    startImageUpload,
+    uploadErrorKey,
+} from '@/lib/imageUploads';
 import type { RichTextDocument } from '@/types/editor';
+import type { RouteDefinition } from '@/wayfinder';
 
 type ChainedCommands = ReturnType<Editor['chain']>;
 type ToolbarControl = {
@@ -91,11 +103,29 @@ function shortcutKeys(binding: string): string[] {
     return binding.split('-').map((key) => modifierKeys[key] ?? key);
 }
 
-const props = defineProps<{ modelValue: RichTextDocument }>();
+const props = defineProps<{
+    modelValue: RichTextDocument;
+    /*
+     * Supplying an endpoint is what turns image uploading on. The editor stays
+     * reusable for surfaces that have nowhere to publish an image to: without
+     * this prop no control is rendered, while existing image nodes still
+     * render, because the node type is always part of the schema.
+     */
+    imageUploadRoute?: RouteDefinition<'post'>;
+}>();
 const emit = defineEmits<{ 'update:modelValue': [value: RichTextDocument] }>();
 const { t } = useTranslations();
 const isLinkDialogOpen = ref(false);
 const linkHref = ref('');
+const isImageDialogOpen = ref(false);
+const imageAlt = ref('');
+const imageFileInput = ref<HTMLInputElement | null>(null);
+/* `uploading` is the only state with a measurable percentage. */
+const imageState = ref<'idle' | 'uploading' | 'processing'>('idle');
+const imageProgress = ref(0);
+const imageError = ref<string | null>(null);
+const pendingImageUpload = ref<ImageUploadRecord | null>(null);
+let imageUploadAbort: AbortController | null = null;
 /*
  * `useEditor` hands back a plain shallow ref, so Tiptap transactions never
  * invalidate a computed on their own. Every transaction bumps this counter and
@@ -111,6 +141,7 @@ const editor = useEditor({
         Placeholder.configure({
             placeholder: t('editor.placeholder'),
         }),
+        DocumentationImage,
         TableKit.configure({ table: { resizable: true } }),
     ],
     editorProps: {
@@ -370,7 +401,146 @@ function applyLink(): void {
     isLinkDialogOpen.value = false;
 }
 
-onBeforeUnmount(() => editor.value?.destroy());
+const canUploadImage = computed(() => props.imageUploadRoute !== undefined);
+const isImageBusy = computed(() => imageState.value !== 'idle');
+
+function openImageDialog(): void {
+    if (!props.imageUploadRoute) {
+        return;
+    }
+
+    imageAlt.value = '';
+    imageError.value = null;
+    isImageDialogOpen.value = true;
+}
+
+/** Deferred for the same reason as the link dialog: the menu restores focus. */
+function openImageDialogFromMenu(): void {
+    setTimeout(openImageDialog);
+}
+
+/**
+ * Alt text is collected before the file, which is the only ordering that makes
+ * an image without alt text unrepresentable rather than merely discouraged.
+ */
+function chooseImageFile(): void {
+    if (imageAlt.value.trim() === '') {
+        return;
+    }
+
+    isImageDialogOpen.value = false;
+    imageFileInput.value?.click();
+}
+
+function onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    /* Cleared so re-picking the same file still fires a change event. */
+    input.value = '';
+
+    if (file) {
+        void uploadImage(file, imageAlt.value.trim());
+    }
+}
+
+function insertImage(src: string, alt: string): void {
+    editor.value?.chain().focus().setDocumentationImage({ src, alt }).run();
+}
+
+async function uploadImage(file: File, alt: string): Promise<void> {
+    const route = props.imageUploadRoute;
+
+    if (!route) {
+        return;
+    }
+
+    imageError.value = null;
+    imageProgress.value = 0;
+    imageState.value = 'uploading';
+    imageUploadAbort = new AbortController();
+    const { signal } = imageUploadAbort;
+
+    try {
+        const accepted = await startImageUpload(route.url, file, {
+            signal,
+            onProgress: (percentage) => {
+                imageProgress.value = percentage;
+            },
+        });
+
+        pendingImageUpload.value = accepted;
+        /* The bytes are in. Everything past here happens on the server. */
+        imageState.value = 'processing';
+
+        const settled = await pollImageUpload(accepted, {
+            signal,
+            onUpdate: (record) => {
+                pendingImageUpload.value = record;
+            },
+        });
+
+        if (settled === null) {
+            /* Not a failure: this client stopped asking, the job did not stop. */
+            imageError.value = signal.aborted
+                ? t('media.upload.message.cancelled')
+                : t('media.upload.message.timed_out');
+
+            return;
+        }
+
+        if (settled.status !== 'ready' || settled.url === null) {
+            imageError.value = t(uploadErrorKey(settled));
+
+            return;
+        }
+
+        insertImage(settled.url, alt);
+    } catch (error) {
+        imageError.value = uploadFailureMessage(error, signal.aborted);
+    } finally {
+        imageState.value = 'idle';
+        imageProgress.value = 0;
+        imageUploadAbort = null;
+        pendingImageUpload.value = null;
+    }
+}
+
+/** A rejected file gets the server's own message; anything else stays coarse. */
+function uploadFailureMessage(error: unknown, aborted: boolean): string {
+    if (aborted) {
+        return t('media.upload.message.cancelled');
+    }
+
+    if (error instanceof ImageUploadError) {
+        const [first] = Object.values(error.validationErrors);
+
+        if (first) {
+            return first;
+        }
+    }
+
+    return t('media.upload.error.processing_failed');
+}
+
+async function abandonImageUpload(): Promise<void> {
+    const upload = pendingImageUpload.value;
+
+    imageUploadAbort?.abort();
+
+    if (upload) {
+        try {
+            await cancelImageUpload(upload.cancel_url);
+        } catch {
+            /* Already terminal, or unreachable; the orphan sweep reclaims it. */
+        }
+    }
+}
+
+onBeforeUnmount(() => {
+    imageUploadAbort?.abort();
+    editor.value?.destroy();
+});
 </script>
 
 <template>
@@ -507,6 +677,24 @@ onBeforeUnmount(() => editor.value?.destroy());
                                 t('editor.action.link')
                             }}</TooltipContent>
                         </Tooltip>
+                        <Tooltip v-if="canUploadImage">
+                            <TooltipTrigger as-child>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    :disabled="isImageBusy"
+                                    :aria-label="t('editor.action.image')"
+                                    data-test="rich-text-image-trigger"
+                                    @click="openImageDialog"
+                                >
+                                    <ImagePlus />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{{
+                                t('editor.action.image')
+                            }}</TooltipContent>
+                        </Tooltip>
                         <DropdownMenu>
                             <DropdownMenuTrigger as-child>
                                 <Button
@@ -588,6 +776,53 @@ onBeforeUnmount(() => editor.value?.destroy());
                 </div>
             </ScrollArea>
         </TooltipProvider>
+        <div
+            v-if="isImageBusy || imageError"
+            class="flex items-center gap-3 border-b bg-muted/30 px-3 py-2 text-sm"
+            data-test="rich-text-image-status"
+        >
+            <template v-if="isImageBusy">
+                <span class="text-muted-foreground">{{
+                    imageState === 'uploading'
+                        ? t('editor.image.uploading')
+                        : t('media.upload.status.processing')
+                }}</span>
+                <!--
+                    Only the byte transfer has a percentage; processing happens
+                    on the server and reports no measurable progress.
+                -->
+                <Progress
+                    v-if="imageState === 'uploading'"
+                    :model-value="imageProgress"
+                    class="h-1.5 max-w-48 flex-1"
+                    data-test="rich-text-image-progress"
+                />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="ml-auto"
+                    data-test="rich-text-image-cancel"
+                    @click="abandonImageUpload"
+                    >{{ t('media.upload.button.cancel') }}</Button
+                >
+            </template>
+            <span
+                v-else
+                class="text-destructive"
+                data-test="rich-text-image-error"
+                >{{ imageError }}</span
+            >
+        </div>
+        <input
+            v-if="canUploadImage"
+            ref="imageFileInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            class="hidden"
+            data-test="rich-text-image-input"
+            @change="onImageSelected"
+        />
         <ContextMenu>
             <ContextMenuTrigger as-child>
                 <div class="p-5" @keydown="stopHandledShortcut">
@@ -667,6 +902,14 @@ onBeforeUnmount(() => editor.value?.destroy());
                     @select="openLinkDialogFromMenu"
                 >
                     <LinkIcon />{{ t('editor.action.link') }}
+                </ContextMenuItem>
+                <ContextMenuItem
+                    v-if="canUploadImage"
+                    :disabled="isImageBusy"
+                    data-test="rich-text-context-image"
+                    @select="openImageDialogFromMenu"
+                >
+                    <ImagePlus />{{ t('editor.action.image') }}
                 </ContextMenuItem>
                 <ContextMenuSub>
                     <ContextMenuSubTrigger
@@ -750,6 +993,48 @@ onBeforeUnmount(() => editor.value?.destroy());
                             type="submit"
                             data-test="rich-text-link-submit"
                             >{{ t('editor.link.submit') }}</Button
+                        >
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+        <Dialog v-model:open="isImageDialogOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{{ t('editor.image.title') }}</DialogTitle>
+                    <DialogDescription>{{
+                        t('editor.image.description')
+                    }}</DialogDescription>
+                </DialogHeader>
+                <form @submit.prevent="chooseImageFile">
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel
+                                class="sr-only"
+                                for="rich-text-image-alt"
+                                >{{ t('editor.image.label') }}</FieldLabel
+                            >
+                            <Input
+                                id="rich-text-image-alt"
+                                v-model="imageAlt"
+                                maxlength="300"
+                                :placeholder="t('editor.image.placeholder')"
+                                data-test="rich-text-image-alt"
+                            />
+                        </Field>
+                    </FieldGroup>
+                    <DialogFooter class="mt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="isImageDialogOpen = false"
+                            >{{ t('editor.image.cancel') }}</Button
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="imageAlt.trim() === ''"
+                            data-test="rich-text-image-submit"
+                            >{{ t('editor.image.submit') }}</Button
                         >
                     </DialogFooter>
                 </form>

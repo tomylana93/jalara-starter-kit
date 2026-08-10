@@ -4,9 +4,11 @@ use App\Actions\Media\PruneOrphanImages;
 use App\Data\Media\PruneOrphanImagesResult;
 use App\Enums\ImageUploadTarget;
 use App\Models\Chat\Message;
+use App\Models\Documentation;
 use App\Models\ImageUpload;
 use App\Models\User;
 use App\Settings\BrandingSettings;
+use App\Support\DocumentationContent;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -189,4 +191,65 @@ it('leaves directories themselves alone', function (): void {
     sweep();
 
     expect(Storage::disk('public')->path('avatars/empty-directory'))->toBeDirectory();
+});
+
+/**
+ * A stored document whose body references one managed documentation image.
+ */
+function documentReferencing(string $path, bool $published = true): Documentation
+{
+    $factory = Documentation::factory();
+
+    return ($published ? $factory->published() : $factory)->create([
+        'content' => [
+            'type' => 'doc',
+            'content' => [[
+                'type' => 'image',
+                'attrs' => [
+                    'src' => Storage::disk(DocumentationContent::IMAGE_DISK)->url($path),
+                    'alt' => 'Referenced diagram',
+                ],
+            ]],
+        ],
+    ]);
+}
+
+it('protects a documentation image a stored document still points at', function (bool $published): void {
+    $referenced = agedImage('public', DocumentationContent::IMAGE_DIRECTORY.'/kept/diagram.webp');
+    documentReferencing($referenced, $published);
+
+    $result = sweep();
+
+    Storage::disk('public')->assertExists($referenced);
+
+    expect($result->disks['public']['deleted'])->toBe(0)
+        ->and($result->disks['public']['skipped'])->toBe(1);
+})->with([
+    'a published document' => true,
+    /* A draft is unfinished work, not an invitation to delete its images. */
+    'a draft' => false,
+]);
+
+it('deletes a documentation image no document references any more', function (): void {
+    $orphan = agedImage('public', DocumentationContent::IMAGE_DIRECTORY.'/dropped/diagram.webp');
+
+    /* The document that used to carry it now references something else. */
+    documentReferencing(DocumentationContent::IMAGE_DIRECTORY.'/kept/other.webp');
+
+    $result = sweep();
+
+    Storage::disk('public')->assertMissing($orphan);
+
+    expect($result->disks['public']['deleted'])->toBe(1);
+});
+
+it('keeps a freshly uploaded documentation image that was never saved into a document', function (): void {
+    /* Written just now: the author may still be typing around it. */
+    Storage::disk('public')->put(DocumentationContent::IMAGE_DIRECTORY.'/new/diagram.webp', 'x');
+
+    $result = sweep();
+
+    Storage::disk('public')->assertExists(DocumentationContent::IMAGE_DIRECTORY.'/new/diagram.webp');
+
+    expect($result->disks['public']['deleted'])->toBe(0);
 });
