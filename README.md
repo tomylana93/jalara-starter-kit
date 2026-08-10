@@ -8,7 +8,7 @@
 
 # Jalara Starter Kit
 
-A professional and production-ready Laravel application starter kit. Jalara provides a highly-polished, feature-rich foundation with integrated authentication, role-based authorization, comprehensive application settings, dynamic branding, and a complete testing suite.
+A professional Laravel application starter kit with production-ready capabilities. Jalara provides a highly-polished, feature-rich foundation with integrated authentication, role-based authorization, comprehensive application settings, dynamic branding, and a complete testing suite.
 
 <p align="center">
   <img src="https://img.shields.io/badge/PHP-8.5-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.5">
@@ -16,10 +16,24 @@ A professional and production-ready Laravel application starter kit. Jalara prov
   <img src="https://img.shields.io/badge/Inertia-3-9553E9?style=flat-square&logo=inertia&logoColor=white" alt="Inertia.js 3">
   <img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
+  <img src="https://img.shields.io/badge/status-development%20%2F%20pre--adoption-orange?style=flat-square" alt="Status: Development / Pre-adoption">
   <a href="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/tests.yml"><img src="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/tests.yml/badge.svg?branch=main" alt="tests"></a>
   <a href="https://github.com/tomylana93/jalara-starter-kit/releases/latest"><img src="https://img.shields.io/github/v/release/tomylana93/jalara-starter-kit?style=flat-square&label=release&color=blue" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"></a>
 </p>
+
+## Project Status
+
+**Development / Pre-adoption.** The starter kit has no external adopters or
+persistent production databases whose migration history must be preserved yet.
+While this status remains active, existing application migrations may be
+consolidated and development databases rebuilt from scratch.
+
+Before the first real deployment, external adoption, or supported in-place
+upgrade, change this status to **Stable / Adopted**. From that point onward,
+existing migrations are immutable and every schema change must use a new,
+forward-only migration. Creating a Git tag alone does not change this lifecycle
+status.
 
 ## Key Features
 
