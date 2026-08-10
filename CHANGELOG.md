@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/tomylana93/jalara-starter-kit/compare/v2.0.0...v2.1.0) (2026-08-10)
+
+
+### Features
+
+* **documentation:** upload images from the rich-text editor ([60cb4f9](https://github.com/tomylana93/jalara-starter-kit/commit/60cb4f90b9f1797a6f9ebfb5ce4d03c38014d7db))
+
 ## [2.0.0](https://github.com/tomylana93/jalara-starter-kit/compare/v1.4.0...v2.0.0) (2026-08-10)
 
 
