@@ -15,11 +15,11 @@ regenerate.
 - This repository supports exactly two agents, Claude Code and Codex. `boost.json`
   must list exactly `claude_code` and `codex`. Never add a third agent, and never
   reintroduce client configuration, plugins, hooks, or ignore entries for one.
-- Treat `.ai/guidelines/` and `.ai/skills/` as the custom Boost sources.
-  Treat `AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/` as
-  generated outputs. `.agents/skills/grill-me/` is the exception: it is a
-  hand-maintained Codex-only skill that Boost neither composes nor overwrites,
-  because it is absent from both `.ai/skills/` and the `boost.json` skill list.
+- Treat `.ai/guidelines/` and `.ai/skills/` as the custom Boost sources, and
+  `AGENTS.md`, `CLAUDE.md`, plus their published skills as generated outputs.
+  Third-party project skills are installer-owned instead: canonical files live
+  in `.agents/skills/`, Claude Code receives `.claude/skills/` symlinks, and
+  `skills-lock.json` owns their provenance. Publication must preserve them.
 - Treat `.ai/rules/` as a third, tool-owned store: committed, path-scoped rules
   written only through the `record-rule` MCP tool, which owns file placement,
   frontmatter, and `index.md`. Recorded rules are neither a Boost source you
@@ -37,18 +37,6 @@ regenerate.
   `No rules recorded yet.` is valid.
 - Change generated outputs only through
   `composer run agents:update`; do not patch them independently.
-- Upstream Boost skills ship text naming agents this repository does not
-  support. `composer run agents:update` therefore ends in a deterministic
-  sanitizer that strips those references from the published assets. Fix such a
-  reference by teaching the sanitizer, never by editing the published file: a
-  hand edit is overwritten by the next publication. The sanitizer fails loudly
-  when a rule it owns no longer matches, so an upstream format change surfaces
-  as an error instead of silently leaving the reference behind.
-- `composer run agents:check` is the read-only counterpart. It asserts the
-  two-agent selection, the absence of unsupported-agent references, the shared
-  handoff structure and verification gate across the Codex, grill-me, and
-  `/apply-plan` surfaces, and the presence of the managed scoped-rule subtree in
-  the index.
 - Invoke dependency-backed repository tooling through Composer scripts. Add or
   update the Composer entry point before documenting a direct vendor binary or
   Artisan command; keep Serena memory operations Serena-native.
@@ -63,8 +51,11 @@ regenerate.
   list of installed skill names into static instructions.
 - Select a skill only when its trigger metadata actually matches the task; do
   not substitute the closest available skill for a missing capability.
-- Give every skill a lowercase hyphenated directory name and a `SKILL.md` whose
+- Give every custom skill a lowercase hyphenated directory name and a `SKILL.md` whose
   frontmatter contains only `name` and a precise trigger-rich `description`.
+- Install third-party project skills for exactly `claude-code` and `codex`, not
+  an all-agent wildcard. Let the installer manage `skills-lock.json` and agent
+  symlinks; do not copy or patch those assets by hand.
 - Read a selected `SKILL.md` through EOF. Continue after truncated or paginated
   output; never treat a fixed line range as a complete read.
 - Keep the body imperative and concise. Add scripts, references, or assets only
@@ -110,8 +101,9 @@ regenerate.
 1. Run `composer run agents:update`.
 2. Confirm the custom guideline and skills appear in both configured agent
    outputs without manually enumerating unrelated installed skills.
-3. Run `composer run agents:check` and resolve every reported violation.
-4. Run the update again and confirm it produces no further tracked diff.
+3. Run the update again and confirm it produces no further tracked diff.
+4. Confirm `boost.json` still selects exactly Claude Code and Codex, and inspect
+   generated output for unsupported-agent references.
 5. Run the Serena memory checks when memories changed.
 6. Run `git diff --check`, review the complete diff, and report exactly which
    validation commands ran.
