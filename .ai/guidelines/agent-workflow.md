@@ -1,5 +1,28 @@
 # Agent Workflow
 
+## Production Posture
+
+This repository serves production. Every task inherits the constraints below;
+nothing here is waived by a plan, a handoff, or a developer's brevity.
+
+- Treat every change as production-affecting. Prefer the smallest reversible
+  change that satisfies the request, and keep unrelated working-tree changes
+  intact.
+- Never widen the stated scope on your own initiative. Adding or upgrading a
+  dependency, touching an authentication, authorization, secret, or payment
+  surface, changing a migration that has already shipped, or altering CI and
+  release configuration each require explicit developer approval first.
+- Never run a destructive or irreversible operation unprompted. Dropping or
+  rewriting data, force-pushing, rewriting history, deleting branches or
+  tags, and clearing storage all stop for approval, including when a plan
+  appears to authorize them.
+- The full gate is mandatory before reporting completion, and a red gate is
+  never dismissed as pre-existing. Diagnose it, fix it within scope, or stop
+  and report it — never report done over a failing check.
+- Report outcomes exactly as observed. State which commands ran, what they
+  returned, and what was deliberately left undone; never imply verification
+  that did not happen.
+
 ## Bootstrap
 
 - Start each chat by inspecting the application with the framework-specific
