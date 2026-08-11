@@ -1,55 +1,24 @@
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 /*
- * Migration and superadmin setup must operate inside the storage root the
- * runner owns and later removes, so the database path is resolved from the same
- * environment the application under test uses.
+ * Database preparation deliberately does NOT happen here.
+ *
+ * `run-server.sh` owns it, because it has to: the queue worker it starts can
+ * only run against an already-migrated schema. Playwright starts the web server
+ * before this hook, so migrating here as well dropped and recreated every table
+ * underneath a worker that was already polling. The worker re-reads the
+ * `illuminate:queue:restart` key every loop through the *database* cache store,
+ * so a check landing inside that window died on `no such table: cache` and took
+ * the worker down with it. The server itself survived, which is why this
+ * surfaced only as the three queue-driven specs (chat images, notifications,
+ * documentation images) failing, intermittently and never on CI, where retries
+ * hid it.
+ *
+ * Anything a test needs from the database belongs in `run-server.sh`, so the
+ * schema has exactly one writer.
  */
-const storageRoot = path.resolve(process.env.LARAVEL_STORAGE_PATH ?? 'storage');
-const databasePath = path.resolve(
-    process.env.DB_DATABASE ??
-        path.join(storageRoot, 'framework/testing/playwright.sqlite'),
-);
-const environment = {
-    ...process.env,
-    APP_ENV: 'testing',
-    APP_URL: 'http://127.0.0.1:8010',
-    LARAVEL_STORAGE_PATH: storageRoot,
-    DB_CONNECTION: 'sqlite',
-    DB_DATABASE: databasePath,
-    SESSION_DRIVER: 'file',
-    SETTINGS_CACHE_ENABLED: 'false',
-    SUPER_ADMIN_NAME: 'Playwright Admin',
-    SUPER_ADMIN_EMAIL: 'playwright@example.test',
-    SUPER_ADMIN_PASSWORD: 'Playwright-Test-Password-123!',
-};
-
 export default function globalSetup(): void {
-    mkdirSync(path.dirname(databasePath), { recursive: true });
+    /* `auth.setup.ts` writes the shared storage state here. */
     mkdirSync(path.resolve('e2e/.auth'), { recursive: true });
-    writeFileSync(databasePath, '');
-
-    execFileSync(
-        'php',
-        ['artisan', 'migrate:fresh', '--force', '--no-interaction'],
-        {
-            env: environment,
-            stdio: 'inherit',
-        },
-    );
-    execFileSync(
-        'php',
-        [
-            'artisan',
-            'auth:init-superadmin',
-            '--reset-password',
-            '--no-interaction',
-        ],
-        {
-            env: environment,
-            stdio: 'inherit',
-        },
-    );
 }
