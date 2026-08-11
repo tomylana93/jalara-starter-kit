@@ -162,11 +162,7 @@
         ],
         "agents:update": [
             "@putenv BOOST_RULES_SCOPED_GUIDELINES=true",
-            "@php artisan boost:update --no-interaction",
-            "@php .ai/scripts/agent-context.php sanitize"
-        ],
-        "agents:check": [
-            "@php .ai/scripts/agent-context.php check"
+            "@php artisan boost:update --no-interaction"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

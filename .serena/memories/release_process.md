@@ -1,6 +1,6 @@
 # Release Process
 
-Commit, pull-request, branching, and release conventions are owned by `.ai/guidelines/release-workflow.md` and load on every task. This memory holds only the automation internals that are not stated there and that a diagnosis would otherwise have to rediscover.
+Commit, pull-request, branching, and release policy is owned by `.ai/guidelines/release-workflow.md` and load on every task. This memory holds only the automation internals that are not stated there and that a diagnosis would otherwise have to rediscover.
 
 - Release type `simple` is chosen because its `version.txt` updater uses `createIfMissing: false`: with no `version.txt` committed, nothing extra is generated and `version.json` stays the only runtime version file, updated through the generic JSON extra-file updater.
 - A single root `simple` manifest release is componentless: do not set `package-name` in `release-please-config.json`. A configured package component does not match the componentless `release-please--branches--main` branch and can leave a merged release PR at `autorelease: pending` without ever publishing.
