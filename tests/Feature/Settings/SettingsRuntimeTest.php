@@ -130,12 +130,32 @@ it('still surfaces a genuine database failure once the SQLite file exists', func
     }
 });
 
+/*
+ * The guard reads the connection *name*; it never opens that connection. Naming
+ * an unsupported driver directly is therefore safe, and it is what makes this
+ * test about the guard instead of about whichever engine the suite happens to
+ * run on. It previously passed only because that engine was SQLite, so against
+ * the PostgreSQL job the guard correctly stayed silent and the assertion failed
+ * for the one reason that proves nothing.
+ *
+ * The default is restored before the test ends: RefreshDatabase has a
+ * transaction open on the real connection and rolls it back on teardown.
+ */
 it('rejects an unsupported database driver in a configured production application', function () {
-    app()->detectEnvironment(fn (): string => 'production');
-    config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+    $original = config('database.default');
 
-    expect(fn () => new AppServiceProvider(app())->boot())
-        ->toThrow(LogicException::class, __('system.exception.production_database'));
+    app()->detectEnvironment(fn (): string => 'production');
+    config([
+        'app.key' => 'base64:'.base64_encode(random_bytes(32)),
+        'database.default' => 'sqlite',
+    ]);
+
+    try {
+        expect(fn () => new AppServiceProvider(app())->boot())
+            ->toThrow(LogicException::class, __('system.exception.production_database'));
+    } finally {
+        config(['database.default' => $original]);
+    }
 });
 
 it('tolerates the pre-install boot that has no application key yet', function () {

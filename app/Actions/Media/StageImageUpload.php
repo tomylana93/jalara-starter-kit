@@ -10,6 +10,7 @@ use App\Models\ImageUpload;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -59,8 +60,19 @@ final class StageImageUpload
             'payload' => $payload === [] ? null : $payload,
         ]);
 
+        /*
+         * The insert runs in its own transaction so the conflict stays
+         * recoverable. PostgreSQL aborts the entire transaction on a constraint
+         * violation and refuses every later statement in it, so reading the
+         * conflicting row back - the whole point of the catch - would itself
+         * fail whenever a caller had already opened one. Nested, this is a
+         * savepoint to roll back to; standalone, it is an ordinary transaction
+         * around a single insert. Either way the catch can still query.
+         */
         try {
-            $upload->save();
+            DB::transaction(function () use ($upload): void {
+                $upload->save();
+            });
         } catch (UniqueConstraintViolationException) {
             /*
              * Someone else holds the target. The staged bytes are useless now,

@@ -8,6 +8,7 @@ use App\Jobs\Backups\RunBackupJob;
 use App\Models\BackupRun;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Opens a backup run and hands it to the queue.
@@ -34,8 +35,18 @@ final class StartBackupRun
             'status' => BackupRunStatus::Pending,
         ]);
 
+        /*
+         * The insert gets its own transaction so losing the race stays
+         * survivable. PostgreSQL aborts the whole transaction on a constraint
+         * violation and rejects every statement after it, so a caller that had
+         * already opened one would find its next query failing rather than
+         * seeing the null this returns. Nested, this is a savepoint; standalone,
+         * a transaction around one insert. The gate itself is unchanged.
+         */
         try {
-            $run->save();
+            DB::transaction(function () use ($run): void {
+                $run->save();
+            });
         } catch (UniqueConstraintViolationException) {
             return null;
         }

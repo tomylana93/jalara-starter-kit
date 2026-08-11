@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection as SupportCollection;
 
@@ -23,6 +23,7 @@ use Illuminate\Support\Collection as SupportCollection;
  * @property string $id
  * @property string $participant_key
  * @property CarbonInterface|null $last_message_at
+ * @property string|null $last_message_id
  * @property CarbonInterface|null $created_at
  * @property CarbonInterface|null $updated_at
  * @property-read int|null $messages_count
@@ -30,7 +31,7 @@ use Illuminate\Support\Collection as SupportCollection;
  * @property-read Collection<int, Participant> $participants
  * @property-read Collection<int, Message> $messages
  */
-#[Fillable(['participant_key', 'last_message_at'])]
+#[Fillable(['participant_key', 'last_message_at', 'last_message_id'])]
 #[Table(name: 'chat_conversations')]
 class Conversation extends Model
 {
@@ -156,11 +157,15 @@ class Conversation extends Model
     /**
      * The newest message, used for the inbox preview.
      *
-     * @return HasOne<Message, $this>
+     * A maintained pointer rather than an aggregate: one-of-many relations
+     * cannot run against UUID keys on PostgreSQL. `SendMessage` moves this
+     * alongside `last_message_at`.
+     *
+     * @return BelongsTo<Message, $this>
      */
-    public function latestMessage(): HasOne
+    public function latestMessage(): BelongsTo
     {
-        return $this->hasOne(Message::class, 'conversation_id')->latestOfMany();
+        return $this->belongsTo(Message::class, 'last_message_id');
     }
 
     /**

@@ -47,8 +47,23 @@ abstract class AbstractTable
 
         $query = $this->query();
 
+        /*
+         * `whereLike` rather than `whereAny(..., 'like', ...)`, because the two
+         * disagree about case on PostgreSQL. A bare `LIKE` is case-insensitive on
+         * SQLite and MySQL but case-sensitive on PostgreSQL, so the raw operator
+         * makes every table search in the application quietly stop matching
+         * "budi" against "Budi" the moment it runs on the production engine -
+         * with no error anywhere to explain it. `whereLike` defaults to
+         * case-insensitive and emits the right operator per driver.
+         */
         if ($resolved->search !== null) {
-            $query->whereAny($this->searchable(), 'like', '%'.$resolved->search.'%');
+            $term = '%'.$resolved->search.'%';
+
+            $query->where(function (Builder $builder) use ($term): void {
+                foreach ($this->searchable() as $column) {
+                    $builder->orWhereLike($column, $term);
+                }
+            });
         }
 
         /* Filters narrow the set before it is counted, ordered, and paged. */

@@ -50,7 +50,15 @@ final class SendMessage
                 ]);
                 $message->save();
 
-                $conversation->forceFill(['last_message_at' => $message->created_at])->save();
+                /*
+                 * Both columns move together. `last_message_id` is what the
+                 * `latestMessage` relation reads; letting them diverge would show
+                 * one message's preview under another's timestamp.
+                 */
+                $conversation->forceFill([
+                    'last_message_at' => $message->created_at,
+                    'last_message_id' => $message->id,
+                ])->save();
 
                 /*
                  * The sender has by definition seen what they just wrote, so their

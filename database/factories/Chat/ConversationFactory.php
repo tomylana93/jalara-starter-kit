@@ -23,6 +23,8 @@ class ConversationFactory extends Factory
         return [
             'participant_key' => (string) Str::uuid(),
             'last_message_at' => now(),
+            /* Set by SendMessage; a conversation with no messages has none. */
+            'last_message_id' => null,
         ];
     }
 
