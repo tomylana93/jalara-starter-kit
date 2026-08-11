@@ -132,7 +132,13 @@ it('names who generated the document and when', function () {
         ->assertOk();
 
     Pdf::assertRespondedWithPdf(function (PdfBuilder $pdf) use ($viewer): bool {
-        return str_contains($pdf->getHtml(), $viewer->name)
+        /*
+         * Compared escaped, because the view renders the name through `{{ }}`.
+         * A raw comparison passes for most generated names and fails for the
+         * handful Faker produces with an apostrophe or ampersand, which is a
+         * flaky test rather than a real difference in behaviour.
+         */
+        return str_contains($pdf->getHtml(), e($viewer->name))
             && str_contains($pdf->getHtml(), __('master_data.user.document.generated_by'));
     });
 });
