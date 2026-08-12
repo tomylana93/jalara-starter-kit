@@ -6,10 +6,13 @@ use App\Settings\AuthenticationSettings;
 use App\Settings\GeneralSettings;
 use App\Settings\MailSettings;
 use App\Settings\SettingsResolver;
+use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 use Spatie\LaravelSettings\Settings;
+use Spatie\LaravelSettings\Support\SettingsCacheFactory;
 
 class SettingsServiceProvider extends ServiceProvider
 {
@@ -28,6 +31,27 @@ class SettingsServiceProvider extends ServiceProvider
         Queue::looping(function (): void {
             $this->applySettings(refresh: true);
         });
+
+        /*
+         * Settings migrations write straight to the repository, so the package
+         * never emits `SettingsSaved` for them and a cached group would survive
+         * a deployment that changed it.
+         */
+        Event::listen(MigrationsEnded::class, function (): void {
+            $this->flushSettingsCache();
+        });
+    }
+
+    /**
+     * Drop every cached settings group, ignoring the caches that are disabled.
+     */
+    private function flushSettingsCache(): void
+    {
+        foreach (app(SettingsCacheFactory::class)->all() as $cache) {
+            if ($cache->isEnabled()) {
+                $cache->clear();
+            }
+        }
     }
 
     /**
