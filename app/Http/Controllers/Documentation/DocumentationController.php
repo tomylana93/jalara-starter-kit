@@ -19,11 +19,7 @@ class DocumentationController extends Controller
     {
         return Inertia::render('documentation/Index', [
             'categories' => DocumentationPresenter::readerCategories(
-                DocumentationCategory::query()
-                    ->whereHas('documentations', fn ($query) => $query->where('status', DocumentationStatus::Published))
-                    ->orderBy('position')
-                    ->with(['documentations' => fn ($query) => $query->where('status', DocumentationStatus::Published)->orderBy('position')])
-                    ->get(),
+                DocumentationCategory::query()->forReaderNavigation()->get(),
             ),
         ]);
     }
@@ -38,11 +34,7 @@ class DocumentationController extends Controller
         return Inertia::render('documentation/Show', [
             'documentation' => DocumentationPresenter::readerDetail($documentation->load('category')),
             'categories' => DocumentationPresenter::readerCategories(
-                DocumentationCategory::query()
-                    ->whereHas('documentations', fn ($query) => $query->where('status', DocumentationStatus::Published))
-                    ->orderBy('position')
-                    ->with(['documentations' => fn ($query) => $query->where('status', DocumentationStatus::Published)->orderBy('position')])
-                    ->get(),
+                DocumentationCategory::query()->forReaderNavigation()->get(),
             ),
         ]);
     }
