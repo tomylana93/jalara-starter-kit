@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/tomylana93/jalara-starter-kit/compare/v2.1.1...v2.1.2) (2026-08-12)
+
+
+### Bug Fixes
+
+* **ci:** use GitHub App client id ([#72](https://github.com/tomylana93/jalara-starter-kit/issues/72)) ([feed307](https://github.com/tomylana93/jalara-starter-kit/commit/feed307c876908f865ec16c34718b4a00cfe4242))
+
 ## [2.1.1](https://github.com/tomylana93/jalara-starter-kit/compare/v2.1.0...v2.1.1) (2026-08-12)
 
 
