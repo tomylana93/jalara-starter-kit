@@ -23,6 +23,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Imports/** | .ai/rules/imports.md |
 | resources/js/**/*.test.ts, resources/js/** | .ai/rules/js.md |
 | database/migrations/** | .ai/rules/migrations.md |
+| app/Models/** | .ai/rules/models.md |
 | tests/PHPStan/** | .ai/rules/p-h-p-stan.md |
 | resources/js/pages/** | .ai/rules/pages.md |
 | resources/views/pdf/** | .ai/rules/pdf.md |
@@ -33,3 +34,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/test/setup.ts | .ai/rules/test.md |
 | tests/** | .ai/rules/tests.md |
 | resources/js/components/ui/** | .ai/rules/ui.md |
+| .github/workflows/** | .ai/rules/workflows.md |

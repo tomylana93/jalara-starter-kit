@@ -181,15 +181,66 @@ jobs:
 
   # `Tests\TestCase` calls `withoutVite()`, so nothing in the Pest suite reads a
   # built asset. That makes this the one job with no Node toolchain at all.
+  # The suite runs on both engines it claims to support in production. SQLite and
+  # PostgreSQL disagree in ways no SQLite run can reveal - `LIKE` case
+  # sensitivity, `MAX` over `uuid`, and whether a constraint violation aborts the
+  # surrounding transaction - and each of those was a live defect here, found
+  # only by adding the PostgreSQL leg. The SQLite leg stays because it is what a
+  # default install runs on.
+  #
+  # The service major version and the `pg_dump` client on the runner must match:
+  # `pg_dump` refuses to dump a newer server, which fails the backup suite with
+  # nothing but an exit code to go on. ubuntu-latest ships the 16 client.
   pest:
-    name: pest
+    name: pest (${{ matrix.database }})
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    strategy:
+      # One engine failing should still report the other, since the whole point
+      # of the matrix is telling engine-specific breakage apart.
+      fail-fast: false
+      matrix:
+        include:
+          - database: sqlite
+            connection: sqlite
+            name: ':memory:'
+          - database: pgsql
+            connection: pgsql
+            name: jalara_test
+
     env:
       APP_ENV: testing
-      DB_DATABASE: ':memory:'
+      DB_CONNECTION: ${{ matrix.connection }}
+      DB_DATABASE: ${{ matrix.name }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_USERNAME: jalara
+      DB_PASSWORD: secret
       LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    # `phpunit.xml` names DB_CONNECTION too, but PHPUnit only applies an `<env>`
+    # when the variable is absent from the real environment unless it is marked
+    # `force`. The matrix therefore wins, and the file still drives a local run.
+    #
+    # The service starts for both legs; the SQLite leg simply never connects to
+    # it. Conditional services are not expressible in a matrix, and a container
+    # nobody dials costs far less than a second job definition to maintain.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jalara
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: jalara_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jalara"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -201,7 +252,7 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
-          extensions: zip
+          extensions: zip, pdo_pgsql, pgsql
           tools: composer:v2
           # Only the full tier measures coverage, but the driver is cheap to
           # install and keeping one PHP setup avoids a second expression.
@@ -222,11 +273,13 @@ jobs:
       # full one. A step-level `if` can read the workflow `env` that a
       # job-level one cannot.
       - name: Run the Pest suite
-        if: env.RUN_FULL != 'true'
+        if: env.RUN_FULL != 'true' || matrix.database == 'sqlite'
         run: composer run ci:pest
 
+      # Coverage is a property of the suite, not of the engine, so it is measured
+      # once - on the engine production actually runs.
       - name: Run the Pest suite with coverage
-        if: env.RUN_FULL == 'true'
+        if: env.RUN_FULL == 'true' && matrix.database == 'pgsql'
         run: composer run ci:pest:coverage
 
   # Only the full gate runs Playwright, so it stays out of the routine feedback

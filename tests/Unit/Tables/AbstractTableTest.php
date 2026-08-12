@@ -77,6 +77,21 @@ it('matches the search term against every searchable column', function () {
     expect($result['data'])->toHaveCount(2);
 });
 
+/*
+ * Case folding is the whole reason this table uses `whereLike` rather than a
+ * raw `like` operator. SQLite and MySQL fold ASCII case for `LIKE` on their own,
+ * so this assertion is free there and only bites on PostgreSQL - which is
+ * exactly where the untested version silently stopped matching.
+ */
+it('matches a search term regardless of case', function (string $term) {
+    User::factory()->create(['name' => 'Budi Santoso']);
+
+    $result = usersTable()->paginate(new TableQuery(search: $term, perPage: 50));
+
+    expect($result['data'])->toHaveCount(1)
+        ->and($result['data'][0]['name'])->toBe('Budi Santoso');
+})->with(['budi', 'BUDI', 'BuDi', 'santoso']);
+
 it('pages deterministically when the sorted values tie', function () {
     $table = usersTable();
     User::factory()->count(12)->create(['name' => 'Identical Name']);
