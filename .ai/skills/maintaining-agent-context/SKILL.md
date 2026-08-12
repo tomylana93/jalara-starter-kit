@@ -12,9 +12,9 @@ regenerate.
 
 - Inspect the working tree, `boost.json`, `.ai/`, `.serena/`, and the generated
   agent outputs before editing.
-- This repository supports exactly two agents, Claude Code and Codex. `boost.json`
-  must list exactly `claude_code` and `codex`. Never add a third agent, and never
-  reintroduce client configuration, plugins, hooks, or ignore entries for one.
+- Keep `boost.json` aligned with the AI coding agents the repository currently
+  supports. Add or remove a client only when the developer explicitly includes
+  that agent in scope.
 - Treat `.ai/guidelines/` and `.ai/skills/` as the custom Boost sources, and
   `AGENTS.md`, `CLAUDE.md`, plus their published skills as generated outputs.
   Third-party project skills are installer-owned instead: canonical files live
@@ -102,8 +102,8 @@ regenerate.
 2. Confirm the custom guideline and skills appear in both configured agent
    outputs without manually enumerating unrelated installed skills.
 3. Run the update again and confirm it produces no further tracked diff.
-4. Confirm `boost.json` still selects exactly Claude Code and Codex, and inspect
-   generated output for unsupported-agent references.
+4. Confirm `boost.json` selects the intended agents and inspect generated output
+   for stale client-specific assumptions.
 5. Run the Serena memory checks when memories changed.
 6. Run `git diff --check`, review the complete diff, and report exactly which
    validation commands ran.

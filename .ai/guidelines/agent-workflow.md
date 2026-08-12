@@ -9,7 +9,7 @@
 ## Bootstrap and routing
 
 - Start with application information when available. Before coding, activate Serena, read its instructions, then read `mem:core` and only the focused memories it routes to. Inspect the working tree before editing.
-- Claude Code and Codex are the repository's only supported agents. They are peers: either may investigate, plan when useful, and implement an authorized request directly. Do not add another agent or a planner/implementor tier.
+- Every AI coding agent configured for this repository is a peer: each may investigate, plan when useful, and implement an authorized request directly.
 - Use Serena for code navigation, references, diagnostics, precise edits, and project memory. For Vue orientation, read the component directly; its TypeScript gate is authoritative over Serena diagnostics.
 - Use Laravel Boost for installed-version Laravel context, framework docs, schema, read-only data, URLs, and recent logs. Use Context7 for current non-Laravel library docs, then web search only when those tools are unhelpful.
 - Use repository Composer scripts when one exists. Read `.ai/rules/index.md` and every matching Project Rule before editing an affected path.
