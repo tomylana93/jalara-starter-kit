@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\PendingCommand;
+use Tests\BrowserTestCase;
 use Tests\TestCase;
 
 /*
@@ -47,11 +48,39 @@ pest()->extend(TestCase::class)
     })
     ->in('Feature');
 
+/*
+ * Browser tests bind BrowserTestCase rather than TestCase: the latter stubs the
+ * Vite directive, which leaves the browser with no bundle to run.
+ */
+pest()->extend(BrowserTestCase::class)
+    ->use(RefreshDatabase::class)
+    ->beforeEach(function (): void {
+        app()->instance(UncompromisedVerifier::class, new class implements UncompromisedVerifier
+        {
+            /**
+             * @param  array<string, mixed>  $data
+             */
+            public function verify($data): bool
+            {
+                return true;
+            }
+        });
+
+        usePasswordPolicy(PasswordPolicy::Basic);
+    })
+    ->in('Browser');
+
 pest()->printer()->compact();
 
-pest()->tia()
-    ->filtered()
-    ->baselined();
+/*
+ * TIA runs locally and is skipped on CI, where the full suite always runs.
+ *
+ * The default branch is named rather than discovered: TIA reads it to decide
+ * which baseline a new branch falls back to, and a fresh clone has no
+ * `origin/HEAD` for it to consult. Left to guess, it would re-run the whole
+ * suite on every new branch while reporting a cache hit.
+ */
+pest()->tia()->locally()->defaultBranch('main');
 
 /*
 |--------------------------------------------------------------------------

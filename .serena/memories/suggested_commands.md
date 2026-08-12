@@ -3,12 +3,12 @@
 - Local setup: `composer run setup`; GitHub CI dependency/environment setup without an early build: `composer run ci:setup`, or `composer run ci:setup:php` for the Node-free Pest job; development: `composer run dev`; frontend dev: `pnpm run dev`.
 - Vitest: `pnpm test:unit`; watch: `pnpm test:unit:watch`.
 - Pest focused: `php artisan test --compact <file>` or `--filter=<name>`; full backend: `composer test`.
-- Playwright E2E: `pnpm test:e2e`; focused: `pnpm exec playwright test <spec> --grep '<name>'`.
+- Pest browser: `composer run ci:browser`; focused: `vendor/bin/pest tests/Browser/<file> --filter='<name>'`. Requires a current `pnpm run build`.
+- Database compatibility locally: `composer run test:pgsql` and `composer run test:mysql` (ephemeral podman containers, torn down after the run).
 - Combined auto-fix before the gate: `composer run fix` (Rector, Pint on dirty
   files, ESLint, Prettier). Frontend-only auto-fix: `pnpm run lint`, `pnpm run
   format`; checks: `pnpm run lint:check`, `pnpm run format:check`, `pnpm run
-  types:check`, `pnpm run test:unit`. Use `pnpm run test:e2e` for the production
-  build plus Playwright. PHP-only auto-fix: `composer run rector`, `composer run
+  types:check`, `pnpm run test:unit`. PHP-only auto-fix: `composer run rector`, `composer run
   format:agent`; repository-wide formatting: `composer run lint`. Checks:
   `composer run rector:check`, `composer run lint:check`, `composer run
   types:check`.
@@ -16,12 +16,12 @@
 - Two-tier gate composed from one script per CI job, so the local command runs
   the same set as CI. `ci:static` = frontend lint/format/types, then
   `config:clear`, Pint, Larastan. `ci:vitest`, `ci:pest`, `ci:pest:coverage`,
-  `ci:e2e` are the rest, and `ci:workflows` runs the structural workflow
-  contract in `tests/Unit/Ci` on its own. `composer run ci:check` (fast) = `ci:static`,
+  `ci:browser` are the rest. `composer run ci:check` (fast) = `ci:static`,
   `ci:vitest`, `ci:pest`. `composer run ci:full` (promotion) swaps in coverage
-  and adds Playwright with its single production build. Pest runs once per tier.
-  Rector is in neither gate: it is a local-only auto-fixer run through
-  `composer run fix`. Pest TIA is configured but inert; see `mem:testing`.
+  and adds `ci:browser`, which needs a current production build. Pest runs once
+  per tier. Rector is in neither gate: it is a local-only auto-fixer run through
+  `composer run fix`. Pest TIA is active locally and skipped on CI through
+  `pest()->tia()->locally()`.
 - `.github/workflows/_ci.yml` is the single implementation of the gate that both
   `pull-request.yml` and `main.yml` call. First stage in parallel: `static`,
   `vitest`, `pest` (SQLite and PostgreSQL, coverage on PostgreSQL only), and

@@ -4,14 +4,11 @@
 /bootstrap/ssr
 /node_modules
 /public/build
-/public/build-e2e
 /public/build-vitest
 /public/fonts-manifest.dev.json
 /public/hot
-/public/hot-e2e
 /public/hot-vitest
 /public/storage
-/public/storage-e2e-*
 /storage/*.key
 /tests/Browser/Screenshots
 /storage/pail
@@ -32,11 +29,7 @@ npm-debug.log
 yarn-error.log
 /auth.json
 /storage/framework/testing/*.sqlite
-/test-results
-/playwright-report
 /.playwright-cli
-/output/playwright
-/e2e/.auth
 /.fleet
 /.idea
 /.nova

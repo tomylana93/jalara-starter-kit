@@ -20,7 +20,6 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./resources/js/test/setup.ts'],
         include: ['resources/js/**/*.test.ts', 'vite/**/*.test.ts'],
-        exclude: ['e2e/**'],
         /*
          * No timezone is configured here on purpose. A globally pinned zone
          * hides the dependency from the tests that have one, and only applies

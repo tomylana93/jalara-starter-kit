@@ -1,0 +1,58 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - button "Change appearance" [ref=e5] [cursor=pointer]
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - link "Jalara Log in" [ref=e10] [cursor=pointer]:
+            - /url: /
+            - img "Jalara" [ref=e12]
+            - generic [ref=e13]: Log in
+          - generic [ref=e14]:
+            - heading "Log in" [level=1] [ref=e15]
+            - paragraph [ref=e16]: Enter an email address and password to log in
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: Email address
+            - textbox "Email address" [active] [ref=e21]:
+              - /placeholder: email@example.com
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - generic [ref=e24]: Password
+              - link "Forgot password?" [ref=e25] [cursor=pointer]:
+                - /url: /forgot-password
+            - generic [ref=e26]:
+              - textbox "Password" [ref=e27]
+              - button "Show password" [ref=e28]
+          - generic [ref=e33]:
+            - checkbox "Stay logged in" [ref=e34]
+            - checkbox [ref=e35]
+            - generic [ref=e36]: Stay logged in
+          - button "Log in" [ref=e37]
+      - contentinfo [ref=e38]: © Jalara. All rights reserved.
+  - generic [ref=e41]:
+    - generic [ref=e43]:
+      - generic [ref=e44] [cursor=pointer]: Request
+      - generic [ref=e45] [cursor=pointer]: Timeline
+      - generic [ref=e46] [cursor=pointer]:
+        - generic: Views
+        - generic [ref=e47]: "3"
+      - generic [ref=e48] [cursor=pointer]:
+        - generic: Queries
+        - generic [ref=e49]: "9"
+      - generic [ref=e50] [cursor=pointer]:
+        - generic: Models
+        - generic [ref=e51]: "25"
+      - generic [ref=e52] [cursor=pointer]:
+        - generic: Inertia
+        - generic [ref=e53]: "1"
+      - generic [ref=e54] [cursor=pointer]:
+        - generic: Http client
+        - generic [ref=e55]: "1"
+    - generic [ref=e56]:
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: "2"
+        - generic [ref=e65]: GET /login
+      - generic [ref=e66] [cursor=pointer]: 28.91ms
+      - generic [ref=e68] [cursor=pointer]: 3MB
+      - generic [ref=e70] [cursor=pointer]: 13.x

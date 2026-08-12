@@ -40,6 +40,7 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.0",
+        "pestphp/pest-plugin-browser": "^5.0",
         "pestphp/pest-plugin-laravel": "^5.0",
         "pestphp/pest-plugin-phpstan": "^5.0",
         "pestphp/pest-plugin-rector": "^5.0"
@@ -108,7 +109,7 @@
             "pnpm run audit:check"
         ],
         "coverage:check": [
-            "pest --coverage --min=80 --only-summary-for-coverage-text"
+            "pest --testsuite=Unit,Feature --coverage --min=80 --only-summary-for-coverage-text"
         ],
         "fix": [
             "Composer\\Config::disableProcessTimeout",
@@ -130,13 +131,21 @@
             "pest tests/Unit/Ci"
         ],
         "ci:pest": [
-            "pest"
+            "pest --testsuite=Unit,Feature"
         ],
         "ci:pest:coverage": [
             "@coverage:check"
         ],
-        "ci:e2e": [
-            "pnpm run test:e2e"
+        "ci:browser": [
+            "pest --testsuite=Browser"
+        ],
+        "test:pgsql": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash -c 'set -euo pipefail; trap \"podman rm -f pest-pgsql >/dev/null 2>&1 || true\" EXIT; podman run --rm -d --name pest-pgsql -e POSTGRES_DB=testing -e POSTGRES_USER=testing -e POSTGRES_PASSWORD=testing -p 55432:5432 postgres:17 >/dev/null; until podman exec pest-pgsql pg_isready -U testing >/dev/null 2>&1; do sleep 1; done; DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=55432 DB_DATABASE=testing DB_USERNAME=testing DB_PASSWORD=testing vendor/bin/pest'"
+        ],
+        "test:mysql": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash -c 'set -euo pipefail; trap \"podman rm -f pest-mysql >/dev/null 2>&1 || true\" EXIT; podman run --rm -d --name pest-mysql -e MYSQL_DATABASE=testing -e MYSQL_USER=testing -e MYSQL_PASSWORD=testing -e MYSQL_ROOT_PASSWORD=testing -p 53306:3306 mysql:8.4 >/dev/null; until podman exec pest-mysql mysqladmin ping -h 127.0.0.1 -utesting -ptesting --silent >/dev/null 2>&1; do sleep 1; done; DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=53306 DB_DATABASE=testing DB_USERNAME=testing DB_PASSWORD=testing vendor/bin/pest'"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
@@ -149,7 +158,7 @@
             "@ci:static",
             "@ci:vitest",
             "@ci:pest:coverage",
-            "@ci:e2e"
+            "@ci:browser"
         ],
         "types:check": [
             "phpstan analyse --memory-limit=1G --no-progress --error-format=json"
