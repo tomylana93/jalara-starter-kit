@@ -6,8 +6,8 @@ This is the authoring policy for commits, pull requests, and releases. Read `mem
 
 - `main` is the only permanent branch. Work on a short-lived branch off `main` and merge it back with a **squash merge**; merge commits and rebase merges are disabled.
 - The pull-request title is the unit of the changelog and of SemVer. Commits inside a pull request are not release units.
-- Open a working-branch pull request as a draft to run the cheap checks: the merge policy, and the workflow contract when `.github/**` changed. Marking it ready for review runs the full gate. Branch pushes alone run no CI.
-- Every push to `main` re-runs the same full gate on the commit that landed, then decides release eligibility.
+- Open a working-branch pull request as a draft to run the cheap checks (merge policy). Marking it ready for review runs the pull-request gate (`verify`, plus `browser` when frontend paths change). Branch pushes alone run no CI.
+- Every push to `main` runs the main-scope gate (database compat + drift) on the commit that landed, then decides release eligibility.
 - Merge a ready pull request with:
 
   ```shell

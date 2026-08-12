@@ -12,8 +12,8 @@ this way, and what to do when a deployment goes wrong.
 ## What gets deployed
 
 The unit of deployment is a **published release tag** — a tag that also has a
-non-draft GitHub Release behind it. A tag is only written after the full gate
-has passed on `main` and every commit behind it was found eligible for release,
+non-draft GitHub Release behind it. A tag is only written after the main-scope
+gate has passed and every commit behind it was found eligible for release,
 so a published tag is the project's only marker for "this code was verified and
 released". `deploy/deploy.sh` refuses a tag whose release is missing or still
 draft, which catches the case where the tag landed but publication failed; re-run

@@ -3,9 +3,9 @@ name: release pr
 # Keeps the release pull request in step with the default branch.
 #
 # It runs on a *successful* conclusion of the `main` workflow, which is the only
-# statement this repository can make about a commit: that the full gate passed on
-# it and that every commit behind it is eligible for release. A red branch simply
-# leaves the release pull request where it was.
+# statement this repository can make about a commit: that the main-scope gate
+# (compat + drift) passed on it and that every commit behind it is eligible for
+# release. A red branch simply leaves the release pull request where it was.
 #
 # This workflow never tags and never publishes. That is `release-publish.yml`,
 # and the split is deliberate: opening a release is a proposal, and publishing

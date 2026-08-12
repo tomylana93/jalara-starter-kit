@@ -1,41 +1,67 @@
 name: gate
 
-# The one implementation of the full gate. Pull requests and the default branch
-# both call it, so "the checks that ran on the pull request" and "the checks that
-# ran on `main`" are the same set by construction rather than by convention.
+# The one implementation of every gate. Each caller names a scope and gets the
+# jobs that scope defines, so no caller can quietly grow a check the others do
+# not have.
 #
-# There is no fast tier inside this file. Tiering is the caller's decision: a
-# draft pull request never calls this workflow at all.
+# The scopes are deliberately different from each other. A pull request answers
+# "is this change correct?" as cheaply as the question allows; `main` answers
+# "does the tree that actually landed still work on the engines we claim to
+# support?". Running both sets in both places was the old design and it charged
+# every change for a guarantee only the merge needs.
+#
+# Drift between them is prevented where it matters: every job invokes a
+# `composer.json` script, so the command a job runs is the command a developer
+# runs locally, and there is exactly one definition of it.
 on:
   workflow_call:
     inputs:
       scope:
         description: >-
-          `full` runs every check. `release` runs only the packaging checks, for
-          the release pull request, whose candidate has already been through the
-          full gate on the default branch.
+          `pull-request` runs verification and, when the diff touches the
+          frontend, the browser suite. `main` runs database compatibility and a
+          drift check. `release` runs only the packaging check, for the release
+          pull request, whose candidate already passed both.
         type: string
         required: false
-        default: full
+        default: pull-request
 
 # Nothing is granted at the top of the file: every job below asks for the read
 # access it needs and no job inherits more than that.
 permissions: {}
 
 jobs:
-  # The first stage runs everything that only needs the source tree, in
-  # parallel, so the slowest check rather than their sum sets the wall time.
-  # `composer.json` keeps one script per job and composes them into `ci:check`
-  # and `ci:full`, so the local gate provably runs the same set as CI.
-  static:
-    name: static analysis
-    if: inputs.scope == 'full'
+  # Static analysis, the Vitest suite, and the Pest suite in one job.
+  #
+  # They were three, and the split cost more than it bought: each paid a full
+  # checkout, PHP setup, pnpm setup, Node setup, and `composer install` to run a
+  # check measured in seconds. Bootstrap dominated, and paying it three times in
+  # parallel still burns three runners. One job pays it once.
+  #
+  # Pest runs `--parallel` here, which is what makes the merge cheap rather than
+  # merely tidy: the suite drops from roughly 23s to 5s, more than covering the
+  # loss of cross-check parallelism.
+  #
+  # Frontend path detection lives here rather than in a third job so the PR gate
+  # stays two jobs (`verify` + `browser`). The filter is job-level on purpose: a
+  # path filter at the trigger makes the browser job *missing* on an unrelated
+  # change, and a missing check is indistinguishable from one that never ran.
+  # Filtering here keeps browser present and reported as skipped. That matters
+  # on the Free plan, which has no required checks — a human cannot audit a
+  # check that is not on the page.
+  verify:
+    name: verify
+    if: inputs.scope == 'pull-request'
     permissions:
       contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
     env:
       APP_ENV: testing
+      DB_CONNECTION: sqlite
       DB_DATABASE: ':memory:'
       LARAVEL_BYPASS_ENV_CHECK: '1'
 
@@ -45,6 +71,20 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Detect frontend changes
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            frontend:
+              - 'resources/js/**'
+              - 'resources/css/**'
+              - 'resources/views/**'
+              - 'routes/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'vite.config.ts'
+
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
@@ -53,7 +93,9 @@ jobs:
           # dependency explicit rather than relying on the runner's defaults.
           extensions: zip
           tools: composer:v2
-          coverage: none
+          # PCOV, not Xdebug: it is the cheaper driver for line coverage, and
+          # nothing here needs a step debugger.
+          coverage: pcov
 
       # pnpm has to exist before `setup-node`, which shells out to it to locate
       # the store it caches.
@@ -68,9 +110,9 @@ jobs:
           node-version: '24'
           cache: 'pnpm'
 
-      # Only the download cache is stored, never `vendor/`. The install still
-      # runs, so Composer's platform checks keep validating the tree; a stale or
-      # corrupt cache can make a run slow, never wrong.
+      # Only the download cache is stored, never `vendor/` or `node_modules/`.
+      # The install still runs, so Composer's platform checks keep validating
+      # the tree; a stale or corrupt cache can make a run slow, never wrong.
       - name: Cache the Composer downloads
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -100,238 +142,49 @@ jobs:
       - name: Setup Application
         run: composer run ci:setup
 
-      # ESLint, Prettier, and vue-tsc all read the generated route and action
-      # modules, which are gitignored.
+      # ESLint, Prettier, vue-tsc, and the Vue modules under test all read the
+      # generated route and action modules, which are gitignored.
       - name: Generate Wayfinder routes
         run: php artisan wayfinder:generate --with-form --no-interaction
 
       - name: Run the static checks
         run: composer run ci:static
 
-  vitest:
-    name: vitest
-    if: inputs.scope == 'full'
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      APP_ENV: testing
-      DB_DATABASE: ':memory:'
-      LARAVEL_BYPASS_ENV_CHECK: '1'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # PHP is not optional here: the Vue components under test import the
-      # gitignored Wayfinder modules, which only Artisan can generate.
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.5'
-          extensions: zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: '11'
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Cache the Composer downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/composer
-          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php8.5-composer-
-
-      - name: Setup Application
-        run: composer run ci:setup
-
-      - name: Generate Wayfinder routes
-        run: php artisan wayfinder:generate --with-form --no-interaction
-
       - name: Run the Vitest suite
         run: composer run ci:vitest
 
-  # `Tests\TestCase` calls `withoutVite()`, so nothing in the Pest suite reads a
-  # built asset. That makes this the one job with no Node toolchain at all.
-  #
-  # The suite runs on both engines it claims to support in production. SQLite and
-  # PostgreSQL disagree in ways no SQLite run can reveal - `LIKE` case
-  # sensitivity, `MAX` over `uuid`, and whether a constraint violation aborts the
-  # surrounding transaction - and each of those was a live defect here, found
-  # only by adding the PostgreSQL leg. The SQLite leg stays because it is what a
-  # default install runs on.
-  #
-  # The service major version and the `pg_dump` client on the runner must match:
-  # `pg_dump` refuses to dump a newer server, which fails the backup suite with
-  # nothing but an exit code to go on. ubuntu-latest ships the 16 client.
-  pest:
-    name: pest (${{ matrix.database }})
-    if: inputs.scope == 'full'
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    strategy:
-      # One engine failing should still report the other, since the whole point
-      # of the matrix is telling engine-specific breakage apart.
-      fail-fast: false
-      matrix:
-        include:
-          - database: sqlite
-            connection: sqlite
-            name: ':memory:'
-          - database: pgsql
-            connection: pgsql
-            name: jalara_test
-
-    env:
-      APP_ENV: testing
-      DB_CONNECTION: ${{ matrix.connection }}
-      DB_DATABASE: ${{ matrix.name }}
-      DB_HOST: 127.0.0.1
-      DB_PORT: '5432'
-      DB_USERNAME: jalara
-      DB_PASSWORD: secret
-      LARAVEL_BYPASS_ENV_CHECK: '1'
-
-    # `phpunit.xml` names DB_CONNECTION too, but PHPUnit only applies an `<env>`
-    # when the variable is absent from the real environment unless it is marked
-    # `force`. The matrix therefore wins, and the file still drives a local run.
-    #
-    # The service starts for both legs; the SQLite leg simply never connects to
-    # it. Conditional services are not expressible in a matrix, and a container
-    # nobody dials costs far less than a second job definition to maintain.
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: jalara
-          POSTGRES_PASSWORD: secret
-          POSTGRES_DB: jalara_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U jalara"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.5'
-          extensions: zip, pdo_pgsql, pgsql
-          tools: composer:v2
-          # Only the PostgreSQL leg measures coverage, but the driver is cheap
-          # to install and keeping one PHP setup avoids a second expression.
-          coverage: pcov
-
-      - name: Cache the Composer downloads
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/composer
-          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php8.5-composer-
-
-      - name: Setup Application
-        run: composer run ci:setup:php
-
-      - name: Run the Pest suite
-        if: matrix.database == 'sqlite'
-        run: composer run ci:pest
-
-      # Coverage is a property of the suite, not of the engine, so it is measured
-      # once - on the engine production actually runs.
+      # Coverage is measured here rather than on a database leg: it is a
+      # property of the suite, not of the engine, and this is the only leg a
+      # pull request runs.
       - name: Run the Pest suite with coverage
-        if: matrix.database == 'pgsql'
-        run: composer run ci:pest:coverage
+        run: composer run coverage:check -- --parallel
 
-  # Advisory databases are a third-party input, so this job separates the two
-  # ways it can fail. A published advisory against a locked dependency is a real
-  # finding and blocks the gate. An unreachable advisory service is not a
-  # finding, and saying so is the difference between "fix this dependency" and
-  # "run it again".
+  # The browser suite costs a Chromium download and a production build, so it
+  # runs only when the diff could plausibly change what the browser sees, and
+  # only once the cheap job has agreed the tree is worth it.
   #
-  # Both audits read a lock file and nothing else, so the job installs no
-  # dependencies. Keeping them out of `ci:check` also makes that gate hermetic,
-  # so a poor connection can no longer fail it for reasons that are not code.
-  audit:
-    name: dependency audit
-    if: inputs.scope == 'full'
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.5'
-          extensions: zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: '11'
-
-      - name: Audit the locked dependencies
-        run: .github/scripts/audit-dependencies.sh
-
-  # The second stage costs a browser download and a production build, so it only
-  # starts once the cheap checks have agreed the tree is worth it.
+  # Accepted consequence: a commit whose diff touches no frontend path can be
+  # merged, and released, without this ever running. That is deliberate. The
+  # alternative charges every backend-only change for a browser boot to defend
+  # against a failure mode that change cannot cause.
   browser:
     name: browser
-    if: inputs.scope == 'full'
+    if: >-
+      ${{ inputs.scope == 'pull-request' &&
+      needs.verify.outputs.frontend == 'true' }}
     needs:
-      - static
-      - vitest
-      - pest
-      - audit
+      - verify
     permissions:
       contents: read
     runs-on: ubuntu-latest
     # Sized against a bad day, not against the gate. A single cache miss on the
     # Playwright browsers once pushed a legitimate run to 887s — thirteen
     # seconds short of a fifteen-minute limit. A timeout that fires on a slow
-    # download reads as a broken test suite and, on `main`, silently stops
-    # releases.
+    # download reads as a broken test suite.
     timeout-minutes: 20
     env:
       APP_ENV: testing
+      DB_CONNECTION: sqlite
       DB_DATABASE: ':memory:'
       LARAVEL_BYPASS_ENV_CHECK: '1'
 
@@ -371,23 +224,32 @@ jobs:
       - name: Setup Application
         run: composer run ci:setup
 
-      # Deliberately uncached. `~/.cache/ms-playwright` was cached here and
-      # measured on `main`: 22s with a cold cache, 22s with a warm one, plus 5s
-      # to restore 269 MB. Almost all of the time is `--with-deps` installing
-      # system libraries through apt, which no cache covers; the browser
-      # download it does skip is the cheap part. Dropping `--with-deps` would
-      # make a cache worth having, but it bets on which libraries the runner
-      # image happens to ship and fails as an unexplained Chromium crash.
+      # Browser binaries are keyed on the locked Playwright version with no
+      # restore-keys, so a pin hits the warm cache and a bump starts cold.
+      # System libraries from `--with-deps` are still installed every run; only
+      # the browser download itself is what the cache skips.
+      - name: Resolve the Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "${GITHUB_OUTPUT}"
+
+      - name: Cache the Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
       # The browser suite reads the ordinary `public/build`. Nothing in
-      # `composer run ci:browser` builds it — the old runner script did — so the
-      # bundle is produced here. It also regenerates the Wayfinder modules
-      # through the Vite plugin.
+      # `composer run ci:browser` builds it, so the bundle is produced here. It
+      # also regenerates the Wayfinder modules through the Vite plugin.
       - name: Build the production bundle
         run: pnpm run build
 
+      # No `--parallel` here. The runner has two cores, and driving several
+      # Chromium instances across them is slower than one and measurably
+      # flakier.
       - name: Run the browser suite
         run: composer run ci:browser
 
@@ -403,6 +265,179 @@ jobs:
           path: tests/Browser/Screenshots/
           retention-days: 7
           if-no-files-found: ignore
+
+  # The engines this kit claims to support, run against the tree that actually
+  # landed.
+  #
+  # SQLite and a server engine disagree in ways no SQLite run can reveal —
+  # `LIKE` case sensitivity, `MAX` over `uuid`, whether a constraint violation
+  # aborts the surrounding transaction — and each of those was a live defect
+  # here, found only by adding a server leg. Those are merge-time properties,
+  # not per-change ones, so the cost belongs here rather than on every push to
+  # a branch.
+  #
+  # `--parallel` here matches every other non-browser Pest leg. Each worker
+  # gets its own database name via Laravel's parallel testing tokens; the
+  # service containers already expose CREATE DATABASE to the configured user.
+  compat:
+    name: compat (${{ matrix.database }})
+    if: inputs.scope == 'main'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      # One engine failing should still report the other, since the whole point
+      # of the matrix is telling engine-specific breakage apart.
+      fail-fast: false
+      matrix:
+        include:
+          - database: pgsql
+            port: '5432'
+          - database: mysql
+            port: '3306'
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_DATABASE: jalara_test
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.port }}
+      DB_USERNAME: jalara
+      DB_PASSWORD: secret
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    # `phpunit.xml` names DB_CONNECTION too, but PHPUnit only applies an `<env>`
+    # when the variable is absent from the real environment unless it is marked
+    # `force`. The matrix therefore wins, and the file still drives a local run.
+    #
+    # Both services start for both legs; the leg that does not use one simply
+    # never dials it. Conditional services are not expressible in a matrix, and
+    # an idle container costs far less than a second job definition to maintain.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: jalara
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: jalara_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jalara"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_USER: jalara
+          MYSQL_PASSWORD: secret
+          MYSQL_DATABASE: jalara_test
+          MYSQL_ROOT_PASSWORD: secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ujalara -psecret --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # `pg_dump` refuses to dump a server newer than itself and fails the
+      # backup suite with nothing but an exit code to go on. ubuntu-latest ships
+      # the 16 client, so pinning the service at 17 obliges this step: the
+      # client major must be installed to match the server major, in the same
+      # change that moves it.
+      - name: Install the PostgreSQL 17 client
+        if: matrix.database == 'pgsql'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends postgresql-client-17
+          pg_dump --version
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip, pdo_pgsql, pgsql, pdo_mysql, mysql
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      # `Tests\TestCase` calls `withoutVite()`, so nothing outside the browser
+      # suite reads a built asset. That is what lets this job skip Node.
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      - name: Run the Pest suite
+        run: composer run ci:pest -- --parallel
+
+  # The same SQLite run a pull request made, repeated against the merge result.
+  #
+  # Without protected branches or a merge queue — neither of which the Free plan
+  # offers — nothing guarantees the tree that was tested is the tree that
+  # landed. This is the cheapest check that says so.
+  drift:
+    name: drift
+    if: inputs.scope == 'main'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      - name: Run the Pest suite
+        run: composer run ci:pest -- --parallel
 
   # Reproduces every material stage of the installation command documented in
   # the README:
@@ -420,30 +455,11 @@ jobs:
   # This job deliberately sets no APP_ENV, because the production fallback
   # during the pre-environment window is exactly what it has to cover.
   #
-  # It runs everywhere, including in private descendants: a downstream
-  # application that cannot be installed from a clean checkout is broken for its
-  # own contributors, not only for this repository's users. Only the scheduled
-  # run against the *published* repository is opt-in, in `installer-smoke.yml`.
-  #
   # Because the stages are reproduced by hand, this job validates the installer
   # contract as this repository understands it, not the installer binary.
   installer:
     name: installer
-    needs:
-      - static
-      - vitest
-      - pest
-      - audit
-    # The release scope runs this job on its own, so it cannot simply depend on
-    # the first stage: a skipped dependency skips the dependent job. Naming the
-    # results explicitly keeps the ordering for a full run and still lets the
-    # release pull request reach the packaging check.
-    if: >-
-      ${{ !cancelled() && (inputs.scope == 'release' ||
-      (needs.static.result == 'success' &&
-       needs.vitest.result == 'success' &&
-       needs.pest.result == 'success' &&
-       needs.audit.result == 'success')) }}
+    if: inputs.scope == 'release'
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -459,8 +475,6 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
-          # spatie/laravel-backup requires ext-zip; naming it here makes the
-          # dependency explicit rather than relying on the runner's defaults.
           extensions: zip
           tools: composer:v2
           coverage: none

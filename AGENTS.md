@@ -61,8 +61,8 @@ This is the authoring policy for commits, pull requests, and releases. Read `mem
 
 - `main` is the only permanent branch. Work on a short-lived branch off `main` and merge it back with a **squash merge**; merge commits and rebase merges are disabled.
 - The pull-request title is the unit of the changelog and of SemVer. Commits inside a pull request are not release units.
-- Open a working-branch pull request as a draft to run the cheap checks: the merge policy, and the workflow contract when `.github/**` changed. Marking it ready for review runs the full gate. Branch pushes alone run no CI.
-- Every push to `main` re-runs the same full gate on the commit that landed, then decides release eligibility.
+- Open a working-branch pull request as a draft to run the cheap checks (merge policy). Marking it ready for review runs the pull-request gate (`verify`, plus `browser` when frontend paths change). Branch pushes alone run no CI.
+- Every push to `main` runs the main-scope gate (database compat + drift) on the commit that landed, then decides release eligibility.
 - Merge a ready pull request with:
 
   ```shell
@@ -193,6 +193,13 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+
+=== tests rules ===
+
+# Test Enforcement
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
 
 === inertia-laravel/core rules ===
 

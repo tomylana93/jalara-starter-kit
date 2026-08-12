@@ -1,23 +1,15 @@
-name: installer smoke
+name: weekly
 
-# Runs the installation command exactly as the README documents it, against the
-# real Laravel installer and the published repository.
+# The checks that answer a question time changes rather than a commit changes.
 #
-# The `installer` job in the gate reproduces the installer's stages by hand so it
-# can test the commit under review instead of the default branch. That makes it
-# fast and precise, but it validates the contract as this repository understands
-# it — including a hand-copied version of the installer's `--pnpm` script
-# rewrite. If the installer changes that logic, the simulation stays green while
-# real installations break. This workflow is what notices.
+# Neither belongs on a pull request. One depends on a third-party advisory
+# database that can publish against code already merged; the other depends on an
+# upstream installer and a live registry. Both would charge every change for a
+# non-hermetic dependency, and a failure in either says nothing about the diff
+# under review.
 #
-# It is opt-in through `STARTER_KIT_MODE`, because it only means anything for a
-# repository that publishes itself as a starter kit. A private application built
-# from this one has no such contract, and a weekly failure it cannot act on is
-# noise.
-#
-# It also stays out of the gate on purpose: the non-hermetic failures it invites
-# — an upstream installer bug, a registry outage — must never colour a gate that
-# release eligibility reads.
+# They share a schedule because they share that property, not because they are
+# related.
 #
 # GitHub disables scheduled workflows after 60 days without repository activity.
 on:
@@ -28,10 +20,66 @@ on:
 permissions: {}
 
 concurrency:
-  group: installer-smoke
+  group: weekly
   cancel-in-progress: false
 
 jobs:
+  # The pull-request gate no longer audits lock files on every change: a published
+  # advisory against code that was already merged is a property of the calendar,
+  # not of a diff. Dependabot owns the remediation; this owns noticing.
+  audit:
+    name: audit the locked dependencies
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: '11'
+
+      - name: Audit the locked dependencies
+        run: .github/scripts/audit-dependencies.sh
+
+  # Runs the installation command exactly as the README documents it, against the
+  # real Laravel installer and the published repository.
+  #
+  # The `installer` job in the release scope reproduces the installer's stages by
+  # hand so it can test the commit under review instead of the default branch.
+  # That makes it fast and precise, but it validates the contract as this
+  # repository understands it — including a hand-copied version of the
+  # installer's `--pnpm` script rewrite. If the installer changes that logic, the
+  # simulation stays green while real installations break. This job is what
+  # notices.
+  #
+  # It is opt-in through `STARTER_KIT_MODE`, because it only means anything for a
+  # repository that publishes itself as a starter kit. A private application
+  # built from this one has no such contract, and a weekly failure it cannot act
+  # on is noise.
+  #
+  # It also stays out of the merge gate on purpose: the non-hermetic failures it
+  # invites — an upstream installer bug, a registry outage — must never colour a
+  # gate that release eligibility reads.
   smoke:
     name: laravel new
     if: vars.STARTER_KIT_MODE == 'true'
@@ -110,9 +158,9 @@ jobs:
             --no-boost \
             --no-interaction
 
-      # These assertions mirror the `installer` job in the gate. They have to
-      # stay in step: divergence between the simulation and the real installer is
-      # the only thing this workflow exists to detect.
+      # These assertions mirror the `installer` job in the release scope. They
+      # have to stay in step: divergence between the simulation and the real
+      # installer is the only thing this job exists to detect.
       - name: Verify the pnpm package manager contract
         if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
@@ -162,4 +210,4 @@ jobs:
       - name: Run the installed test suite
         if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
-        run: php artisan test --compact
+        run: composer run ci:pest -- --parallel
