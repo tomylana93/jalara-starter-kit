@@ -10,8 +10,8 @@ inputs:
       `creator` mints a token that may open and update the release pull request.
       `publisher` mints one that may only write the tag and the release.
     required: true
-  app-id:
-    description: The GitHub App identifier, from a repository variable or secret.
+  client-id:
+    description: The GitHub App client identifier, from a repository variable or secret.
     required: false
     default: ''
   app-private-key:
@@ -42,11 +42,11 @@ runs:
       id: mode
       shell: bash
       env:
-        APP_ID: ${{ inputs.app-id }}
+        CLIENT_ID: ${{ inputs.client-id }}
         APP_PRIVATE_KEY: ${{ inputs.app-private-key }}
         FALLBACK_TOKEN: ${{ inputs.fallback-token }}
       run: |
-        if [ -n "${APP_ID}" ] && [ -n "${APP_PRIVATE_KEY}" ]; then
+        if [ -n "${CLIENT_ID}" ] && [ -n "${APP_PRIVATE_KEY}" ]; then
           echo 'mode=app' >> "${GITHUB_OUTPUT}"
         elif [ -n "${FALLBACK_TOKEN}" ]; then
           echo 'mode=token' >> "${GITHUB_OUTPUT}"
@@ -61,7 +61,7 @@ runs:
       if: steps.mode.outputs.mode == 'app' && inputs.scope == 'creator'
       uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
       with:
-        app-id: ${{ inputs.app-id }}
+        client-id: ${{ inputs.client-id }}
         private-key: ${{ inputs.app-private-key }}
         permission-contents: write
         permission-pull-requests: write
@@ -75,7 +75,7 @@ runs:
       if: steps.mode.outputs.mode == 'app' && inputs.scope == 'publisher'
       uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
       with:
-        app-id: ${{ inputs.app-id }}
+        client-id: ${{ inputs.client-id }}
         private-key: ${{ inputs.app-private-key }}
         permission-contents: write
         permission-metadata: read

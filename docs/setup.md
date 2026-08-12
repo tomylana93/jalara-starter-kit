@@ -139,7 +139,7 @@ Releases are automated with [Release Please](https://github.com/googleapis/relea
 1. Create a GitHub App under your account or organisation (**Settings → Developer settings → GitHub Apps → New GitHub App**). It needs no webhook and no user-facing URL.
 2. Give it these repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Issues: Read and write**, **Metadata: Read-only**.
 3. Generate a private key and install the App on this repository only.
-4. Add the App identifier as the repository variable `RELEASE_APP_ID`, and the private key as the repository secret `RELEASE_APP_PRIVATE_KEY`.
+4. Add the App client ID (the value beginning with `Iv`) as the repository variable `RELEASE_APP_CLIENT_ID`, and the private key as the repository secret `RELEASE_APP_PRIVATE_KEY`.
 
 The workflows narrow the token further per job: the publisher receives Contents and Metadata alone.
 

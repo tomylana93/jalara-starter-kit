@@ -176,7 +176,7 @@ jobs:
         uses: ./.github/actions/release-credentials
         with:
           scope: publisher
-          app-id: ${{ vars.RELEASE_APP_ID || secrets.RELEASE_APP_ID }}
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID || secrets.RELEASE_APP_CLIENT_ID }}
           app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           fallback-token: ${{ secrets.RELEASE_TOKEN }}
 
@@ -186,7 +186,7 @@ jobs:
           {
             echo '## Release automation is enabled but has no credential'
             echo
-            echo 'Configure either a GitHub App — `RELEASE_APP_ID` and the'
+            echo 'Configure either a GitHub App — `RELEASE_APP_CLIENT_ID` and the'
             echo '`RELEASE_APP_PRIVATE_KEY` secret — or the `RELEASE_TOKEN` secret.'
             echo 'No tag and no release were created.'
           } >> "${GITHUB_STEP_SUMMARY}"

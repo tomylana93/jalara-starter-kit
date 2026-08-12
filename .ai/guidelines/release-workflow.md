@@ -31,5 +31,5 @@ Remediate by reverting through a pull request, then record the commit in `.githu
 ## Releases
 
 - Releasing is split in two. `release-pr.yml` opens and refreshes the release pull request after a successful `main` run; `release-publish.yml` writes the tag and the GitHub Release after a human merges it. Neither does the other's half, and the release pull request never auto-merges.
-- Automation stays off until `RELEASE_ENABLED=true` and one credential mode is complete: a GitHub App (`RELEASE_APP_ID` plus the `RELEASE_APP_PRIVATE_KEY` secret, preferred) or the `RELEASE_TOKEN` fine-grained PAT. Without them CI stays green and the release job reports in its summary that it is inactive.
+- Automation stays off until `RELEASE_ENABLED=true` and one credential mode is complete: a GitHub App (`RELEASE_APP_CLIENT_ID` plus the `RELEASE_APP_PRIVATE_KEY` secret, preferred) or the `RELEASE_TOKEN` fine-grained PAT. Without them CI stays green and the release job reports in its summary that it is inactive.
 - Publication is idempotent. If a tag exists but its GitHub Release does not, re-run `release-publish.yml`: it finishes that same version rather than raising a new one.
