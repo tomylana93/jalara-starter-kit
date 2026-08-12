@@ -31,25 +31,39 @@ on:
 permissions: {}
 
 jobs:
-  # Which parts of the tree the pull request touched. The browser suite is the
-  # only consumer, and it reads this rather than `on.push.paths` on purpose: a
-  # path filter at the trigger makes the job *missing* on an unrelated change,
-  # and a missing check is indistinguishable from one that never ran. Filtering
-  # at the job keeps it present and reported as skipped.
+  # Static analysis, the Vitest suite, and the Pest suite in one job.
   #
-  # That distinction carries weight here because the Free plan has no required
-  # checks: the aggregate is read by a human, and a human cannot audit a check
-  # that is not on the page.
-  changes:
-    name: changed paths
+  # They were three, and the split cost more than it bought: each paid a full
+  # checkout, PHP setup, pnpm setup, Node setup, and `composer install` to run a
+  # check measured in seconds. Bootstrap dominated, and paying it three times in
+  # parallel still burns three runners. One job pays it once.
+  #
+  # Pest runs `--parallel` here, which is what makes the merge cheap rather than
+  # merely tidy: the suite drops from roughly 23s to 5s, more than covering the
+  # loss of cross-check parallelism.
+  #
+  # Frontend path detection lives here rather than in a third job so the PR gate
+  # stays two jobs (`verify` + `browser`). The filter is job-level on purpose: a
+  # path filter at the trigger makes the browser job *missing* on an unrelated
+  # change, and a missing check is indistinguishable from one that never ran.
+  # Filtering here keeps browser present and reported as skipped. That matters
+  # on the Free plan, which has no required checks — a human cannot audit a
+  # check that is not on the page.
+  verify:
+    name: verify
     if: inputs.scope == 'pull-request'
     permissions:
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
 
     steps:
       - name: Checkout code
@@ -70,35 +84,6 @@ jobs:
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'vite.config.ts'
-
-  # Static analysis, the Vitest suite, and the Pest suite in one job.
-  #
-  # They were three, and the split cost more than it bought: each paid a full
-  # checkout, PHP setup, pnpm setup, Node setup, and `composer install` to run a
-  # check measured in seconds. Bootstrap dominated, and paying it three times in
-  # parallel still burns three runners. One job pays it once.
-  #
-  # Pest runs `--parallel` here, which is what makes the merge cheap rather than
-  # merely tidy: the suite drops from roughly 23s to 5s, more than covering the
-  # loss of cross-check parallelism.
-  verify:
-    name: verify
-    if: inputs.scope == 'pull-request'
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      APP_ENV: testing
-      DB_CONNECTION: sqlite
-      DB_DATABASE: ':memory:'
-      LARAVEL_BYPASS_ENV_CHECK: '1'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
 
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
@@ -186,9 +171,8 @@ jobs:
     name: browser
     if: >-
       ${{ inputs.scope == 'pull-request' &&
-      needs.changes.outputs.frontend == 'true' }}
+      needs.verify.outputs.frontend == 'true' }}
     needs:
-      - changes
       - verify
     permissions:
       contents: read
@@ -240,13 +224,22 @@ jobs:
       - name: Setup Application
         run: composer run ci:setup
 
-      # Deliberately uncached. `~/.cache/ms-playwright` was cached here and
-      # measured on `main`: 22s with a cold cache, 22s with a warm one, plus 5s
-      # to restore 269 MB. Almost all of the time is `--with-deps` installing
-      # system libraries through apt, which no cache covers; the browser
-      # download it does skip is the cheap part. Dropping `--with-deps` would
-      # make a cache worth having, but it bets on which libraries the runner
-      # image happens to ship and fails as an unexplained Chromium crash.
+      # Browser binaries are keyed on the locked Playwright version so a bump
+      # forces a cold download and a pin keeps the warm cache. System libraries
+      # from `--with-deps` are still installed every run; only the browser
+      # download itself is what the cache skips.
+      - name: Resolve the Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "${GITHUB_OUTPUT}"
+
+      - name: Cache the Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
@@ -285,9 +278,9 @@ jobs:
   # not per-change ones, so the cost belongs here rather than on every push to
   # a branch.
   #
-  # No `--parallel`: Laravel provisions one database per worker token, which
-  # turns a compatibility check into a test of the runner's CREATE DATABASE
-  # permissions. Dialect agreement is the point here, not wall time.
+  # `--parallel` here matches every other non-browser Pest leg. Each worker
+  # gets its own database name via Laravel's parallel testing tokens; the
+  # service containers already expose CREATE DATABASE to the configured user.
   compat:
     name: compat (${{ matrix.database }})
     if: inputs.scope == 'main'
@@ -400,7 +393,7 @@ jobs:
         run: composer run ci:setup:php
 
       - name: Run the Pest suite
-        run: composer run ci:pest
+        run: composer run ci:pest -- --parallel
 
   # The same SQLite run a pull request made, repeated against the merge result.
   #

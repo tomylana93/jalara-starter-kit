@@ -70,14 +70,15 @@ therefore land on `main` and turn the compat leg red after the merge; release
 eligibility then refuses to refresh until it is fixed. That is the Free-plan
 boundary this repository already accepted for every other gate failure.
 
-The Playwright browser cache is deliberately not restored. Measurement on
-`main` showed a cold and a warm `~/.cache/ms-playwright` both taking ~22s, with
-almost all of the time spent in `--with-deps` installing system libraries
-through apt — which no cache covers. Dropping `--with-deps` would make a cache
-worth having, but it bets on which libraries the runner image happens to ship
-and fails as an unexplained Chromium crash.
+The Playwright browser cache at `~/.cache/ms-playwright` is keyed on the locked
+Playwright version so a pin stays warm and a bump forces a cold download.
+`--with-deps` still installs system libraries every run; the cache only skips
+the browser binary download itself.
 
 Draft pull requests no longer run a separate workflow-contract job. The
 structural tests that job invoked were removed in ADR-002; a draft's remaining
 cheap signal is the pull-request policy check, which does not need the reusable
 gate.
+
+The pull-request gate is two jobs, not three: frontend path detection is an
+output of `verify`, not a sibling job, so the graph stays `verify` + `browser`.
