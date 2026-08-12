@@ -104,13 +104,13 @@ it('casts enum, boolean, and integer values across save and reload', function ()
         ->and(app(SecuritySettings::class)->refresh()->maxFailedLoginAttempts)->toBe(9);
 });
 
-it('disables the settings cache during tests while remaining configurable', function () {
-    expect(config('settings.cache.enabled'))->toBeFalse()
+it('caches settings during tests while remaining configurable', function () {
+    expect(config('settings.cache.enabled'))->toBeTrue()
         ->and(config('settings.cache.prefix'))->toBe('settings');
 
     $configuration = require config_path('settings.php');
 
     expect($configuration['cache']['enabled'])
-        ->toBeFalse()
-        ->toBe((bool) Env::get('SETTINGS_CACHE_ENABLED', false));
+        ->toBeTrue()
+        ->toBe((bool) Env::get('SETTINGS_CACHE_ENABLED', true));
 });

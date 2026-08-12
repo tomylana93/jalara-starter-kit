@@ -77,18 +77,25 @@ return [
      * The contents of settings classes can be cached through your application,
      * settings will be stored within a provided Laravel store and can have an
      * additional prefix.
+     *
+     * Caching is on by default: every settings group is otherwise read from the
+     * database on each request that touches it. The package keeps the cache
+     * coherent itself - it writes the group back to the cache on `SettingsSaved`
+     * - and `SettingsServiceProvider` clears it after migrations, which write
+     * to the table without emitting that event.
      */
     'cache' => [
-        'enabled' => (bool) env('SETTINGS_CACHE_ENABLED', false),
+        'enabled' => (bool) env('SETTINGS_CACHE_ENABLED', true),
         'store' => env('SETTINGS_CACHE_STORE'),
         'prefix' => env('SETTINGS_CACHE_PREFIX', 'settings'),
         'ttl' => null,
 
         /*
          * When enabled, uses Laravel's memoized cache driver (requires Laravel 12.9+)
-         * to keep resolved values in memory during a single request.
+         * to keep resolved values in memory during a single request. It only
+         * applies while `enabled` is true.
          */
-        'memo' => env('SETTINGS_CACHE_MEMO', false),
+        'memo' => (bool) env('SETTINGS_CACHE_MEMO', true),
     ],
 
     /*
