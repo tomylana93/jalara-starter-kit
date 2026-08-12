@@ -5,7 +5,7 @@ Commit, pull-request, branching, and release *authoring* policy is owned by `.ai
 ## Workflow topology
 
 - `.github/workflows/_ci.yml` is the only gate implementation. Callers pass `scope`: `pull-request` | `main` | `release`.
-- **pull-request** (two jobs): `verify` (static + vitest + pest sqlite with PCOV `--min=80 --parallel`; also runs `dorny/paths-filter` and exposes `frontend` output) + `browser` only when that output is true. Path filter is job-level so browser appears *skipped*, not missing. Browser caches `~/.cache/ms-playwright` keyed on the locked Playwright version; no `--parallel` on browser.
+- **pull-request** (two jobs): `verify` (static + vitest + pest sqlite with PCOV `--min=80 --parallel`; also runs `dorny/paths-filter` and exposes `frontend` output) + `browser` only when that output is true. Path filter is job-level so browser appears *skipped*, not missing. Browser caches `~/.cache/ms-playwright` keyed on the locked Playwright version with no restore-keys; no `--parallel` on browser.
 - **main**: `compat` (pest `--parallel` on pgsql:17 + mysql:8.4) + `drift` (pest sqlite `--parallel`) + release-eligibility on the caller. No browser on `main`.
 - **release**: `installer` only (packaging contract for the release PR).
 - **weekly** (`.github/workflows/weekly.yml`): dependency audit + opt-in installer-smoke (`STARTER_KIT_MODE`). Both non-hermetic; never colour release eligibility.
