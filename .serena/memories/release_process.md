@@ -27,7 +27,7 @@ Commit, pull-request, branching, and release policy is owned by `.ai/guidelines/
 ## Credentials
 
 - Guards are workflow *steps*, not job-level `if`s, because `secrets` is unavailable in a job-level condition.
-- `.github/actions/release-credentials` resolves the mode: GitHub App (`RELEASE_APP_ID` + `RELEASE_APP_PRIVATE_KEY`) → installation token, else `RELEASE_TOKEN`, else `none`. Permission subsets are per scope: the creator gets contents/pull-requests/issues write, the publisher only contents write. Mode `none` reports in the job summary and never fails the run.
+- `.github/actions/release-credentials` resolves the mode: GitHub App (`RELEASE_APP_CLIENT_ID` + `RELEASE_APP_PRIVATE_KEY`) → installation token, else `RELEASE_TOKEN`, else `none`. Permission subsets are per scope: the creator gets contents/pull-requests/issues write, the publisher only contents write. Mode `none` reports in the job summary and never fails the run.
 
 ## Runtime version
 

@@ -256,6 +256,22 @@ it('separates proposing a release from publishing one', function () {
         ->and(ciStep($publisher['steps'], 'name', 'Tag the verified commit'))->not->toBe([]);
 });
 
+it('uses the current GitHub App client id contract', function () {
+    $action = (string) file_get_contents(
+        ciRepositoryRoot().'/.github/actions/release-credentials/action.yml',
+    );
+
+    expect($action)->toContain('client-id:', 'inputs.client-id')
+        ->and($action)->not->toContain('app-id:', 'inputs.app-id');
+
+    foreach (['release-pr.yml', 'release-publish.yml'] as $name) {
+        $workflow = (string) file_get_contents(ciRepositoryRoot().'/.github/workflows/'.$name);
+
+        expect($workflow)->toContain('RELEASE_APP_CLIENT_ID')
+            ->and($workflow)->not->toContain('RELEASE_APP_ID');
+    }
+});
+
 it('releases only after a successful gate on the default branch', function () {
     foreach (['release-pr.yml', 'release-publish.yml'] as $name) {
         $workflow = ciWorkflows()[$name];
