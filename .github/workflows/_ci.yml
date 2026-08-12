@@ -224,10 +224,10 @@ jobs:
       - name: Setup Application
         run: composer run ci:setup
 
-      # Browser binaries are keyed on the locked Playwright version so a bump
-      # forces a cold download and a pin keeps the warm cache. System libraries
-      # from `--with-deps` are still installed every run; only the browser
-      # download itself is what the cache skips.
+      # Browser binaries are keyed on the locked Playwright version with no
+      # restore-keys, so a pin hits the warm cache and a bump starts cold.
+      # System libraries from `--with-deps` are still installed every run; only
+      # the browser download itself is what the cache skips.
       - name: Resolve the Playwright version
         id: playwright
         run: echo "version=$(node -p "require('playwright/package.json').version")" >> "${GITHUB_OUTPUT}"
@@ -237,8 +237,6 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium

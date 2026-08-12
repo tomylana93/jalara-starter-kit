@@ -71,9 +71,10 @@ eligibility then refuses to refresh until it is fixed. That is the Free-plan
 boundary this repository already accepted for every other gate failure.
 
 The Playwright browser cache at `~/.cache/ms-playwright` is keyed on the locked
-Playwright version so a pin stays warm and a bump forces a cold download.
-`--with-deps` still installs system libraries every run; the cache only skips
-the browser binary download itself.
+Playwright version with no `restore-keys`, so a pin stays warm and a bump starts
+cold rather than restoring an older binary set. `--with-deps` still installs
+system libraries every run; the cache only skips the browser binary download
+itself.
 
 Draft pull requests no longer run a separate workflow-contract job. The
 structural tests that job invoked were removed in ADR-002; a draft's remaining

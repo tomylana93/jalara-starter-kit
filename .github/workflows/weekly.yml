@@ -210,4 +210,4 @@ jobs:
       - name: Run the installed test suite
         if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
-        run: php artisan test --compact
+        run: composer run ci:pest -- --parallel
