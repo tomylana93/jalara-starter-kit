@@ -1,0 +1,56 @@
+name: dependency audit
+
+# The gate audits the lock files of the revision under review, which catches a
+# pull request that *introduces* a vulnerable dependency. It cannot catch an
+# advisory published against code that was already merged, because nothing
+# re-runs on a quiet week.
+#
+# This is that re-run. It changes no code and blocks nothing; Dependabot owns the
+# remediation, and this owns noticing.
+#
+# GitHub disables scheduled workflows after 60 days without repository activity.
+on:
+  schedule:
+    - cron: '41 3 * * 2'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: audit the locked dependencies
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: '11'
+
+      - name: Audit the locked dependencies
+        run: .github/scripts/audit-dependencies.sh

@@ -1,0 +1,18 @@
+{
+    "$comment": "The versioned source of truth for release eligibility. `baseline` is the oldest commit release eligibility inspects; the effective baseline moves forward to the latest release tag when that tag is a descendant of it, which is also what closes a remediation entry once its resolution has been published. `remediated` records commits that reached the default branch outside the pull-request path and have since been undone. An entry is evidence, never an allowlist: `.github/scripts/provenance-report.sh` proves with `git patch-id` that the remediating commit is the exact inverse of the offending one and comes after it, and that commit must itself be releasable, so a line added here cannot make an unreviewed change releasable. `revert` is the only accepted type: replacement semantics cannot be proven from a label. Both fields change only through a reviewed pull request: a repository variable or a workflow artifact would let a single actor unblock a release without a trace.",
+    "$schema": {
+        "baseline": "full commit sha",
+        "remediated": [
+            {
+                "sha": "full commit sha of the commit that should not have landed",
+                "reason": "why it landed and what was done about it",
+                "remediation": {
+                    "type": "revert",
+                    "by": "full commit sha of the commit whose patch is the exact inverse of it"
+                }
+            }
+        ]
+    },
+    "baseline": "616fec074ae2dbb682aee6a7ae9718ea798722d6",
+    "remediated": []
+}

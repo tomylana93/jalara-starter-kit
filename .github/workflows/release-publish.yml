@@ -1,0 +1,285 @@
+name: release publish
+
+# Publishes the release a human merged.
+#
+# It runs on a successful conclusion of the `main` workflow — the same evidence
+# the creator waits for — and then only for the commit that merged the release
+# pull request.
+#
+# Everything is addressed by that one commit's sha, never by the tip of the
+# branch. The branch moves on: an ordinary commit pushed between the release
+# merge and this run changes nothing about what the run verified, and reading
+# `main` instead would either publish the wrong tree or, as it used to, quietly
+# publish nothing at all.
+#
+# The deployment contract this repository documents is exactly what this
+# workflow produces: a `vX.Y.Z` tag on the verified commit and a published,
+# non-draft GitHub Release.
+on:
+  workflow_run:
+    workflows:
+      - main
+    branches:
+      - main
+    types:
+      - completed
+  # Reconciliation only, for finishing a publication that stopped halfway. The
+  # commit is named explicitly: a search back through recent history would both
+  # put older partial releases out of reach and let the search, rather than the
+  # operator, choose what gets tagged.
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: The full 40-character sha of the release commit to finish publishing.
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish the release
+    permissions:
+      contents: read
+      actions: read
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      # The whole branch, so the candidate can be proven to be on it. The
+      # working tree is moved to the candidate itself once it is verified;
+      # nothing is read from the tip.
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Resolve the release capability
+        id: capability
+        env:
+          RELEASE_ENABLED: ${{ vars.RELEASE_ENABLED }}
+        run: |
+          if [ "${RELEASE_ENABLED}" = 'true' ]; then
+            echo 'enabled=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'enabled=false' >> "${GITHUB_OUTPUT}"
+            {
+              echo '## Release automation is off'
+              echo
+              echo 'Set the `RELEASE_ENABLED` repository variable to `true` to turn it on.'
+              echo 'Nothing was published, and nothing failed.'
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Setup PHP
+        if: steps.capability.outputs.enabled == 'true'
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        if: steps.capability.outputs.enabled == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        if: steps.capability.outputs.enabled == 'true'
+        run: composer run ci:setup:php
+
+      # Three facts about one commit, gathered here and judged by a command the
+      # test suite covers. A manual run is a retry of a publication that already
+      # earned its evidence, never a way to publish something that did not.
+      - name: Decide whether there is a release to publish
+        id: candidate
+        if: steps.capability.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          REQUESTED_SHA: ${{ inputs.release_sha }}
+        run: |
+          sha="${REQUESTED_SHA:-${RUN_SHA}}"
+
+          release_commit='false'
+          gate_passed='false'
+          on_default_branch='false'
+
+          # An unknown or unreachable sha leaves every fact false, which the
+          # judgement below reports as a refusal rather than a crash.
+          if git cat-file -e "${sha}^{commit}" 2>/dev/null &&
+             git merge-base --is-ancestor "${sha}" origin/main 2>/dev/null; then
+            on_default_branch='true'
+
+            if [ "$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/main.yml/runs?head_sha=${sha}&status=success" \
+              --jq '.total_count')" -ge 1 ]; then
+              gate_passed='true'
+            fi
+
+            release_commit="$(.github/scripts/release-commit.sh "${GITHUB_REPOSITORY}" "${sha}")"
+          fi
+
+          jq -n \
+            --arg event "${EVENT_NAME}" \
+            --arg run_sha "${RUN_SHA}" \
+            --arg requested_sha "${REQUESTED_SHA}" \
+            --argjson release_commit "${release_commit}" \
+            --argjson gate_passed "${gate_passed}" \
+            --argjson on_default_branch "${on_default_branch}" \
+            '{event: $event, run_sha: $run_sha, requested_sha: $requested_sha,
+              release_commit: $release_commit, gate_passed: $gate_passed,
+              on_default_branch: $on_default_branch}' \
+            > "${RUNNER_TEMP}/candidate.json"
+
+          php artisan ci:publication-candidate \
+            --payload="${RUNNER_TEMP}/candidate.json" \
+            --output="${GITHUB_OUTPUT}"
+
+      # Every file read from here on is the verified commit's own. Reading the
+      # manifest from the tip of the branch would let a version merged after the
+      # release decide what this run publishes.
+      - name: Move the working tree to the verified commit
+        if: steps.candidate.outputs.proceed == 'true'
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: git checkout --quiet --detach "${CANDIDATE_SHA}"
+
+      - name: Check that the release metadata agrees with itself
+        if: steps.candidate.outputs.proceed == 'true'
+        run: php artisan ci:release-manifest
+
+      - name: Resolve the release credential
+        id: credentials
+        if: steps.candidate.outputs.proceed == 'true'
+        uses: ./.github/actions/release-credentials
+        with:
+          scope: publisher
+          app-id: ${{ vars.RELEASE_APP_ID || secrets.RELEASE_APP_ID }}
+          app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          fallback-token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Report a missing credential
+        if: steps.credentials.outputs.mode == 'none'
+        run: |
+          {
+            echo '## Release automation is enabled but has no credential'
+            echo
+            echo 'Configure either a GitHub App — `RELEASE_APP_ID` and the'
+            echo '`RELEASE_APP_PRIVATE_KEY` secret — or the `RELEASE_TOKEN` secret.'
+            echo 'No tag and no release were created.'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      # Decided before anything is written. A tag already naming a different
+      # commit stops the run here, while stopping still costs nothing: a tag
+      # cannot be moved back for anybody who already fetched it.
+      - name: Decide what publishing this version still has to do
+        id: publication
+        if: >-
+          steps.credentials.outputs.mode == 'app' ||
+          steps.credentials.outputs.mode == 'token'
+        env:
+          GH_TOKEN: ${{ steps.credentials.outputs.token }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          version="$(php -r 'echo json_decode(file_get_contents(".release-please-manifest.json"), true)["."];')"
+          tag="v${version}"
+
+          git fetch --tags --quiet
+
+          tagged="$(git rev-list -n 1 "refs/tags/${tag}" 2>/dev/null || echo '')"
+          release="$(gh release view "${tag}" --json isDraft --jq '.isDraft' 2>/dev/null || echo 'missing')"
+
+          jq -n \
+            --arg tag "${tag}" \
+            --arg candidate_sha "${CANDIDATE_SHA}" \
+            --arg tagged_sha "${tagged}" \
+            --arg release "${release}" \
+            '{tag: $tag, candidate_sha: $candidate_sha, tagged_sha: $tagged_sha, release: $release}' \
+            > "${RUNNER_TEMP}/publication.json"
+
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+          php artisan ci:tag-publication \
+            --payload="${RUNNER_TEMP}/publication.json" \
+            --output="${GITHUB_OUTPUT}"
+
+      # The ref is created at the sha this run verified, so the tag's target is
+      # known before it is written rather than checked afterwards.
+      - name: Tag the verified commit
+        if: steps.publication.outputs.create_tag == 'true'
+        env:
+          GH_TOKEN: ${{ steps.credentials.outputs.token }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          TAG: ${{ steps.publication.outputs.tag }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" \
+            --method POST \
+            --field "ref=refs/tags/${TAG}" \
+            --field "sha=${CANDIDATE_SHA}"
+
+      - name: Create the GitHub Release
+        if: steps.publication.outputs.create_release == 'true'
+        env:
+          GH_TOKEN: ${{ steps.credentials.outputs.token }}
+          TAG: ${{ steps.publication.outputs.tag }}
+        run: |
+          awk '/^## /{ if (seen) exit; seen = 1 } seen' CHANGELOG.md > "${RUNNER_TEMP}/notes.md"
+          gh release create "${TAG}" --title "${TAG}" --notes-file "${RUNNER_TEMP}/notes.md"
+
+      - name: Publish the draft GitHub Release
+        if: steps.publication.outputs.publish_draft == 'true'
+        env:
+          GH_TOKEN: ${{ steps.credentials.outputs.token }}
+          TAG: ${{ steps.publication.outputs.tag }}
+        run: gh release edit "${TAG}" --draft=false
+
+      # A green run has to mean the contract holds, so the two halves are read
+      # back rather than assumed from the steps having succeeded.
+      - name: Verify the published release
+        if: >-
+          steps.credentials.outputs.mode == 'app' ||
+          steps.credentials.outputs.mode == 'token'
+        env:
+          GH_TOKEN: ${{ steps.credentials.outputs.token }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          TAG: ${{ steps.publication.outputs.tag }}
+        run: |
+          tagged="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')"
+
+          if [ "${tagged}" != "${CANDIDATE_SHA}" ]; then
+            echo "::error::${TAG} points at ${tagged}, not the verified release commit ${CANDIDATE_SHA}."
+            exit 1
+          fi
+
+          if [ "$(gh release view "${TAG}" --json isDraft --jq '.isDraft')" != 'false' ]; then
+            echo "::error::${TAG} has no published GitHub Release."
+            exit 1
+          fi
+
+          {
+            echo "## Released ${TAG}"
+            echo
+            echo "\`${TAG}\` points at \`${CANDIDATE_SHA}\` and its GitHub Release is published."
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -1,21 +1,23 @@
 name: installer smoke
 
 # Runs the installation command exactly as the README documents it, against the
-# real Laravel installer and the real default branch.
+# real Laravel installer and the published repository.
 #
-# The `installer` job in `tests.yml` reproduces the installer's stages by hand so
-# it can test the commit under review instead of the default branch. That makes
-# it fast and precise, but it validates the contract as this repository
-# understands it — including a hand-copied version of the installer's `--pnpm`
-# script rewrite. If the installer changes that logic, the simulation stays green
-# while real installations break. This workflow is what notices.
+# The `installer` job in the gate reproduces the installer's stages by hand so it
+# can test the commit under review instead of the default branch. That makes it
+# fast and precise, but it validates the contract as this repository understands
+# it — including a hand-copied version of the installer's `--pnpm` script
+# rewrite. If the installer changes that logic, the simulation stays green while
+# real installations break. This workflow is what notices.
 #
-# It lives in its own file on purpose. A scheduled run inside `tests.yml` would
-# reach `release-please.yml` through its `workflow_run` trigger and put release
-# automation on a cron, and `RUN_FULL` does not recognise the `schedule` event so
-# the run would take the fast gate anyway. Keeping it separate also means the
-# non-hermetic failures this job invites — an upstream installer bug, a registry
-# outage — can never colour the `tests` gate or block a release.
+# It is opt-in through `STARTER_KIT_MODE`, because it only means anything for a
+# repository that publishes itself as a starter kit. A private application built
+# from this one has no such contract, and a weekly failure it cannot act on is
+# noise.
+#
+# It also stays out of the gate on purpose: the non-hermetic failures it invites
+# — an upstream installer bug, a registry outage — must never colour a gate that
+# release eligibility reads.
 #
 # GitHub disables scheduled workflows after 60 days without repository activity.
 on:
@@ -23,8 +25,7 @@ on:
     - cron: '17 2 * * 1'
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: installer-smoke
@@ -33,12 +34,43 @@ concurrency:
 jobs:
   smoke:
     name: laravel new
-    if: github.repository == 'tomylana93/jalara-starter-kit'
+    if: vars.STARTER_KIT_MODE == 'true'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
+      # The installer clones over HTTPS, which a private repository refuses
+      # anonymously. Being private is not a failure — it is the default for a
+      # descendant — so it is reported and skipped rather than failed.
+      - name: Resolve how the repository can be fetched
+        id: access
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
+          INSTALL_TOKEN: ${{ secrets.STARTER_KIT_INSTALL_TOKEN }}
+        run: |
+          if [ "${PRIVATE}" != 'true' ]; then
+            echo 'fetchable=true' >> "${GITHUB_OUTPUT}"
+          elif [ -n "${INSTALL_TOKEN}" ]; then
+            echo 'fetchable=true' >> "${GITHUB_OUTPUT}"
+            git config --global \
+              "url.https://x-access-token:${INSTALL_TOKEN}@github.com/.insteadOf" \
+              'https://github.com/'
+          else
+            echo 'fetchable=false' >> "${GITHUB_OUTPUT}"
+            {
+              echo '## The remote installer check needs a read credential'
+              echo
+              echo 'This repository is private, so the Laravel installer cannot clone it'
+              echo 'anonymously. Add a read-only `STARTER_KIT_INSTALL_TOKEN` secret, or'
+              echo 'unset `STARTER_KIT_MODE` if this repository is not published as a'
+              echo 'starter kit.'
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
       - name: Setup PHP
+        if: steps.access.outputs.fetchable == 'true'
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
@@ -46,37 +78,43 @@ jobs:
           coverage: none
 
       - name: Setup Node
+        if: steps.access.outputs.fetchable == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
 
       - name: Setup pnpm
+        if: steps.access.outputs.fetchable == 'true'
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: '11'
 
       - name: Install the Laravel installer
+        if: steps.access.outputs.fetchable == 'true'
         run: |
           composer global require laravel/installer --no-interaction
           echo "$(composer config --global home)/vendor/bin" >> "${GITHUB_PATH}"
 
       - name: Report the installer version under test
+        if: steps.access.outputs.fetchable == 'true'
         run: laravel --version
 
       - name: Install the starter kit with the documented command
+        if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}
         run: |
           laravel new jalara-smoke \
-            --using=https://github.com/tomylana93/jalara-starter-kit \
+            --using="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
             --database=sqlite \
             --pnpm \
             --no-boost \
             --no-interaction
 
-      # These assertions mirror the `installer` job in `tests.yml`. They have to
+      # These assertions mirror the `installer` job in the gate. They have to
       # stay in step: divergence between the simulation and the real installer is
       # the only thing this workflow exists to detect.
       - name: Verify the pnpm package manager contract
+        if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
         run: |
           test -f pnpm-lock.yaml
@@ -104,6 +142,7 @@ jobs:
           '
 
       - name: Verify the environment and database were initialized
+        if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
         run: |
           test -f .env
@@ -111,13 +150,16 @@ jobs:
           php artisan migrate:status --no-interaction
 
       - name: Build the frontend
+        if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
         run: pnpm run build
 
       - name: Verify the application boots
+        if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
         run: php artisan about --only=environment
 
       - name: Run the installed test suite
+        if: steps.access.outputs.fetchable == 'true'
         working-directory: ${{ runner.temp }}/jalara-smoke
         run: php artisan test --compact

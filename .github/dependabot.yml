@@ -1,7 +1,15 @@
 version: 2
 updates:
+  # Every pull request Dependabot opens goes through the same gate and the same
+  # squash-merge policy as a hand-written one, and none of them merge
+  # automatically: a dependency bump that passes CI is still a change somebody
+  # has to accept.
+  #
+  # `target-branch` is named rather than left to the default so a repository that
+  # still has an older branch cannot receive updates against it.
   - package-ecosystem: 'github-actions'
     directory: '/'
+    target-branch: 'main'
     schedule:
       interval: 'weekly'
     cooldown:
@@ -10,16 +18,26 @@ updates:
     # Conventional Commit gate. We specify the exact prefix to avoid deps-dev variation.
     commit-message:
       prefix: 'chore(deps)'
+    # Actions are pinned to a full commit SHA, which Dependabot understands and
+    # keeps updating; the version comment beside each pin is what it rewrites.
+    #
+    # Majors arrive on their own so one breaking upgrade cannot hold the rest
+    # hostage.
     groups:
       github-actions:
+        applies-to: version-updates
+        update-types:
+          - 'minor'
+          - 'patch'
         patterns:
           - '*'
 
   # Application dependencies need a remediation path, not only a detector. The
-  # `audit` job in `tests.yml` blocks a pull request that introduces a vulnerable
-  # package, but it can never raise the version that fixes one; these entries do.
+  # audit blocks a pull request that introduces a vulnerable package, but it can
+  # never raise the version that fixes one; these entries do.
   - package-ecosystem: 'composer'
     directory: '/'
+    target-branch: 'main'
     schedule:
       interval: 'weekly'
     cooldown:
@@ -28,11 +46,16 @@ updates:
       prefix: 'chore(deps)'
     groups:
       composer:
+        applies-to: version-updates
+        update-types:
+          - 'minor'
+          - 'patch'
         patterns:
           - '*'
 
   - package-ecosystem: 'npm'
     directory: '/'
+    target-branch: 'main'
     schedule:
       interval: 'weekly'
     cooldown:

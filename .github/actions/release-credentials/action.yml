@@ -1,0 +1,102 @@
+name: Release credentials
+description: >-
+  Resolves the credential a release job runs with, preferring a short-lived
+  GitHub App installation token scoped to this repository and to the permissions
+  the job actually needs.
+
+inputs:
+  scope:
+    description: >-
+      `creator` mints a token that may open and update the release pull request.
+      `publisher` mints one that may only write the tag and the release.
+    required: true
+  app-id:
+    description: The GitHub App identifier, from a repository variable or secret.
+    required: false
+    default: ''
+  app-private-key:
+    description: The GitHub App private key, from a repository secret.
+    required: false
+    default: ''
+  fallback-token:
+    description: A fine-grained personal access token, used when no App is configured.
+    required: false
+    default: ''
+
+outputs:
+  mode:
+    description: '`app`, `token`, or `none`.'
+    value: ${{ steps.mode.outputs.mode }}
+  token:
+    description: The token to authenticate release automation with; empty when the mode is `none`.
+    value: ${{ steps.resolve.outputs.token }}
+
+runs:
+  using: composite
+  steps:
+    # A GitHub App is preferred because its installation token expires within the
+    # hour and can be narrowed per job. A personal access token is the fallback
+    # because it is what a small repository can set up in a minute, and no
+    # release automation at all is worse than one honest fallback.
+    - name: Choose the credential mode
+      id: mode
+      shell: bash
+      env:
+        APP_ID: ${{ inputs.app-id }}
+        APP_PRIVATE_KEY: ${{ inputs.app-private-key }}
+        FALLBACK_TOKEN: ${{ inputs.fallback-token }}
+      run: |
+        if [ -n "${APP_ID}" ] && [ -n "${APP_PRIVATE_KEY}" ]; then
+          echo 'mode=app' >> "${GITHUB_OUTPUT}"
+        elif [ -n "${FALLBACK_TOKEN}" ]; then
+          echo 'mode=token' >> "${GITHUB_OUTPUT}"
+        else
+          echo 'mode=none' >> "${GITHUB_OUTPUT}"
+        fi
+
+    # Release Please writes the release pull request and, through it, the
+    # changelog, the manifest, and the runtime version file.
+    - name: Mint an installation token for the release pull request
+      id: creator
+      if: steps.mode.outputs.mode == 'app' && inputs.scope == 'creator'
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.app-private-key }}
+        permission-contents: write
+        permission-pull-requests: write
+        permission-issues: write
+        permission-metadata: read
+
+    # The publisher only creates a tag and a release, so it is not given the
+    # ability to write pull requests or issues.
+    - name: Mint an installation token for the publisher
+      id: publisher
+      if: steps.mode.outputs.mode == 'app' && inputs.scope == 'publisher'
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.app-private-key }}
+        permission-contents: write
+        permission-metadata: read
+
+    - name: Resolve the token
+      id: resolve
+      shell: bash
+      env:
+        MODE: ${{ steps.mode.outputs.mode }}
+        APP_TOKEN: ${{ steps.creator.outputs.token || steps.publisher.outputs.token }}
+        FALLBACK_TOKEN: ${{ inputs.fallback-token }}
+      run: |
+        case "${MODE}" in
+          app) token="${APP_TOKEN}" ;;
+          token) token="${FALLBACK_TOKEN}" ;;
+          *) token='' ;;
+        esac
+
+        # Nothing downstream may print this, and an empty mask is rejected.
+        if [ -n "${token}" ]; then
+          echo "::add-mask::${token}"
+        fi
+
+        echo "token=${token}" >> "${GITHUB_OUTPUT}"
