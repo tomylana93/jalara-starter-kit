@@ -4,12 +4,16 @@ Commit, pull-request, branching, and release policy is owned by `.ai/guidelines/
 
 ## Workflow topology
 
-- `.github/workflows/_ci.yml` is the only implementation of the gate. `pull-request.yml` and `main.yml` both call it, so the two can never drift. Its `scope` input is `full` or `release`; `release` skips every check except `installer`, which is why that one job carries an explicit `!cancelled()` condition instead of plain `needs` — a skipped dependency would otherwise skip it too.
-- `main.yml` re-runs the full gate on the pushed sha and then decides release eligibility. Both release workflows key on its `workflow_run` conclusion, so nothing releases from a commit whose own gate did not pass.
-- `.github/scripts/release-commit.sh` tells a release merge from any other commit by checking the associated merged pull request's head ref. Automatic publication addresses the triggering `main` run SHA; manual reconciliation requires an explicit full release SHA, so neither path substitutes the current branch tip.
-- `pull-request.yml` splits the aggregate in two. `gates` records the gate conclusion for one revision; `required` re-reads the live pull request policy on every accepted event. Metadata-only and current runs are excluded when it reuses a `gates` result for the live head SHA.
+- `.github/workflows/_ci.yml` is the only implementation of the gate. Callers pass `scope`: `pull-request` | `main` | `release`. Rationale: `docs/adr/003-ci-cost-model.md`.
+- **pull-request**: `changes` (paths-filter) + `verify` (static + vitest + pest sqlite with PCOV `--min=80 --parallel`) + `browser` only when frontend paths match. Browser is job-level filtered so it appears *skipped*, not missing.
+- **main**: `compat` (pest pgsql:17 + mysql:8.4, no parallel) + `drift` (pest sqlite --parallel) + release-eligibility on the caller. No browser on `main`.
+- **release**: `installer` only (packaging contract for the release PR).
+- **weekly** (`.github/workflows/weekly.yml`): dependency audit + opt-in installer-smoke (`STARTER_KIT_MODE`). Both non-hermetic; never colour release eligibility.
+- Both release workflows key on a successful conclusion of the `main` workflow, so nothing releases from a commit whose main-scope gate did not pass.
+- `.github/scripts/release-commit.sh` tells a release merge from any other commit by checking the associated merged pull request's head ref. Automatic publication addresses the triggering `main` run SHA; manual reconciliation requires an explicit full release SHA.
+- `pull-request.yml` splits the aggregate in two. `gates` records the gate conclusion for one revision; `required` re-reads the live pull request policy on every accepted event. Metadata-only and current runs are excluded when it reuses a `gates` result for the live head SHA. `GateOutcome` / `ci:gate-outcome` still own that lookup.
 - Concurrency: pull-request runs cancel (grouped per pull request *and* per event name, so an approval cannot cancel a running gate), `main` and both release workflows queue.
-- Every workflow grants `permissions: {}` at the top and asks per job. A job that calls the reusable gate must therefore hold `contents: read` itself, because a called workflow can only narrow what the caller has.
+- Every workflow grants `permissions: {}` at the top and asks per job. A job that calls the reusable gate must therefore hold `contents: read` itself (and `pull-requests: read` when the callee needs paths-filter on a PR), because a called workflow can only narrow what the caller has.
 
 ## Release eligibility
 
