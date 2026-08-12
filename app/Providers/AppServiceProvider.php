@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\ExceptionResponse;
@@ -59,7 +58,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureRateLimiting();
-        $this->configureVite();
         $this->configureErrorPages();
     }
 
@@ -98,23 +96,6 @@ class AppServiceProvider extends ServiceProvider
                 ? $response->render('ErrorPage', ['status' => $response->statusCode()])->withSharedData()
                 : null;
         });
-    }
-
-    /**
-     * Point Vite at the isolated bundle built for browser tests.
-     *
-     * The Playwright bundle must never share a build directory or hot file with
-     * a development session, because both processes would then create and
-     * delete the same coordination files.
-     */
-    protected function configureVite(): void
-    {
-        if (! config('app.vite.isolated_assets')) {
-            return;
-        }
-
-        Vite::useBuildDirectory((string) config('app.vite.isolated_build_directory'))
-            ->useHotFile(public_path((string) config('app.vite.isolated_hot_file')));
     }
 
     /**

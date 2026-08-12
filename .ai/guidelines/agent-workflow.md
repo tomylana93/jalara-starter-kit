@@ -28,6 +28,10 @@
 - CI, release, coverage, installer, or Playwright configuration changed: also run `composer run ci:full`.
 - Always finish with `composer run ci:check`.
 
+## `.gitignore` changes and staging
+
+Removing an ignore line exposes files it was hiding. After changing `.gitignore`, never `git add -A` or `git add .`; run `git status --porcelain` first, stage per path, and confirm nothing newly un-hidden came along. An ignore line that looks dead must be proven dead by inspecting the directory's contents, not inferred from the name of the feature being removed.
+
 ## Durable knowledge
 
 Classify before writing; one finding has one owner:

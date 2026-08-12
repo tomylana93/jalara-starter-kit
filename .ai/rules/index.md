@@ -15,7 +15,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | resources/js/components/data-table/** | .ai/rules/data-table.md |
 | app/Data/** | .ai/rules/data.md |
-| e2e/** | .ai/rules/e2e.md |
 | app/Exports/** | .ai/rules/exports.md |
 | database/factories/** | .ai/rules/factories.md |
 | tests/Feature/** | .ai/rules/feature.md |
