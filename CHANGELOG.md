@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/tomylana93/jalara-starter-kit/compare/v2.1.0...v2.1.1) (2026-08-12)
+
+
+### Bug Fixes
+
+* repair five PostgreSQL incompatibilities in shipped code ([c70fea1](https://github.com/tomylana93/jalara-starter-kit/commit/c70fea19b95ef288f245409696b146fbbb1179fe))
+* repair PostgreSQL incompatibilities and cover Postgres in CI ([231a624](https://github.com/tomylana93/jalara-starter-kit/commit/231a624ccc762382684e7d9e13979b0bc76db48e))
+
 ## [2.1.0](https://github.com/tomylana93/jalara-starter-kit/compare/v2.0.0...v2.1.0) (2026-08-10)
 
 
