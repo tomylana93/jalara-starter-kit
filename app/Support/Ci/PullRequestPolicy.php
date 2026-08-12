@@ -120,9 +120,11 @@ final class PullRequestPolicy
             if ($review->state === null) {
                 continue;
             }
+
             if (! $review->state->decides()) {
                 continue;
             }
+
             $latest[$review->login] = $review;
         }
 

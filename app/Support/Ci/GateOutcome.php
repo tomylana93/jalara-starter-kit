@@ -55,6 +55,7 @@ final class GateOutcome
             if ($gates === []) {
                 continue;
             }
+
             if (in_array($conclusion, self::VERDICTLESS, true)) {
                 continue;
             }

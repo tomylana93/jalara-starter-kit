@@ -209,6 +209,22 @@ it('re-reports the required check on every event and re-reads the policy live', 
         ->and(ciStep($required['steps'], 'id', 'outcome'))->not->toBe([]);
 });
 
+it('bootstraps pull request policy only from an internal branch', function () {
+    $workflow = ciWorkflows()['pull-request.yml'];
+
+    foreach (['policy', 'required'] as $jobName) {
+        $steps = $workflow['jobs'][$jobName]['steps'];
+        $selection = ciStep($steps, 'id', 'policy_source');
+        $bootstrap = ciStep($steps, 'name', 'Bootstrap the policy from the internal branch');
+
+        expect($selection)->not->toBe([])
+            ->and($selection['run'])->toContain('HEAD_REPOSITORY', 'BASE_REPOSITORY', 'exit 1')
+            ->and($bootstrap)->not->toBe([])
+            ->and($bootstrap['if'])->toContain("steps.policy_source.outputs.use_head == 'true'")
+            ->and($bootstrap['with']['ref'])->toBe('${{ github.event.pull_request.head.sha }}');
+    }
+});
+
 it('re-runs the full gate on the commit that actually landed', function () {
     $triggers = ciTriggers(ciWorkflows()['main.yml']);
 

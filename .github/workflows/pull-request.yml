@@ -41,9 +41,11 @@ concurrency:
 
 jobs:
   # The merge policy. This is the one job that decides trust, so it is also the
-  # one job that must never execute contributed code: it checks out the base
-  # revision, reads the event payload and the review list through the API, and
-  # judges them with an Artisan command the test suite covers.
+  # one job that must never execute code from an external repository: it checks
+  # out the base revision, reads the event payload and the review list through
+  # the API, and judges them with an Artisan command the test suite covers.
+  # During the one-time rollout, the base does not contain that command yet, so
+  # an internal branch may supply it; an external pull request fails closed.
   #
   # It needs no repository secret, which is what lets it work identically for a
   # pull request opened from a fork.
@@ -64,6 +66,28 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Select the policy implementation
+        id: policy_source
+        env:
+          BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ -x .github/scripts/pull-request-reviews.sh ] && [ -f app/Console/Commands/Ci/CheckPullRequestPolicy.php ]; then
+            echo 'use_head=false' >> "${GITHUB_OUTPUT}"
+          elif [ "${HEAD_REPOSITORY}" = "${BASE_REPOSITORY}" ]; then
+            echo 'use_head=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'The trusted base revision does not contain the pull-request policy implementation.' >&2
+            exit 1
+          fi
+
+      - name: Bootstrap the policy from the internal branch
+        if: steps.policy_source.outputs.use_head == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Setup PHP
@@ -354,11 +378,33 @@ jobs:
 
     steps:
       # The base revision, for the same reason the `policy` job checks it out:
-      # this job decides trust and must never execute contributed code.
+      # this job decides trust and must never execute external contributed code.
       - name: Checkout the base revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Select the policy implementation
+        id: policy_source
+        env:
+          BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ -x .github/scripts/pull-request-reviews.sh ] && [ -f app/Console/Commands/Ci/CheckPullRequestPolicy.php ]; then
+            echo 'use_head=false' >> "${GITHUB_OUTPUT}"
+          elif [ "${HEAD_REPOSITORY}" = "${BASE_REPOSITORY}" ]; then
+            echo 'use_head=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'The trusted base revision does not contain the pull-request policy implementation.' >&2
+            exit 1
+          fi
+
+      - name: Bootstrap the policy from the internal branch
+        if: steps.policy_source.outputs.use_head == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Setup PHP
