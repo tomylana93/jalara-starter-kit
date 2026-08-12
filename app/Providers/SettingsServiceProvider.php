@@ -36,6 +36,11 @@ class SettingsServiceProvider extends ServiceProvider
          * Settings migrations write straight to the repository, so the package
          * never emits `SettingsSaved` for them and a cached group would survive
          * a deployment that changed it.
+         *
+         * The event only fires when the run had migrations to apply, which
+         * covers the repo's own path - settings changes ship as new migrations.
+         * Any other direct write to the table (a seeder, an edited migration
+         * that already ran) still needs `settings:clear-cache`.
          */
         Event::listen(MigrationsEnded::class, function (): void {
             $this->flushSettingsCache();
