@@ -9,6 +9,7 @@ use App\Models\ImageUpload;
 use App\Models\User;
 use App\Settings\BrandingSettings;
 use App\Support\DocumentationContent;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -114,6 +115,35 @@ it('keeps the staged source of an upload that has not finished', function (): vo
     sweep();
 
     Storage::disk('local')->assertExists($path);
+});
+
+it('streams the upload table rather than loading it whole', function (): void {
+    $kept = agedImage('public', 'avatars/kept/last-of-many.png');
+    $orphan = agedImage('public', 'avatars/orphan/gone.png');
+
+    /* One row past the chunk size, so a single-chunk sweep would miss the last owner. */
+    ImageUpload::factory()->count(200)->create();
+    ImageUpload::factory()->create([
+        'target' => ImageUploadTarget::Avatar,
+        'result_path' => $kept,
+    ]);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    sweep();
+
+    $reads = array_filter(
+        DB::getQueryLog(),
+        fn (array $query): bool => str_contains((string) $query['query'], 'from "image_uploads"'),
+    );
+
+    DB::disableQueryLog();
+
+    expect(count($reads))->toBeGreaterThan(1);
+
+    Storage::disk('public')->assertExists($kept);
+    Storage::disk('public')->assertMissing($orphan);
 });
 
 it('keeps a result an upload record still owns', function (): void {

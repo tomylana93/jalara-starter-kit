@@ -3,6 +3,7 @@
 namespace App\Support\Users;
 
 use DateTimeInterface;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Throwable;
@@ -90,7 +91,16 @@ final readonly class UserImportSheet
 
                 $line++;
             }
-        } catch (Throwable) {
+        } catch (Throwable $throwable) {
+            /*
+             * The operator only ever sees "this file could not be read", which
+             * is all they can act on. Whoever has to explain why needs the
+             * reader's own message, so it goes to the log rather than nowhere.
+             */
+            Log::warning('Failed to read a user import sheet.', [
+                'exception' => $throwable->getMessage(),
+            ]);
+
             return null;
         }
 

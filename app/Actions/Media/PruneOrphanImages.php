@@ -214,7 +214,8 @@ final readonly class PruneOrphanImages
          * upload may own a result the sweep would otherwise not recognise.
          */
         ImageUpload::query()
-            ->get()
+            ->select(['id', 'status', 'target', 'source_path', 'result_path'])
+            ->lazyById(200)
             ->each(function (ImageUpload $upload) use (&$referenced): void {
                 if (! $upload->status->isTerminal()) {
                     $referenced['local:'.$upload->source_path] = true;
