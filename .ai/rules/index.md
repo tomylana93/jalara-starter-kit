@@ -19,7 +19,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Exports/** | .ai/rules/exports.md |
 | database/factories/** | .ai/rules/factories.md |
 | tests/Feature/** | .ai/rules/feature.md |
-| composer.json, README.md | .ai/rules/general.md |
+| composer.json, README.md, **/*.php | .ai/rules/general.md |
 | app/Imports/** | .ai/rules/imports.md |
 | resources/js/**/*.test.ts, resources/js/** | .ai/rules/js.md |
 | database/migrations/** | .ai/rules/migrations.md |
