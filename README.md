@@ -16,7 +16,7 @@ A professional Laravel application starter kit with production-ready capabilitie
   <img src="https://img.shields.io/badge/Inertia-3-9553E9?style=flat-square&logo=inertia&logoColor=white" alt="Inertia.js 3">
   <img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3">
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
-  <a href="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/tests.yml"><img src="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/tests.yml/badge.svg?branch=main" alt="tests"></a>
+  <a href="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/main.yml"><img src="https://github.com/tomylana93/jalara-starter-kit/actions/workflows/main.yml/badge.svg?branch=main" alt="main"></a>
   <a href="https://github.com/tomylana93/jalara-starter-kit/releases/latest"><img src="https://img.shields.io/github/v/release/tomylana93/jalara-starter-kit?style=flat-square&label=release&color=blue" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"></a>
 </p>

@@ -1,7 +1,8 @@
 {
     "agents": [
         "claude_code",
-        "codex"
+        "codex",
+        "opencode"
     ],
     "cloud": false,
     "guidelines": true,
@@ -10,7 +11,8 @@
     "packages": [
         "spatie/laravel-permission",
         "fruitcake/laravel-debugbar",
-        "spatie/laravel-backup"
+        "spatie/laravel-backup",
+        "spatie/laravel-pdf"
     ],
     "sail": false,
     "skills": [
@@ -24,6 +26,7 @@
         "echo-vue-development",
         "echo-development",
         "laravel-backup",
+        "laravel-pdf",
         "laravel-permission-development",
         "debug-using-debugbar",
         "maintaining-agent-context"

@@ -1,54 +1,37 @@
-name: tests
+name: gate
 
+# The one implementation of the full gate. Pull requests and the default branch
+# both call it, so "the checks that ran on the pull request" and "the checks that
+# ran on `main`" are the same set by construction rather than by convention.
+#
+# There is no fast tier inside this file. Tiering is the caller's decision: a
+# draft pull request never calls this workflow at all.
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - ready_for_review
-      - edited
+  workflow_call:
+    inputs:
+      scope:
+        description: >-
+          `full` runs every check. `release` runs only the packaging checks, for
+          the release pull request, whose candidate has already been through the
+          full gate on the default branch.
+        type: string
+        required: false
+        default: full
 
-permissions:
-  contents: read
-
-# Superseded runs for the same branch or pull request are pointless work: only
-# the newest revision can still be merged.
-#
-# `push` deliberately covers `main` alone. Listing a working branch there too
-# would have every push produce a second run alongside the `synchronize` run its
-# own pull request triggers, and the older of the two would be cancelled — which
-# reads as a failed check against the commit even though nothing failed. A push
-# to a branch with no pull request open therefore runs nothing; opening the pull
-# request as a draft is what asks for the fast gate.
-#
-# The group still keys on the source branch rather than the pull request number,
-# so a `push` to `main` and any pull request targeting it from the same branch
-# name cannot run concurrently.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
-  cancel-in-progress: true
-
-# The tiering rule for the whole workflow. Draft pull requests get the fast gate;
-# ready pull requests and `main` — the two points where code is actually
-# promoted — get the full one.
-env:
-  RUN_FULL: ${{ (github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'pull_request' && github.event.pull_request.draft == false) }}
+# Nothing is granted at the top of the file: every job below asks for the read
+# access it needs and no job inherits more than that.
+permissions: {}
 
 jobs:
-  # The gate is split into independent jobs so the slowest one, rather than
-  # their sum, sets the wall time. `composer.json` keeps one script per job and
-  # composes them into `ci:check` and `ci:full`, so the local gate provably runs
-  # the same set as CI.
-  #
-  # `edited` fires on title, body, and base branch changes. Only the commit
-  # contract job has anything to say about those, so the expensive jobs opt out.
+  # The first stage runs everything that only needs the source tree, in
+  # parallel, so the slowest check rather than their sum sets the wall time.
+  # `composer.json` keeps one script per job and composes them into `ci:check`
+  # and `ci:full`, so the local gate provably runs the same set as CI.
   static:
     name: static analysis
-    if: github.event.action != 'edited'
+    if: inputs.scope == 'full'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -127,7 +110,9 @@ jobs:
 
   vitest:
     name: vitest
-    if: github.event.action != 'edited'
+    if: inputs.scope == 'full'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -181,6 +166,7 @@ jobs:
 
   # `Tests\TestCase` calls `withoutVite()`, so nothing in the Pest suite reads a
   # built asset. That makes this the one job with no Node toolchain at all.
+  #
   # The suite runs on both engines it claims to support in production. SQLite and
   # PostgreSQL disagree in ways no SQLite run can reveal - `LIKE` case
   # sensitivity, `MAX` over `uuid`, and whether a constraint violation aborts the
@@ -193,7 +179,9 @@ jobs:
   # nothing but an exit code to go on. ubuntu-latest ships the 16 client.
   pest:
     name: pest (${{ matrix.database }})
-    if: github.event.action != 'edited'
+    if: inputs.scope == 'full'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -254,8 +242,8 @@ jobs:
           php-version: '8.5'
           extensions: zip, pdo_pgsql, pgsql
           tools: composer:v2
-          # Only the full tier measures coverage, but the driver is cheap to
-          # install and keeping one PHP setup avoids a second expression.
+          # Only the PostgreSQL leg measures coverage, but the driver is cheap
+          # to install and keeping one PHP setup avoids a second expression.
           coverage: pcov
 
       - name: Cache the Composer downloads
@@ -269,28 +257,72 @@ jobs:
       - name: Setup Application
         run: composer run ci:setup:php
 
-      # Pest runs once per tier: plain on the fast one, with coverage on the
-      # full one. A step-level `if` can read the workflow `env` that a
-      # job-level one cannot.
       - name: Run the Pest suite
-        if: env.RUN_FULL != 'true' || matrix.database == 'sqlite'
+        if: matrix.database == 'sqlite'
         run: composer run ci:pest
 
       # Coverage is a property of the suite, not of the engine, so it is measured
       # once - on the engine production actually runs.
       - name: Run the Pest suite with coverage
-        if: env.RUN_FULL == 'true' && matrix.database == 'pgsql'
+        if: matrix.database == 'pgsql'
         run: composer run ci:pest:coverage
 
-  # Only the full gate runs Playwright, so it stays out of the routine feedback
-  # loop. The tiering expression is repeated here because a job-level `if`
-  # cannot read `env`.
+  # Advisory databases are a third-party input, so this job separates the two
+  # ways it can fail. A published advisory against a locked dependency is a real
+  # finding and blocks the gate. An unreachable advisory service is not a
+  # finding, and saying so is the difference between "fix this dependency" and
+  # "run it again".
+  #
+  # Both audits read a lock file and nothing else, so the job installs no
+  # dependencies. Keeping them out of `ci:check` also makes that gate hermetic,
+  # so a poor connection can no longer fail it for reasons that are not code.
+  audit:
+    name: dependency audit
+    if: inputs.scope == 'full'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: '11'
+
+      - name: Audit the locked dependencies
+        run: .github/scripts/audit-dependencies.sh
+
+  # The second stage costs a browser download and a production build, so it only
+  # starts once the cheap checks have agreed the tree is worth it.
   e2e:
     name: end-to-end
-    if: >-
-      github.event.action != 'edited' &&
-      ((github.event_name == 'push' && github.ref_name == 'main') ||
-       (github.event_name == 'pull_request' && github.event.pull_request.draft == false))
+    if: inputs.scope == 'full'
+    needs:
+      - static
+      - vitest
+      - pest
+      - audit
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     # Sized against a bad day, not against the gate. A single cache miss on the
     # Playwright browsers once pushed a legitimate run to 887s — thirteen
@@ -354,100 +386,20 @@ jobs:
       - name: Run the end-to-end suite
         run: composer run ci:e2e
 
-  # Validates the Conventional Commit contract that Release Please reads to
-  # derive the next version and the changelog. Merge commits are exempt: the
-  # repository promotes `dev` into `main` with a merge commit.
-  commits:
-    name: conventional commits
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Only failures produce an artifact, and only the Playwright output. The
+      # application log is deliberately left out: it is the one file that can
+      # carry a rendered environment value, and no sanitizer here could promise
+      # otherwise.
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Validate the pull request title and its commits
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          pattern='^(feat|fix|perf|refactor|docs|test|build|ci|chore|revert)(\([a-z0-9][a-z0-9._/-]*\))?!?: .+'
-          status=0
-
-          if ! printf '%s' "${PR_TITLE}" | grep -Eq "${pattern}"; then
-            echo "::error::Pull request title is not a Conventional Commit: ${PR_TITLE}"
-            status=1
-          fi
-
-          git log --no-merges --format=%s "${BASE_SHA}..${HEAD_SHA}" > "${RUNNER_TEMP}/subjects.txt"
-
-          while IFS= read -r subject; do
-            [ -n "${subject}" ] || continue
-            if ! printf '%s' "${subject}" | grep -Eq "${pattern}"; then
-              echo "::error::Commit subject is not a Conventional Commit: ${subject}"
-              status=1
-            fi
-          done < "${RUNNER_TEMP}/subjects.txt"
-
-          if [ "${status}" -ne 0 ]; then
-            echo 'Use: <type>(<optional scope>): <english description>'
-            echo 'Allowed types: feat, fix, perf, refactor, docs, test, build, ci, chore, revert.'
-            exit 1
-          fi
-
-          echo 'Every pull request title and non-merge commit follows the convention.'
-
-  # Advisory databases are a third-party input: a newly published advisory turns
-  # a previously green revision red without a line of code changing. That belongs
-  # nowhere near the release path, because `release-please.yml` keys on the
-  # conclusion of this workflow on `main` and would stop releasing without ever
-  # saying why. Restricting the job to pull requests keeps the property that
-  # actually matters — a pull request that *introduces* a vulnerable dependency
-  # is blocked, which is the one case Dependabot cannot catch, since its
-  # dependency graph is built from the default branch.
-  #
-  # Both audits read a lock file and nothing else, so the job installs no
-  # dependencies. Keeping them out of `ci:check` also makes that gate hermetic,
-  # so a poor connection can no longer fail it for reasons that are not code.
-  audit:
-    name: dependency audit
-    if: github.event_name == 'pull_request' && github.event.action != 'edited'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.5'
-          # spatie/laravel-backup requires ext-zip; naming it here makes the
-          # dependency explicit rather than relying on the runner's defaults.
-          extensions: zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
-        with:
-          version: '11'
-
-      - name: Audit the locked dependencies
-        run: composer run audit:check
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # Reproduces every material stage of the installation command documented in
   # the README:
@@ -465,21 +417,32 @@ jobs:
   # This job deliberately sets no APP_ENV, because the production fallback
   # during the pre-environment window is exactly what it has to cover.
   #
-  # The scenario only describes the public starter kit, so private descendants
-  # skip it. It runs as an independent parallel full-tier job to minimize overall CI wall
-  # time and preserve the hosted <=5-minute target.
+  # It runs everywhere, including in private descendants: a downstream
+  # application that cannot be installed from a clean checkout is broken for its
+  # own contributors, not only for this repository's users. Only the scheduled
+  # run against the *published* repository is opt-in, in `installer-smoke.yml`.
   #
   # Because the stages are reproduced by hand, this job validates the installer
-  # contract as this repository understands it, not the installer binary. The
-  # scheduled `installer-smoke.yml` covers that gap by running the documented
-  # command against the real installer.
+  # contract as this repository understands it, not the installer binary.
   installer:
     name: installer
+    needs:
+      - static
+      - vitest
+      - pest
+      - audit
+    # The release scope runs this job on its own, so it cannot simply depend on
+    # the first stage: a skipped dependency skips the dependent job. Naming the
+    # results explicitly keeps the ordering for a full run and still lets the
+    # release pull request reach the packaging check.
     if: >-
-      github.event.action != 'edited' &&
-      github.repository == 'tomylana93/jalara-starter-kit' &&
-      ((github.event_name == 'push' && github.ref_name == 'main') ||
-       (github.event_name == 'pull_request' && github.event.pull_request.draft == false))
+      ${{ !cancelled() && (inputs.scope == 'release' ||
+      (needs.static.result == 'success' &&
+       needs.vitest.result == 'success' &&
+       needs.pest.result == 'success' &&
+       needs.audit.result == 'success')) }}
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

@@ -126,6 +126,9 @@
         "ci:vitest": [
             "pnpm run test:unit"
         ],
+        "ci:workflows": [
+            "pest tests/Unit/Ci"
+        ],
         "ci:pest": [
             "pest"
         ],

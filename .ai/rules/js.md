@@ -21,3 +21,6 @@ Put `text-current` on any lucide icon rendered over a brand-painted surface. The
 
 ## jsdom force-mounts dropdown content, so a closed-menu assertion proves nothing
 Under jsdom, `DropdownMenuContent` is force mounted, so a menu item is findable without ever opening the menu. A test that asserts an item is absent therefore proves nothing about authorization gating. Assert on the trigger's presence instead.
+
+## JSDoc must add information
+Add JSDoc or TSDoc only when it conveys information TypeScript types and descriptive names cannot express, such as framework behavior, public contracts, lifecycle semantics, cross-boundary assumptions, or non-obvious invariants. Omit documentation that merely restates a symbol name, parameter types, return type, or obvious behavior.

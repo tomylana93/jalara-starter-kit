@@ -100,10 +100,55 @@ Uploaded files and brand assets are served publicly.
 
 ---
 
+## Repository Setup
+
+A fresh copy of this starter kit needs **no repository variable and no secret** to get working CI. Every check runs out of the box, including the installer contract. The optional capabilities are switched on individually:
+
+| Variable | Effect when set to `true` |
+| --- | --- |
+| `RELEASE_ENABLED` | Turns on release automation, once a credential below is also configured |
+| `STARTER_KIT_MODE` | Turns on the weekly check that installs this repository with the real Laravel installer |
+
+The repository itself should be configured for the trunk-based flow the workflows assume: `main` as the default branch, squash merge enabled, merge commits and rebase merges disabled, and *Automatically delete head branches* enabled. Under **Settings → Actions → General**, set the default workflow permission to read-only.
+
+On a **public** repository, or on any paid plan, you can additionally require the `CI / required` check through a ruleset. The workflows do not depend on that: a private repository on the Free plan gets the same behaviour without it.
+
+---
+
+## Version Bootstrap for a Descendant
+
+A project generated from this starter kit inherits Jalara's `CHANGELOG.md`, `.release-please-manifest.json`, and `version.json`. Those describe *Jalara's* releases, not yours. Before enabling release automation, reset them to your own starting point:
+
+1. Empty or replace `CHANGELOG.md`.
+2. Set `.release-please-manifest.json` to `{ ".": "0.1.0" }` (or your chosen starting version).
+3. Set `version.json` to the same version.
+4. Set `bootstrap-sha` in `release-please-config.json` to the first commit of your own history, and `baseline` in `.github/release-provenance.json` to the commit you are starting the policy from.
+
+The three version files must agree; the release metadata gate fails the release pull request if they do not.
+
+---
+
 ## Release Automation Setup
 
-Releases are automated with [Release Please](https://github.com/googleapis/release-please) targeting the `main` branch. This process is opt-in, so a fork or private descendant stays silent until enabled:
+Releases are automated with [Release Please](https://github.com/googleapis/release-please) targeting the `main` branch. The process is opt-in, so a fork or private descendant stays silent until it is enabled — CI stays green and the release job explains in its run summary that it is inactive.
 
-1. Create a fine-grained personal access token (PAT) scoped to the repository with **Contents**, **Pull requests**, and **Issues** read/write access.
-2. Add it as the repository secret `RELEASE_PLEASE_TOKEN`.
-3. Add the repository variable `RELEASE_ENABLED` with the value `true`.
+### 1. Choose a credential
+
+**A GitHub App (preferred).** Its installation token expires within the hour and is issued per job with only the permissions that job needs.
+
+1. Create a GitHub App under your account or organisation (**Settings → Developer settings → GitHub Apps → New GitHub App**). It needs no webhook and no user-facing URL.
+2. Give it these repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Issues: Read and write**, **Metadata: Read-only**.
+3. Generate a private key and install the App on this repository only.
+4. Add the App identifier as the repository variable `RELEASE_APP_ID`, and the private key as the repository secret `RELEASE_APP_PRIVATE_KEY`.
+
+The workflows narrow the token further per job: the publisher receives Contents and Metadata alone.
+
+**A fine-grained personal access token (fallback).** Scope it to this repository with **Contents**, **Pull requests**, and **Issues** read/write, and add it as the repository secret `RELEASE_TOKEN`.
+
+### 2. Switch automation on
+
+Add the repository variable `RELEASE_ENABLED` with the value `true`.
+
+### 3. Release
+
+Merge to `main` as usual. After the gate passes, a release pull request appears; merging it publishes the tag and the GitHub Release. If a tag was written but its GitHub Release was not, re-run `release-publish.yml` — it completes that same version rather than raising a new one.

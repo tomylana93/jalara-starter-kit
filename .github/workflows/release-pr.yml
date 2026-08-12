@@ -1,0 +1,146 @@
+name: release pr
+
+# Keeps the release pull request in step with the default branch.
+#
+# It runs on a *successful* conclusion of the `main` workflow, which is the only
+# statement this repository can make about a commit: that the full gate passed on
+# it and that every commit behind it is eligible for release. A red branch simply
+# leaves the release pull request where it was.
+#
+# This workflow never tags and never publishes. That is `release-publish.yml`,
+# and the split is deliberate: opening a release is a proposal, and publishing
+# one is an irreversible act that a human merge has to sit between.
+on:
+  workflow_run:
+    workflows:
+      - main
+    branches:
+      - main
+    types:
+      - completed
+  # The manual entry point is a retry, not an escape hatch. It re-runs against
+  # the current head of the default branch and only after verifying that the
+  # same gate already passed there.
+  workflow_dispatch:
+
+permissions: {}
+
+# An interrupted run can leave the release pull request half written, so later
+# runs queue instead of cancelling the one in flight.
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
+jobs:
+  create:
+    name: create or update the release pull request
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      # Release automation is opt-in. A descendant of this starter kit keeps it
+      # off until it sets `RELEASE_ENABLED` and configures a credential, and this
+      # job says so in the run summary rather than failing or, worse, reporting
+      # a green run that released nothing.
+      - name: Resolve the release capability
+        id: capability
+        env:
+          RELEASE_ENABLED: ${{ vars.RELEASE_ENABLED }}
+        run: |
+          if [ "${RELEASE_ENABLED}" = 'true' ]; then
+            echo 'enabled=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'enabled=false' >> "${GITHUB_OUTPUT}"
+            {
+              echo '## Release automation is off'
+              echo
+              echo 'Set the `RELEASE_ENABLED` repository variable to `true` to turn it on.'
+              echo 'Nothing was released, and nothing failed.'
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Verify the head of the default branch passed its gate
+        id: head
+        if: steps.capability.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+
+          if [ "${EVENT_NAME}" = 'workflow_dispatch' ]; then
+            passed="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/main.yml/runs?head_sha=${sha}&status=success" \
+              --jq '.total_count')"
+
+            if [ "${passed}" -lt 1 ]; then
+              echo "::error::${sha} has no successful \`main\` run, so it may not be released."
+              exit 1
+            fi
+          elif [ "${sha}" != "${RUN_SHA}" ]; then
+            echo "::notice::The branch moved to ${sha} after ${RUN_SHA} was verified; its own run will follow."
+            echo 'proceed=false' >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo 'proceed=true' >> "${GITHUB_OUTPUT}"
+
+      # A release commit is the publisher's business. Running the creator over it
+      # would immediately propose the next, empty release.
+      - name: Skip the commit that merged a release pull request
+        id: kind
+        if: steps.head.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_commit="$(.github/scripts/release-commit.sh "${GITHUB_REPOSITORY}" "$(git rev-parse HEAD)")"
+          echo "release-commit=${release_commit}" >> "${GITHUB_OUTPUT}"
+
+      - name: Resolve the release credential
+        id: credentials
+        if: steps.head.outputs.proceed == 'true' && steps.kind.outputs.release-commit == 'false'
+        uses: ./.github/actions/release-credentials
+        with:
+          scope: creator
+          app-id: ${{ vars.RELEASE_APP_ID || secrets.RELEASE_APP_ID }}
+          app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          fallback-token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Report a missing credential
+        if: steps.credentials.outputs.mode == 'none'
+        run: |
+          {
+            echo '## Release automation is enabled but has no credential'
+            echo
+            echo 'Configure either a GitHub App — `RELEASE_APP_ID` and the'
+            echo '`RELEASE_APP_PRIVATE_KEY` secret — or the `RELEASE_TOKEN` secret.'
+            echo 'The release pull request was not touched.'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Create or update the release pull request
+        if: >-
+          steps.credentials.outputs.mode == 'app' ||
+          steps.credentials.outputs.mode == 'token'
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.credentials.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main
+          # The tag and the GitHub Release belong to `release-publish.yml`, which
+          # only runs once a human has merged this pull request.
+          skip-github-release: true

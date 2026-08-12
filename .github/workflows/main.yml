@@ -1,0 +1,134 @@
+name: main
+
+# The default branch runs the same full gate a pull request runs, against the
+# commit that actually landed.
+#
+# That repetition is not redundancy here. Without protected branches or a merge
+# queue — neither of which a private repository on the GitHub Free plan has —
+# nothing guarantees that what was tested is what was merged: a pull request can
+# be merged over a red gate, merged while out of date with the branch, or
+# bypassed entirely by a direct push. The result on this branch is the only
+# result that describes the released tree.
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+# Merges land close enough together for two runs to overlap. Cancelling is the
+# wrong answer: the cancelled run is the one that decides whether its commit may
+# be released, and a cancelled decision is not a negative one.
+concurrency:
+  group: main
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: gate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_ci.yml
+
+  # Whether this branch may be released, judged from where its commits came
+  # from. A commit that reached the branch outside a squashed pull request — a
+  # direct push, a merge commit, an unapproved fork contribution — leaves the
+  # branch ineligible until it is reverted or recorded in the remediation ledger
+  # through a pull request.
+  #
+  # Nothing here can stop such a commit from landing. What it stops is the
+  # release: the release pull request is not refreshed and the publisher never
+  # runs, so an unreviewed change cannot become a tag.
+  release-readiness:
+    name: release readiness
+    needs: gate
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The provenance range is walked with git, and the effective baseline
+          # is the newest release tag.
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      - name: Collect the provenance of every commit since the baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/scripts/provenance-report.sh \
+            "${GITHUB_REPOSITORY}" \
+            .github/release-provenance.json \
+            "${GITHUB_SHA}" \
+            "${RUNNER_TEMP}/provenance.json"
+
+      - name: Check release eligibility
+        run: |
+          php artisan ci:release-eligibility \
+            --report="${RUNNER_TEMP}/provenance.json" \
+            --ledger=.github/release-provenance.json
+
+  # The counterpart of `CI / required` for the default branch, and the signal the
+  # release workflows key on: they run on a successful conclusion of this
+  # workflow, which cannot happen unless both the gate and release readiness
+  # passed for this exact commit.
+  required:
+    name: required
+    if: ${{ always() }}
+    needs:
+      - gate
+      - release-readiness
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Aggregate the gates
+        env:
+          GATE: ${{ needs.gate.result }}
+          READINESS: ${{ needs.release-readiness.result }}
+        run: |
+          status=0
+
+          echo "gate=${GATE} release-readiness=${READINESS}"
+
+          if [ "${GATE}" != 'success' ]; then
+            echo "::error::The full gate did not pass on this commit (${GATE})."
+            status=1
+          fi
+
+          if [ "${READINESS}" != 'success' ]; then
+            echo "::error::This commit is not eligible for release (${READINESS})."
+            status=1
+          fi
+
+          exit "${status}"

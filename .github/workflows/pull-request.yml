@@ -1,0 +1,560 @@
+name: CI
+
+# Everything a pull request is judged by, aggregated into one check named
+# `CI / required`.
+#
+# On a private repository on the GitHub Free plan that check cannot be *required*
+# by the platform: there are no protected branches, no rulesets, and no merge
+# queue. It is still the single place to read whether a revision is mergeable,
+# and a public or paid repository can promote it to an enforced check without
+# changing anything here.
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - converted_to_draft
+      - edited
+  # An approval is part of the merge policy for a fork, so granting, editing, or
+  # dismissing one has to re-decide the policy check.
+  pull_request_review:
+    types:
+      - submitted
+      - edited
+      - dismissed
+
+permissions: {}
+
+# Superseded runs for the same pull request are pointless work: only the newest
+# revision can still be merged. Converting a ready pull request back to a draft
+# lands in this same group, so the expensive run it supersedes is cancelled
+# rather than left burning minutes on a revision nobody is asking to merge.
+#
+# Review events get their own group. They re-decide the policy check while the
+# gate may still be running, and cancelling that run because somebody clicked
+# approve would be absurd.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  # The merge policy. This is the one job that decides trust, so it is also the
+  # one job that must never execute code from an external repository: it checks
+  # out the base revision, reads the event payload and the review list through
+  # the API, and judges them with an Artisan command the test suite covers.
+  # During the one-time rollout, the base does not contain that command yet, so
+  # an internal branch may supply it; an external pull request fails closed.
+  #
+  # It needs no repository secret, which is what lets it work identically for a
+  # pull request opened from a fork.
+  policy:
+    name: policy
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout the base revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Select the policy implementation
+        id: policy_source
+        env:
+          BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ -x .github/scripts/pull-request-reviews.sh ] && [ -f app/Console/Commands/Ci/CheckPullRequestPolicy.php ]; then
+            echo 'use_head=false' >> "${GITHUB_OUTPUT}"
+          elif [ "${HEAD_REPOSITORY}" = "${BASE_REPOSITORY}" ]; then
+            echo 'use_head=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'The trusted base revision does not contain the pull-request policy implementation.' >&2
+            exit 1
+          fi
+
+      - name: Bootstrap the policy from the internal branch
+        if: steps.policy_source.outputs.use_head == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      - name: Collect the pull request and its reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          cp "${GITHUB_EVENT_PATH}" "${RUNNER_TEMP}/event.json"
+          .github/scripts/pull-request-reviews.sh \
+            "${GITHUB_REPOSITORY}" \
+            "${PULL_REQUEST_NUMBER}" > "${RUNNER_TEMP}/reviews.json"
+
+      - name: Check the merge policy
+        run: |
+          php artisan ci:pull-request-policy \
+            --event="${RUNNER_TEMP}/event.json" \
+            --reviews="${RUNNER_TEMP}/reviews.json"
+
+  # A draft pull request only pays for the cheap checks. The workflow contract is
+  # one of them, because a broken workflow file is the one defect that stops the
+  # expensive checks from ever reporting.
+  #
+  # A ready pull request skips this job: `gate` runs the whole Pest suite, which
+  # contains the same contract test.
+  workflows:
+    name: workflow contract
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited' &&
+      github.event.pull_request.draft == true
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect whether the workflows changed
+        id: changed
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" | grep -q '^\.github/'; then
+            echo 'changed=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'changed=false' >> "${GITHUB_OUTPUT}"
+            echo 'No workflow or automation file changed; nothing to validate.'
+          fi
+
+      - name: Setup PHP
+        if: steps.changed.outputs.changed == 'true'
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        if: steps.changed.outputs.changed == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        if: steps.changed.outputs.changed == 'true'
+        run: composer run ci:setup:php
+
+      - name: Validate the workflow contract
+        if: steps.changed.outputs.changed == 'true'
+        run: composer run ci:workflows
+
+  # The full gate. A draft pull request is not a merge candidate, so it never
+  # reaches this; marking the pull request ready for review is what asks for it.
+  #
+  # The release pull request takes the other path: its candidate has already been
+  # through this same gate on `main`, and re-running the suite over a changelog
+  # edit proves nothing.
+  gate:
+    name: gate
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited' &&
+      github.event.pull_request.draft == false &&
+      !startsWith(github.event.pull_request.head.ref, 'release-please--branches--')
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_ci.yml
+
+  # The release pull request is checked for what is actually unverified about it:
+  # that it changes release files only, that the manifest, the runtime version
+  # file, and the changelog agree on one new version, and that the application
+  # this metadata describes still installs, builds, and boots.
+  release-candidate:
+    name: release candidate
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited' &&
+      github.event.pull_request.draft == false &&
+      startsWith(github.event.pull_request.head.ref, 'release-please--branches--')
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_ci.yml
+    with:
+      scope: release
+
+  release-metadata:
+    name: release metadata
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited' &&
+      github.event.pull_request.draft == false &&
+      startsWith(github.event.pull_request.head.ref, 'release-please--branches--')
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      - name: Describe the release the pull request proposes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "${BASE_SHA}" "${HEAD_SHA}" > "${RUNNER_TEMP}/changed.txt"
+          git tag --list 'v*' > "${RUNNER_TEMP}/tags.txt"
+          git show "${BASE_SHA}:.release-please-manifest.json" \
+            | php -r 'echo json_decode(stream_get_contents(STDIN), true)["."] ?? "";' \
+            > "${RUNNER_TEMP}/previous.txt"
+
+      - name: Check the release metadata
+        run: |
+          php artisan ci:release-manifest \
+            --changed="${RUNNER_TEMP}/changed.txt" \
+            --tags="${RUNNER_TEMP}/tags.txt" \
+            --previous="$(cat "${RUNNER_TEMP}/previous.txt")"
+
+  # What the gates decided about this revision, in one job so that a later event
+  # — an approval, a retitled pull request — can read the outcome without paying
+  # to run them again.
+  #
+  # A conditional job that never ran must not read as a pass by accident, so the
+  # rule is spelled out rather than inferred: a draft has deliberately not run
+  # the gate, and anything else has to have run exactly one of the two gates and
+  # passed it.
+  gates:
+    name: gates
+    if: >-
+      ${{ always() &&
+      github.event_name == 'pull_request' &&
+      github.event.action != 'edited' }}
+    needs:
+      - workflows
+      - gate
+      - release-candidate
+      - release-metadata
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Aggregate the gates
+        env:
+          DRAFT: ${{ github.event.pull_request.draft }}
+          WORKFLOWS: ${{ needs.workflows.result }}
+          GATE: ${{ needs.gate.result }}
+          RELEASE_CANDIDATE: ${{ needs.release-candidate.result }}
+          RELEASE_METADATA: ${{ needs.release-metadata.result }}
+        run: |
+          status=0
+
+          report() {
+            echo "::error::${1}"
+            status=1
+          }
+
+          echo "workflows=${WORKFLOWS} gate=${GATE}" \
+            "release-candidate=${RELEASE_CANDIDATE} release-metadata=${RELEASE_METADATA}"
+
+          case "${WORKFLOWS}" in
+            success | skipped) ;;
+            *) report "The workflow contract check did not pass (${WORKFLOWS})." ;;
+          esac
+
+          if [ "${DRAFT}" = 'true' ]; then
+            if [ "${GATE}" != 'skipped' ] || [ "${RELEASE_CANDIDATE}" != 'skipped' ]; then
+              report 'A draft pull request must not run the full gate.'
+            fi
+
+            echo 'Draft pull request: the cheap checks passed and the full gate was deliberately not run.'
+          elif [ "${GATE}" = 'success' ] && [ "${RELEASE_CANDIDATE}" = 'skipped' ]; then
+            echo 'The full gate passed.'
+          elif [ "${RELEASE_CANDIDATE}" = 'success' ] && [ "${RELEASE_METADATA}" = 'success' ] && [ "${GATE}" = 'skipped' ]; then
+            echo 'The release pull request passed its metadata and packaging gate.'
+          else
+            report 'No gate reported a pass for this revision.'
+          fi
+
+          exit "${status}"
+
+  # The single check that says whether this revision may be merged.
+  #
+  # It runs on every event this workflow accepts, including the ones that change
+  # no code: an approval, a dismissal, a retitled pull request. That is
+  # deliberate. The merge policy depends on facts that move without a push, so
+  # this job re-reads them live at the moment it reports rather than trusting a
+  # verdict formed earlier in the run. An approval granted while the gate was
+  # running, or a title made invalid after it passed, would otherwise leave a
+  # stale answer standing as the only check anybody reads.
+  #
+  # Whichever event reports last therefore reports correctly, and the gate half
+  # is looked up for the exact revision rather than run again.
+  required:
+    name: required
+    if: ${{ always() }}
+    needs: gates
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      DB_DATABASE: ':memory:'
+      LARAVEL_BYPASS_ENV_CHECK: '1'
+
+    steps:
+      # The base revision, for the same reason the `policy` job checks it out:
+      # this job decides trust and must never execute external contributed code.
+      - name: Checkout the base revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Select the policy implementation
+        id: policy_source
+        env:
+          BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ -x .github/scripts/pull-request-reviews.sh ] && [ -f app/Console/Commands/Ci/CheckPullRequestPolicy.php ]; then
+            echo 'use_head=false' >> "${GITHUB_OUTPUT}"
+          elif [ "${HEAD_REPOSITORY}" = "${BASE_REPOSITORY}" ]; then
+            echo 'use_head=true' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'The trusted base revision does not contain the pull-request policy implementation.' >&2
+            exit 1
+          fi
+
+      - name: Bootstrap the policy from the internal branch
+        if: steps.policy_source.outputs.use_head == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.5'
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache the Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-php8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.5-composer-
+
+      - name: Setup Application
+        run: composer run ci:setup:php
+
+      # The live pull request, not the event payload that triggered this run.
+      # A payload is a snapshot of the moment the event fired; by the time this
+      # job reports, the title may have been corrected, an approval granted, or
+      # a new revision pushed. The check anybody reads has to describe the pull
+      # request as it is now, so every fact below is re-read here.
+      - name: Read the pull request as it stands now
+        id: live
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PULL_REQUEST_NUMBER}" \
+            --jq '{pull_request: {
+                title,
+                draft,
+                head: {sha: .head.sha, repo: {full_name: (.head.repo.full_name // "")}},
+                base: {repo: {full_name: (.base.repo.full_name // "")}}
+            }}' > "${RUNNER_TEMP}/live.json"
+
+          {
+            echo "head_sha=$(jq -r '.pull_request.head.sha' "${RUNNER_TEMP}/live.json")"
+            echo "draft=$(jq -r '.pull_request.draft' "${RUNNER_TEMP}/live.json")"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Re-check the merge policy
+        id: policy
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          .github/scripts/pull-request-reviews.sh \
+            "${GITHUB_REPOSITORY}" \
+            "${PULL_REQUEST_NUMBER}" > "${RUNNER_TEMP}/reviews.json"
+          php artisan ci:pull-request-policy \
+            --event="${RUNNER_TEMP}/live.json" \
+            --reviews="${RUNNER_TEMP}/reviews.json"
+
+      # The gate half. This run may have produced it itself; when it did not —
+      # an approval, a dismissal, a retitle runs no gate job — it is looked up
+      # from the runs that did, for the live head sha and no other.
+      #
+      # The run asking is excluded from its own answer. Without that, an
+      # `edited` run finds itself in flight and reports `pending` forever,
+      # because nothing later comes back to correct it.
+      - name: Collect the runs that could carry the gate verdict
+        id: runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.live.outputs.head_sha }}
+        run: |
+          runs="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/pull-request.yml/runs?head_sha=${HEAD_SHA}&event=pull_request" \
+            --paginate --jq '[.workflow_runs[] | {id, status, run_started_at}]' \
+            | jq --argjson current "${GITHUB_RUN_ID}" \
+                '[.[] | select(.id != $current)] | sort_by(.run_started_at, .id) | reverse | .[0:10]')"
+
+          # Each run's `gates` job is what carries the verdict. A run without
+          # one — an `edited` run, a cancelled run — decided nothing about the
+          # gate and must stay transparent to the lookup rather than answer for
+          # it, so the job is attached and the judgement is made over the whole
+          # document at once.
+          attached='[]'
+
+          for id in $(jq -r '.[].id' <<<"${runs}"); do
+            gates="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${id}/jobs" \
+              --paginate --jq '[.jobs[] | select(.name == "gates") | {status, conclusion}] | last // {}')"
+
+            attached="$(jq \
+              --argjson id "${id}" \
+              --argjson gates "${gates}" \
+              --argjson runs "${runs}" \
+              '. + [($runs[] | select(.id == $id)) + {gates: $gates}]' <<<"${attached}")"
+          done
+
+          jq -c . <<<"${attached}" > "${RUNNER_TEMP}/runs.json"
+
+      - name: Resolve the gate outcome for this revision
+        id: outcome
+        env:
+          GATES: ${{ needs.gates.result }}
+          LIVE_SHA: ${{ steps.live.outputs.head_sha }}
+          EVENT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          jq -n \
+            --arg own "${GATES}" \
+            --arg live "${LIVE_SHA}" \
+            --arg event "${EVENT_SHA}" \
+            --slurpfile runs "${RUNNER_TEMP}/runs.json" \
+            '{own: $own, live: $live, event: $event, runs: $runs[0]}' \
+            > "${RUNNER_TEMP}/outcome.json"
+
+          echo "outcome=$(php artisan ci:gate-outcome --payload="${RUNNER_TEMP}/outcome.json")" \
+            >> "${GITHUB_OUTPUT}"
+
+      - name: Aggregate the checks
+        env:
+          DRAFT: ${{ steps.live.outputs.draft }}
+          POLICY: ${{ steps.policy.outcome }}
+          OUTCOME: ${{ steps.outcome.outputs.outcome }}
+        run: |
+          status=0
+
+          report() {
+            echo "::error::${1}"
+            status=1
+          }
+
+          echo "policy=${POLICY} gates=${OUTCOME} draft=${DRAFT}"
+
+          [ "${POLICY}" = 'success' ] || report 'The merge policy check did not pass.'
+
+          case "${OUTCOME}" in
+            success)
+              echo 'The gates passed for this revision.'
+              ;;
+            none)
+              if [ "${DRAFT}" = 'true' ]; then
+                echo 'Draft pull request: the full gate has deliberately not run.'
+              else
+                report 'No gate has run for this revision.'
+              fi
+              ;;
+            pending)
+              report 'The gate for this revision is still running; this check is reported again when it finishes.'
+              ;;
+            *)
+              report "The gates did not pass for this revision (${OUTCOME})."
+              ;;
+          esac
+
+          exit "${status}"
