@@ -29,6 +29,14 @@ jobs:
           tools: composer:v2
           coverage: xdebug
 
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@v2
+        with:
+          version: 11
+          runtime: node@24
+          cache: true
+          install: false
+
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
@@ -36,6 +44,11 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate --force
+
+      - name: Build frontend assets
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - name: Record TIA baseline
         run: vendor/bin/pest --parallel --tia --fresh
