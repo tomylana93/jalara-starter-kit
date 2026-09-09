@@ -5,4 +5,5 @@ publicHoistPattern:
     - '@inertiajs/core'
 
 allowBuilds:
+    maplibre-gl: true
     vue-demi: true
