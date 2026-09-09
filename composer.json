@@ -9,7 +9,7 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.5",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
@@ -28,7 +28,11 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.1",
-        "pestphp/pest-plugin-laravel": "^5.0"
+        "pestphp/pest-plugin-laravel": "^5.0",
+        "pestphp/pest-plugin-phpstan": "^5.2",
+        "pestphp/pest-plugin-rector": "^5.0",
+        "pestphp/pest-plugin-type-coverage": "^5.0",
+        "rector/rector": "^2.6"
     },
     "autoload": {
         "psr-4": {
@@ -61,11 +65,32 @@
         "lint:check": [
             "pint --parallel --test"
         ],
+        "refactor": [
+            "rector process"
+        ],
+        "refactor:check": [
+            "rector process --dry-run --no-progress-bar"
+        ],
+        "test:coverage": [
+            "pest --type-coverage"
+        ],
+        "test:line-coverage": [
+            "pest --coverage"
+        ],
+        "test:tia": [
+            "XDEBUG_MODE=coverage php -d zend_extension=xdebug vendor/bin/pest --tia"
+        ],
+        "test:ci": [
+            "pest --ci --type-coverage"
+        ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
             "pnpm run check",
             "pnpm run types:check",
-            "@test"
+            "@lint:check",
+            "@types:check",
+            "@refactor:check",
+            "@test:ci"
         ],
         "types:check": [
             "phpstan analyse"

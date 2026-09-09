@@ -2,10 +2,11 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
-test('security page is displayed', function () {
+it('security page is displayed', function (): void {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
     Features::twoFactorAuthentication([
@@ -21,7 +22,7 @@ test('security page is displayed', function () {
     $this->actingAs($user)
         ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('security.edit'))
-        ->assertInertia(fn (Assert $page) => $page
+        ->assertInertia(fn (Assert $page): AssertableInertia => $page
             ->component('settings/Security')
             ->where('canManagePasskeys', true)
             ->where('passkeys', [])
@@ -30,7 +31,7 @@ test('security page is displayed', function () {
         );
 });
 
-test('security page requires password confirmation when enabled', function () {
+it('security page requires password confirmation when enabled', function (): void {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
     $user = User::factory()->create();
@@ -46,7 +47,7 @@ test('security page requires password confirmation when enabled', function () {
     $response->assertRedirect(route('password.confirm'));
 });
 
-test('security page renders without two factor when feature is disabled', function () {
+it('security page renders without two factor when feature is disabled', function (): void {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
     config(['fortify.features' => []]);
@@ -57,7 +58,7 @@ test('security page renders without two factor when feature is disabled', functi
         ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('security.edit'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
+        ->assertInertia(fn (Assert $page): AssertableInertia => $page
             ->component('settings/Security')
             ->where('canManagePasskeys', false)
             ->where('passkeys', [])
@@ -67,7 +68,7 @@ test('security page renders without two factor when feature is disabled', functi
         );
 });
 
-test('password can be updated', function () {
+it('password can be updated', function (): void {
     $user = User::factory()->create();
 
     $response = $this
@@ -86,7 +87,7 @@ test('password can be updated', function () {
     expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
 
-test('correct password must be provided to update password', function () {
+it('correct password must be provided to update password', function (): void {
     $user = User::factory()->create();
 
     $response = $this
