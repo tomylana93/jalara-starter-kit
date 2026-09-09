@@ -3,3 +3,6 @@ packages:
 
 publicHoistPattern:
     - '@inertiajs/core'
+
+allowBuilds:
+    vue-demi: true
