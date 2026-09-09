@@ -1,0 +1,55 @@
+name: TIA Baseline
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup PHP with Xdebug
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: xdebug
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure application
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Record TIA baseline
+        run: vendor/bin/pest --parallel --tia --fresh
+        env:
+          XDEBUG_MODE: coverage
+
+      - name: Resolve baseline path
+        id: baseline
+        run: echo "path=$(vendor/bin/pest --baseline)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload TIA baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: pest-tia-baseline
+          path: ${{ steps.baseline.outputs.path }}
+          include-hidden-files: true
+          retention-days: 30
