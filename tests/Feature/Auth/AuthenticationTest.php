@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\MasterData\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 

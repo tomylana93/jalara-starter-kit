@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\MasterData\User;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;

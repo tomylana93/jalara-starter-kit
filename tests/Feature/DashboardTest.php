@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\MasterData\User;
 
 it('guests are redirected to the login page', function (): void {
     $response = $this->get(route('dashboard'));
