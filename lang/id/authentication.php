@@ -3,21 +3,35 @@
 return [
     'heading' => [
         'login' => 'Login ke {app_name}',
+        'register' => 'Buat akun baru di {app_name}',
+        'forgot_password' => 'Lupa password',
+    ],
+
+    'label' => [
+        'name' => 'Nama',
+        'email' => 'Email',
+        'password' => 'Password',
+        'confirm_password' => 'Konfirmasi password',
     ],
 
     'placeholder' => [
+        'name' => 'Nama Lengkap',
         'email' => 'Email',
         'password' => 'Password',
+        'confirm_password' => 'Konfirmasi password',
     ],
 
     'button' => [
         'login' => 'Login',
+        'register' => 'Buat akun',
         'show_password' => 'Tampilkan password',
         'hide_password' => 'Sembunyikan password',
+        'send_reset_link' => 'Kirim link reset',
     ],
 
     'link' => [
         'forgot_password' => 'Lupa password?',
         'register' => 'Buat akun baru',
+        'back_to_login' => 'Kembali ke login',
     ],
 ];

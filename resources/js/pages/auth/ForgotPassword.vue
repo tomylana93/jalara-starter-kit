@@ -1,28 +1,44 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Mail } from '@lucide/vue';
 import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
+import { store } from '@/actions/Laravel/Fortify/Http/Controllers/PasswordResetLinkController';
+import { t } from '@/lib/i18n';
 import { login } from '@/routes';
-import { email } from '@/routes/password';
+
+interface ForgotPasswordForm {
+    email: string;
+}
 
 defineOptions({
+    inheritAttrs: false,
     layout: {
-        title: 'Forgot password',
-        description: 'Enter your email to receive a password reset link',
+        title: t('authentication.heading.forgot_password'),
     },
 });
 
 defineProps<{
     status?: string;
 }>();
+
+const form = useForm<ForgotPasswordForm>(store(), {
+    email: '',
+});
+
+const submit = (): void => {
+    form.submit();
+};
 </script>
 
 <template>
-    <Head title="Forgot password" />
+    <Head :title="t('authentication.heading.forgot_password')" />
 
     <div
         v-if="status"
@@ -31,36 +47,40 @@ defineProps<{
         {{ status }}
     </div>
 
-    <div class="space-y-6">
-        <Form v-bind="email.form()" v-slot="{ errors, processing }">
+    <form class="flex flex-col gap-6" @submit.prevent="submit" novalidate>
+        <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    autocomplete="off"
-                    autofocus
-                    placeholder="email@example.com"
-                />
-                <InputError :message="errors.email" />
+                <InputGroup>
+                    <InputGroupAddon>
+                        <Mail />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="email"
+                        v-model="form.email"
+                        type="email"
+                        name="email"
+                        autofocus
+                        autocomplete="email"
+                        :placeholder="t('authentication.placeholder.email')"
+                        :aria-invalid="form.errors.email ? true : undefined"
+                    />
+                </InputGroup>
+                <InputError :message="form.errors.email" />
             </div>
 
-            <div class="my-6 flex items-center justify-start">
+            <div class="flex flex-col gap-4">
                 <Button
-                    class="w-full"
-                    :disabled="processing"
+                    type="submit"
+                    :disabled="form.processing"
                     data-test="email-password-reset-link-button"
                 >
-                    <Spinner v-if="processing" />
-                    Email password reset link
+                    <Spinner v-if="form.processing" />
+                    {{ t('authentication.button.send_reset_link') }}
+                </Button>
+                <Button :as="Link" :href="login()" variant="ghost">
+                    {{ t('authentication.link.back_to_login') }}
                 </Button>
             </div>
-        </Form>
-
-        <div class="text-muted-foreground space-x-1 text-center text-sm">
-            <span>Or, return to</span>
-            <TextLink :href="login()">log in</TextLink>
         </div>
-    </div>
+    </form>
 </template>

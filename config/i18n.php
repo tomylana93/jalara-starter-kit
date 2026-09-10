@@ -6,5 +6,5 @@ return [
     'source_locale' => 'en',
     'locales' => ['en', 'id'],
     'domains' => ['authentication'],
-    'scopes' => ['heading', 'placeholder', 'button', 'link'],
+    'scopes' => ['heading', 'label', 'placeholder', 'button', 'link'],
 ];
