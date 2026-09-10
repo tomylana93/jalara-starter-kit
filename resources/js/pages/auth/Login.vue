@@ -115,8 +115,12 @@ const submit = (): void => {
                                         size="icon-xs"
                                         :aria-label="
                                             showPassword
-                                                ? t('authentication.button.hide_password')
-                                                : t('authentication.button.show_password')
+                                                ? t(
+                                                      'authentication.button.hide_password',
+                                                  )
+                                                : t(
+                                                      'authentication.button.show_password',
+                                                  )
                                         "
                                         @click="showPassword = !showPassword"
                                     >
