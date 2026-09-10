@@ -4,7 +4,6 @@ import { Eye, EyeOff, LockKeyhole, Mail } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
-import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import {
     InputGroup,

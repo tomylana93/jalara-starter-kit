@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Super Admin',
             'email' => 'superadmin@jalara.dev',
         ]);
-        
+
         User::factory(200)->create();
     }
 }
