@@ -31,6 +31,7 @@ interface LoginForm {
 }
 
 defineOptions({
+    inheritAttrs: false,
     layout: {
         title: t('authentication.heading.login', {
             app_name: import.meta.env.VITE_APP_NAME || 'Laravel',

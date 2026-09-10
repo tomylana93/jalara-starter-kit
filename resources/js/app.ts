@@ -8,7 +8,7 @@ import { initializeFlashToast } from '@/lib/flashToast';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-await initializeI18n();
+initializeI18n();
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

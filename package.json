@@ -3,9 +3,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vp build",
-        "build:ssr": "vp build && vp build --ssr",
-        "dev": "vp dev",
+        "build": "pnpm run i18n:bundle && vp build",
+        "build:ssr": "pnpm run i18n:bundle && vp build && vp build --ssr",
+        "dev": "pnpm run i18n:bundle && vp dev",
         "check": "vp check",
         "check:fix": "vp check --fix",
         "i18n:bundle": "php artisan i18n:bundle --no-interaction",
