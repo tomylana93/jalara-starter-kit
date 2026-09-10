@@ -21,13 +21,7 @@ import {
 import { store } from '@/actions/Laravel/Fortify/Http/Controllers/RegisteredUserController';
 import { t } from '@/lib/i18n';
 import { login } from '@/routes';
-
-interface RegisterForm {
-    name: string;
-    email: string;
-    password: string;
-    password_confirmation: string;
-}
+import type { RegisterForm } from '@/types';
 
 defineOptions({
     inheritAttrs: false,

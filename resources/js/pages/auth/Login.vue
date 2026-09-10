@@ -23,12 +23,7 @@ import { t } from '@/lib/i18n';
 import { register } from '@/routes';
 import { store } from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
 import { request } from '@/routes/password';
-
-interface LoginForm {
-    email: string;
-    password: string;
-    remember: boolean;
-}
+import type { LoginForm } from '@/types';
 
 defineOptions({
     inheritAttrs: false,

@@ -12,10 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/actions/Laravel/Fortify/Http/Controllers/PasswordResetLinkController';
 import { t } from '@/lib/i18n';
 import { login } from '@/routes';
-
-interface ForgotPasswordForm {
-    email: string;
-}
+import type { ForgotPasswordForm } from '@/types';
 
 defineOptions({
     inheritAttrs: false,
