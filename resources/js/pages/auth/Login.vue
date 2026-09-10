@@ -1,34 +1,66 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { useForm, Head, Link } from '@inertiajs/vue3';
+import { Eye, EyeOff, LockKeyhole, Mail } from '@lucide/vue';
+import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { t } from '@/lib/i18n';
 import { register } from '@/routes';
-import { store } from '@/routes/login';
+import { store } from '@/actions/Laravel/Fortify/Http/Controllers/AuthenticatedSessionController';
 import { request } from '@/routes/password';
-import PasskeyVerify from '@/components/PasskeyVerify.vue';
+
+interface LoginForm {
+    email: string;
+    password: string;
+    remember: boolean;
+}
 
 defineOptions({
     layout: {
-        title: 'Log in to your account',
-        description: 'Enter your email and password below to log in',
+        title: t('authentication.heading.login', {
+            app_name: import.meta.env.VITE_APP_NAME || 'Laravel',
+        }),
     },
 });
 
 defineProps<{
-    status?: string;
     canResetPassword: boolean;
+    canRegister: boolean;
+    status?: string;
 }>();
+
+const form = useForm<LoginForm>(store(), {
+    email: '',
+    password: '',
+    remember: true,
+});
+
+const showPassword = ref(false);
+
+const submit = (): void => {
+    form.submit({
+        onSuccess: () => form.reset('password'),
+    });
+};
 </script>
 
 <template>
-    <Head :title="t('authentication.heading')" />
+    <Head :title="t('authentication.button.login')" />
 
     <div
         v-if="status"
@@ -39,73 +71,102 @@ defineProps<{
 
     <PasskeyVerify />
 
-    <Form
-        v-bind="store.form()"
-        :reset-on-success="['password']"
-        v-slot="{ errors, processing }"
-        class="flex flex-col gap-6"
-    >
+    <form class="flex flex-col gap-6" @submit.prevent="submit" novalidate>
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    name="email"
-                    required
-                    autofocus
-                    :tabindex="1"
-                    autocomplete="email"
-                    placeholder="email@example.com"
-                />
-                <InputError :message="errors.email" />
+                <InputGroup>
+                    <InputGroupAddon>
+                        <Mail />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="email"
+                        v-model="form.email"
+                        type="email"
+                        name="email"
+                        autofocus
+                        autocomplete="email"
+                        :placeholder="t('authentication.placeholder.email')"
+                        :aria-invalid="form.errors.email ? true : undefined"
+                    />
+                </InputGroup>
+                <InputError :message="form.errors.email" />
             </div>
 
             <div class="grid gap-2">
-                <div class="flex items-center justify-between">
-                    <Label for="password">Password</Label>
-                    <TextLink
-                        v-if="canResetPassword"
-                        :href="request()"
-                        class="text-sm"
-                        :tabindex="5"
-                    >
-                        Forgot your password?
-                    </TextLink>
-                </div>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    required
-                    :tabindex="2"
-                    autocomplete="current-password"
-                    placeholder="Password"
-                />
-                <InputError :message="errors.password" />
+                <InputGroup>
+                    <InputGroupAddon>
+                        <LockKeyhole />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="password"
+                        v-model="form.password"
+                        :type="showPassword ? 'text' : 'password'"
+                        name="password"
+                        autocomplete="current-password"
+                        :placeholder="t('authentication.placeholder.password')"
+                        :aria-invalid="form.errors.password ? true : undefined"
+                    />
+                    <InputGroupAddon align="inline-end">
+                        <TooltipProvider :delay-duration="0">
+                            <Tooltip>
+                                <TooltipTrigger as-child>
+                                    <InputGroupButton
+                                        type="button"
+                                        size="icon-xs"
+                                        :aria-label="
+                                            showPassword
+                                                ? t('authentication.button.hide_password')
+                                                : t('authentication.button.show_password')
+                                        "
+                                        @click="showPassword = !showPassword"
+                                    >
+                                        <EyeOff v-if="showPassword" />
+                                        <Eye v-else />
+                                    </InputGroupButton>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>
+                                        {{
+                                            showPassword
+                                                ? 'Hide password'
+                                                : 'Show password'
+                                        }}
+                                    </p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </InputGroupAddon>
+                </InputGroup>
+                <InputError :message="form.errors.password" />
             </div>
 
-            <div class="flex items-center justify-between">
-                <Label for="remember" class="flex items-center space-x-3">
-                    <Checkbox id="remember" name="remember" :tabindex="3" />
-                    <span>Remember me</span>
-                </Label>
+            <div class="flex flex-col gap-4">
+                <Button
+                    type="submit"
+                    :disabled="form.processing"
+                    data-test="login-button"
+                >
+                    <Spinner v-if="form.processing" />
+                    {{ t('authentication.button.login') }}
+                </Button>
+                <Button
+                    v-if="canResetPassword"
+                    :as="Link"
+                    :href="request()"
+                    variant="ghost"
+                >
+                    {{ t('authentication.link.forgot_password') }}
+                </Button>
             </div>
 
             <Button
-                type="submit"
-                class="mt-4 w-full"
-                :tabindex="4"
-                :disabled="processing"
-                data-test="login-button"
+                v-if="canRegister"
+                :as="Link"
+                :href="register()"
+                variant="outline"
             >
-                <Spinner v-if="processing" />
-                {{ t('authentication.heading') }}
+                {{ t('authentication.link.register') }}
             </Button>
         </div>
-
-        <div class="text-muted-foreground text-center text-sm">
-            Don't have an account?
-            <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
-        </div>
-    </Form>
+    </form>
 </template>

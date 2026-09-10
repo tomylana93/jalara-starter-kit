@@ -171,9 +171,9 @@ it('returns bundles from the configured language files', function (): void {
     $files = (new BuildTranslationBundles)->files();
 
     expect($files)->toBe([
-        resource_path('js/i18n/en.json') => "{\n    \"authentication.heading\": \"Login\"\n}\n",
-        resource_path('js/i18n/id.json') => "{\n    \"authentication.heading\": \"Masuk\"\n}\n",
-        resource_path('js/types/i18n.d.ts') => "export type SupportedLocale =\n    | \"en\"\n    | \"id\";\n\nexport type TranslationKey =\n    | \"authentication.heading\";\n",
+        resource_path('js/i18n/en.json') => "{\n    \"authentication.heading.login\": \"Log into {app_name}\"\n}\n",
+        resource_path('js/i18n/id.json') => "{\n    \"authentication.heading.login\": \"Masuk ke {app_name}\"\n}\n",
+        resource_path('js/types/i18n.d.ts') => "export type SupportedLocale =\n    | \"en\"\n    | \"id\";\n\nexport type TranslationKey =\n    | \"authentication.heading.login\";\n",
     ]);
 });
 

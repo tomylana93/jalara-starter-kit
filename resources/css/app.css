@@ -169,4 +169,11 @@
     body {
         @apply bg-background text-foreground;
     }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: var(--foreground) !important;
+        caret-color: var(--foreground);
+    }
 }

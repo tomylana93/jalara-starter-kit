@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\MasterData\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
@@ -10,16 +11,18 @@ it('login screen can be rendered', function (): void {
     $response->assertOk();
 });
 
-it('users can authenticate using the login screen', function (): void {
+it('users can authenticate and stay remembered using the login screen', function (): void {
     $user = User::factory()->create();
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
+        'remember' => true,
     ]);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertCookie(Auth::guard()->getRecallerName());
 });
 
 it('users with two factor enabled are redirected to two factor challenge', function (): void {
