@@ -8,15 +8,19 @@ import { toUrl } from '@/lib/utils';
 import { edit as editProfile } from '@/routes/account/profile';
 import { edit as editSecurity } from '@/routes/account/security';
 import type { NavItem } from '@/types';
+import { t } from '@/lib/i18n';
+import { UserPen, UserLock } from '@lucide/vue';
 
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Profile',
+        title: t('account.link.profile'),
         href: editProfile(),
+        icon: UserPen,
     },
     {
-        title: 'Security',
+        title: t('account.link.security'),
         href: editSecurity(),
+        icon: UserLock,
     },
 ];
 
@@ -26,8 +30,8 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 <template>
     <div class="px-4 py-6">
         <Heading
-            title="Settings"
-            description="Manage your profile and account settings"
+            :title="t('account.heading.settings')"
+            :description="t('account.description.settings')"
         />
 
         <div class="flex flex-col lg:flex-row lg:space-x-12">
