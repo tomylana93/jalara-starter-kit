@@ -1,11 +1,14 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { initializeTheme } from '@/composables/useAppearance';
+import { i18n, initializeI18n } from '@/lib/i18n';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+await initializeI18n();
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -21,6 +24,9 @@ void createInertiaApp({
     },
     progress: {
         color: '#4B5563',
+    },
+    withApp(app) {
+        app.use(i18n);
     },
 });
 

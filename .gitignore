@@ -10,6 +10,8 @@
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
+/resources/js/i18n
+/resources/js/types/i18n.d.ts
 /vendor
 .DS_Store
 .env
