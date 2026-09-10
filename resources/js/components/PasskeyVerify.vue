@@ -7,6 +7,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { t } from '@/lib/i18n';
 
 type Props = {
     routes?: {
@@ -46,11 +47,13 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
                 :disabled="isLoading"
             >
                 <Spinner v-if="isLoading" />
-                <KeyRound v-else class="h-4 w-4" />
+                <KeyRound v-else class="size-4" />
                 {{
                     isLoading
-                        ? (props.loadingLabel ?? 'Authenticating...')
-                        : (props.label ?? 'Sign in with a passkey')
+                        ? (props.loadingLabel ??
+                          t('authentication.button.passkey_authenticating'))
+                        : (props.label ??
+                          t('authentication.button.passkey_sign_in'))
                 }}
             </Button>
 
@@ -65,7 +68,10 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
             </div>
             <div class="relative flex justify-center text-xs uppercase">
                 <span class="bg-background text-muted-foreground px-2">
-                    {{ props.separator ?? 'Or continue with email' }}
+                    {{
+                        props.separator ??
+                        t('authentication.helper.or_continue_with_email')
+                    }}
                 </span>
             </div>
         </div>

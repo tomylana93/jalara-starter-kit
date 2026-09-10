@@ -27,6 +27,15 @@ return [
         'show_password' => 'Tampilkan password',
         'hide_password' => 'Sembunyikan password',
         'send_reset_link' => 'Kirim link reset',
+        'passkey_sign_in' => 'Masuk dengan passkey',
+        'passkey_authenticating' => 'Mengautentikasi...',
+        'passkey_confirm' => 'Konfirmasi dengan passkey',
+        'passkey_confirming' => 'Mengonfirmasi...',
+    ],
+
+    'helper' => [
+        'or_continue_with_email' => 'Atau lanjutkan dengan email',
+        'or_confirm_with_password' => 'Atau konfirmasi dengan password',
     ],
 
     'link' => [

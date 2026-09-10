@@ -11,6 +11,7 @@ import {
     store as confirmStore,
 } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
+import { t } from '@/lib/i18n';
 
 defineOptions({
     layout: {
@@ -29,9 +30,9 @@ defineOptions({
             options: confirmOptions(),
             submit: confirmStore(),
         }"
-        label="Confirm with passkey"
-        loading-label="Confirming..."
-        separator="Or confirm with password"
+        :label="t('authentication.button.passkey_confirm')"
+        :loading-label="t('authentication.button.passkey_confirming')"
+        :separator="t('authentication.helper.or_confirm_with_password')"
     />
 
     <Form
