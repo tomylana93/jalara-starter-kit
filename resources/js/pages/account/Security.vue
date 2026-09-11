@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import SecurityController from '@/actions/App/Http/Controllers/Account/SecurityController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -19,6 +19,24 @@ type Props = {
     ManageTwoFactorProps;
 
 const props = defineProps<Props>();
+
+const form = useForm({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+});
+
+const resetPasswordFields = (): void => {
+    form.reset('current_password', 'password', 'password_confirmation');
+};
+
+const submit = (): void => {
+    form.put(SecurityController.update().url, {
+        preserveScroll: true,
+        onSuccess: resetPasswordFields,
+        onError: resetPasswordFields,
+    });
+};
 
 defineOptions({
     layout: {
@@ -44,67 +62,55 @@ defineOptions({
             description="Ensure your account is using a long, random password to stay secure"
         />
 
-        <Form
-            v-bind="SecurityController.update.form()"
-            :options="{
-                preserveScroll: true,
-            }"
-            reset-on-success
-            :reset-on-error="[
-                'password',
-                'password_confirmation',
-                'current_password',
-            ]"
-            class="space-y-6"
-            v-slot="{ errors, processing }"
-        >
+        <form class="space-y-6" @submit.prevent="submit">
             <div class="grid gap-2">
                 <Label for="current_password">Current password</Label>
                 <PasswordInput
                     id="current_password"
-                    name="current_password"
+                    v-model="form.current_password"
                     class="mt-1 block w-full"
                     autocomplete="current-password"
                     placeholder="Current password"
                 />
-                <InputError :message="errors.current_password" />
+                <InputError :message="form.errors.current_password" />
             </div>
 
             <div class="grid gap-2">
                 <Label for="password">New password</Label>
                 <PasswordInput
                     id="password"
-                    name="password"
+                    v-model="form.password"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
                     placeholder="New password"
                     :passwordrules="props.passwordRules"
                 />
-                <InputError :message="errors.password" />
+                <InputError :message="form.errors.password" />
             </div>
 
             <div class="grid gap-2">
                 <Label for="password_confirmation">Confirm password</Label>
                 <PasswordInput
                     id="password_confirmation"
-                    name="password_confirmation"
+                    v-model="form.password_confirmation"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
                     placeholder="Confirm password"
                     :passwordrules="props.passwordRules"
                 />
-                <InputError :message="errors.password_confirmation" />
+                <InputError :message="form.errors.password_confirmation" />
             </div>
 
             <div class="flex items-center gap-4">
                 <Button
-                    :disabled="processing"
+                    type="submit"
+                    :disabled="form.processing"
                     data-test="update-password-button"
                 >
                     Save
                 </Button>
             </div>
-        </Form>
+        </form>
     </div>
 
     <ManageTwoFactor

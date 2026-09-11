@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePasskeyRegister } from '@laravel/passkeys/vue';
+import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -32,12 +33,12 @@ const getDefaultPasskeyName = () => {
     return [browser, os].filter(Boolean).join(' on ') || '';
 };
 
-const name = ref(getDefaultPasskeyName());
 const showForm = ref(false);
+const form = useForm({ name: getDefaultPasskeyName() });
 
 const { register, isLoading, error, isSupported } = usePasskeyRegister({
     onSuccess: () => {
-        name.value = '';
+        form.name = '';
         showForm.value = false;
         emit('success');
     },
@@ -46,16 +47,16 @@ const { register, isLoading, error, isSupported } = usePasskeyRegister({
 const handleSubmit = async (event: Event) => {
     event.preventDefault();
 
-    if (!name.value.trim()) {
+    if (!form.name.trim()) {
         return;
     }
 
-    await register(name.value);
+    await register(form.name);
 };
 
 const handleCancel = () => {
     showForm.value = false;
-    name.value = '';
+    form.name = '';
 };
 </script>
 
@@ -78,7 +79,7 @@ const handleCancel = () => {
             <Input
                 id="passkey-name"
                 type="text"
-                v-model="name"
+                v-model="form.name"
                 placeholder="e.g., MacBook Pro, iPhone"
                 class="border-foreground/20 mt-1 block w-full"
                 autofocus
@@ -91,7 +92,7 @@ const handleCancel = () => {
         <InputError v-if="error" :message="error" />
 
         <div class="flex gap-2">
-            <Button type="submit" :disabled="isLoading || !name.trim()">
+            <Button type="submit" :disabled="isLoading || !form.name.trim()">
                 {{ isLoading ? 'Registering...' : 'Register passkey' }}
             </Button>
             <Button type="button" variant="ghost" @click="handleCancel">

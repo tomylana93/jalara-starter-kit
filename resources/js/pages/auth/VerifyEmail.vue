@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { logout } from '@/routes';
-import { send } from '@/routes/verification';
+import { store } from '@/actions/Laravel/Fortify/Http/Controllers/EmailVerificationNotificationController';
 
 defineOptions({
     layout: {
@@ -17,6 +17,12 @@ defineOptions({
 defineProps<{
     status?: string;
 }>();
+
+const form = useForm({});
+
+const submit = (): void => {
+    form.post(store().url);
+};
 </script>
 
 <template>
@@ -30,18 +36,14 @@ defineProps<{
         during registration.
     </div>
 
-    <Form
-        v-bind="send.form()"
-        class="space-y-6 text-center"
-        v-slot="{ processing }"
-    >
-        <Button :disabled="processing" variant="secondary">
-            <Spinner v-if="processing" />
+    <form class="space-y-6 text-center" @submit.prevent="submit">
+        <Button type="submit" :disabled="form.processing" variant="secondary">
+            <Spinner v-if="form.processing" />
             Resend verification email
         </Button>
 
         <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
             Log out
         </TextLink>
-    </Form>
+    </form>
 </template>

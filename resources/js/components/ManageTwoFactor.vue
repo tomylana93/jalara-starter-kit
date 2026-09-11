@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
 import { onUnmounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
@@ -7,7 +7,10 @@ import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
-import { disable, enable } from '@/routes/two-factor';
+import {
+    destroy as disable,
+    store as enable,
+} from '@/actions/Laravel/Fortify/Http/Controllers/TwoFactorAuthenticationController';
 
 export type Props = {
     canManageTwoFactor?: boolean;
@@ -23,6 +26,18 @@ withDefaults(defineProps<Props>(), {
 
 const { hasSetupData, clearTwoFactorAuthData } = useTwoFactorAuth();
 const showSetupModal = ref<boolean>(false);
+const enableForm = useForm({});
+const disableForm = useForm({});
+
+const enableTwoFactor = (): void => {
+    enableForm.post(enable().url, {
+        onSuccess: () => (showSetupModal.value = true),
+    });
+};
+
+const disableTwoFactor = (): void => {
+    disableForm.delete(disable().url);
+};
 
 onUnmounted(() => clearTwoFactorAuthData());
 </script>
@@ -49,16 +64,11 @@ onUnmounted(() => clearTwoFactorAuthData());
                 <Button v-if="hasSetupData" @click="showSetupModal = true">
                     <ShieldCheck />Continue setup
                 </Button>
-                <Form
-                    v-else
-                    v-bind="enable.form()"
-                    @success="showSetupModal = true"
-                    #default="{ processing }"
-                >
-                    <Button type="submit" :disabled="processing">
+                <form v-else @submit.prevent="enableTwoFactor">
+                    <Button type="submit" :disabled="enableForm.processing">
                         Enable 2FA
                     </Button>
-                </Form>
+                </form>
             </div>
         </div>
 
@@ -70,15 +80,15 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <div class="relative inline">
-                <Form v-bind="disable.form()" #default="{ processing }">
+                <form @submit.prevent="disableTwoFactor">
                     <Button
                         variant="destructive"
                         type="submit"
-                        :disabled="processing"
+                        :disabled="disableForm.processing"
                     >
                         Disable 2FA
                     </Button>
-                </Form>
+                </form>
             </div>
 
             <TwoFactorRecoveryCodes />
