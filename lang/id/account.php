@@ -24,5 +24,5 @@ return [
     'link' => [
         'profile' => 'Profile',
         'security' => 'Security',
-    ]
+    ],
 ];
