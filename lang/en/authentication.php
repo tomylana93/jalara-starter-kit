@@ -29,4 +29,21 @@ return [
             'login' => 'Log in',
         ],
     ],
+    'forgot_password' => [
+        'title' => 'Forgot password',
+        'heading' => 'Forgot password',
+        'description' => 'Enter your email to receive a password reset link',
+        'button' => [
+            'submit' => 'Email password reset link',
+            'login' => 'Log in',
+        ],
+    ],
+    'reset_password' => [
+        'title' => 'Reset password',
+        'heading' => 'Reset password',
+        'description' => 'Please enter your new password below',
+        'button' => [
+            'submit' => 'Reset password',
+        ],
+    ],
 ];
