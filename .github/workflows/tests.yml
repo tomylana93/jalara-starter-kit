@@ -47,7 +47,7 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.5'
-          extensions: pdo_pgsql
+          extensions: pdo_pgsql, xdebug
           tools: composer:v2
           coverage: none
 
@@ -64,3 +64,15 @@ jobs:
 
       - name: Run CI Checks
         run: composer ci:check
+
+      - name: Run Code Coverage
+        run: composer test:coverage
+
+      - name: Upload Code Coverage
+        if: ${{ !cancelled() && hashFiles('coverage/clover.xml') != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: code-coverage
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 14
