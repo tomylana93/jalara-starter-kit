@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+
+import InputError from '@/components/InputError.vue';
+import PasswordInput from '@/components/PasswordInput.vue';
+
 import { update } from '@/routes/password';
 
 defineOptions({
@@ -46,7 +49,10 @@ const inputEmail = ref(props.email);
                     class="mt-1 block w-full"
                     readonly
                 />
-                <InputError :message="errors.email" class="mt-2" />
+                <InputError
+                    :message="errors.email"
+                    class="mt-2"
+                />
             </div>
 
             <div class="grid gap-2">
@@ -64,7 +70,7 @@ const inputEmail = ref(props.email);
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm password </Label>
+                <Label for="password_confirmation">Confirm password</Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"

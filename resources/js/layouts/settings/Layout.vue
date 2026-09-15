@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import Heading from '@/components/Heading.vue';
+
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { toUrl } from '@/lib/utils';
+
+import Heading from '@/components/Heading.vue';
+
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
+
+import { useCurrentUrl } from '@/composables/useCurrentUrl';
+
+import { toUrl } from '@/lib/utils';
+
 import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
@@ -52,7 +58,10 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                         as-child
                     >
                         <Link :href="item.href">
-                            <component :is="item.icon" class="h-4 w-4" />
+                            <component
+                                :is="item.icon"
+                                class="h-4 w-4"
+                            />
                             {{ item.title }}
                         </Link>
                     </Button>

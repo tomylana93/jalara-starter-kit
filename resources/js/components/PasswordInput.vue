@@ -2,7 +2,9 @@
 import { Eye, EyeOff } from '@lucide/vue';
 import { ref, useTemplateRef } from 'vue';
 import type { HTMLAttributes } from 'vue';
+
 import { Input } from '@/components/ui/input';
+
 import { cn } from '@/lib/utils';
 
 defineOptions({ inheritAttrs: false });
@@ -39,8 +41,14 @@ defineExpose({
             :aria-label="showPassword ? 'Hide password' : 'Show password'"
             :tabindex="-1"
         >
-            <EyeOff v-if="showPassword" class="size-4" />
-            <Eye v-else class="size-4" />
+            <EyeOff
+                v-if="showPassword"
+                class="size-4"
+            />
+            <Eye
+                v-else
+                class="size-4"
+            />
         </button>
     </div>
 </template>

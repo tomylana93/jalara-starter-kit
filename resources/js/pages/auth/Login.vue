@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
-import TextLink from '@/components/TextLink.vue';
+
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+
+import InputError from '@/components/InputError.vue';
+import PasskeyVerify from '@/components/PasskeyVerify.vue';
+import PasswordInput from '@/components/PasswordInput.vue';
+import TextLink from '@/components/TextLink.vue';
+
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import PasskeyVerify from '@/components/PasskeyVerify.vue';
 
 defineOptions({
     layout: {
@@ -84,8 +87,15 @@ defineProps<{
             </div>
 
             <div class="flex items-center justify-between">
-                <Label for="remember" class="flex items-center space-x-3">
-                    <Checkbox id="remember" name="remember" :tabindex="3" />
+                <Label
+                    for="remember"
+                    class="flex items-center space-x-3"
+                >
+                    <Checkbox
+                        id="remember"
+                        name="remember"
+                        :tabindex="3"
+                    />
                     <span>Remember me</span>
                 </Label>
             </div>
@@ -104,7 +114,12 @@ defineProps<{
 
         <div class="text-muted-foreground text-center text-sm">
             Don't have an account?
-            <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+            <TextLink
+                :href="register()"
+                :tabindex="5"
+            >
+                Sign up
+            </TextLink>
         </div>
     </Form>
 </template>

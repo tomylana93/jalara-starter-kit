@@ -2,12 +2,16 @@
 import { Form } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
 import { onUnmounted, ref } from 'vue';
+
+import { Button } from '@/components/ui/button';
+
 import Heading from '@/components/Heading.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
-import { Button } from '@/components/ui/button';
-import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
+
 import { disable, enable } from '@/routes/two-factor';
+
+import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 
 export type Props = {
     canManageTwoFactor?: boolean;
@@ -28,7 +32,10 @@ onUnmounted(() => clearTwoFactorAuthData());
 </script>
 
 <template>
-    <div v-if="canManageTwoFactor" class="space-y-6">
+    <div
+        v-if="canManageTwoFactor"
+        class="space-y-6"
+    >
         <Heading
             variant="small"
             title="Two-factor authentication"
@@ -46,8 +53,12 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <div>
-                <Button v-if="hasSetupData" @click="showSetupModal = true">
-                    <ShieldCheck />Continue setup
+                <Button
+                    v-if="hasSetupData"
+                    @click="showSetupModal = true"
+                >
+                    <ShieldCheck />
+                    Continue setup
                 </Button>
                 <Form
                     v-else
@@ -55,14 +66,20 @@ onUnmounted(() => clearTwoFactorAuthData());
                     @success="showSetupModal = true"
                     #default="{ processing }"
                 >
-                    <Button type="submit" :disabled="processing">
+                    <Button
+                        type="submit"
+                        :disabled="processing"
+                    >
                         Enable 2FA
                     </Button>
                 </Form>
             </div>
         </div>
 
-        <div v-else class="flex flex-col items-start justify-start space-y-4">
+        <div
+            v-else
+            class="flex flex-col items-start justify-start space-y-4"
+        >
             <p class="text-muted-foreground text-sm">
                 You will be prompted for a secure, random pin during login,
                 which you can retrieve from the TOTP-supported application on
@@ -70,7 +87,10 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <div class="relative inline">
-                <Form v-bind="disable.form()" #default="{ processing }">
+                <Form
+                    v-bind="disable.form()"
+                    #default="{ processing }"
+                >
                     <Button
                         variant="destructive"
                         type="submit"

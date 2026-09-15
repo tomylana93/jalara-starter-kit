@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { useClipboard } from '@vueuse/core';
 import { Check, Copy, ScanLine } from '@lucide/vue';
+import { useClipboard } from '@vueuse/core';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
-import AlertError from '@/components/AlertError.vue';
-import InputError from '@/components/InputError.vue';
+
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -19,9 +18,15 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { Spinner } from '@/components/ui/spinner';
+
+import AlertError from '@/components/AlertError.vue';
+import InputError from '@/components/InputError.vue';
+
+import { confirm } from '@/routes/two-factor';
+
 import { useAppearance } from '@/composables/useAppearance';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
-import { confirm } from '@/routes/two-factor';
+
 import type { TwoFactorConfigContent } from '@/types';
 
 type Props = {
@@ -110,7 +115,10 @@ watch(
 </script>
 
 <template>
-    <Dialog :open="isOpen" @update:open="isOpen = $event">
+    <Dialog
+        :open="isOpen"
+        @update:open="isOpen = $event"
+    >
         <DialogContent class="sm:max-w-md">
             <DialogHeader class="flex items-center justify-center">
                 <div
@@ -152,7 +160,10 @@ watch(
                 class="relative flex w-auto flex-col items-center justify-center space-y-5"
             >
                 <template v-if="!showVerificationStep">
-                    <AlertError v-if="errors?.length" :errors="errors" />
+                    <AlertError
+                        v-if="errors?.length"
+                        :errors="errors"
+                    />
                     <template v-else>
                         <div
                             class="relative mx-auto flex max-w-md items-center overflow-hidden"
@@ -185,7 +196,10 @@ watch(
                         </div>
 
                         <div class="flex w-full items-center space-x-5">
-                            <Button class="w-full" @click="handleModalNextStep">
+                            <Button
+                                class="w-full"
+                                @click="handleModalNextStep"
+                            >
                                 {{ modalConfig.buttonText }}
                             </Button>
                         </div>
@@ -196,9 +210,9 @@ watch(
                             <div
                                 class="bg-border absolute inset-0 top-1/2 h-px w-full"
                             />
-                            <span class="bg-card relative px-2 py-1"
-                                >or, enter the code manually</span
-                            >
+                            <span class="bg-card relative px-2 py-1">
+                                or, enter the code manually
+                            </span>
                         </div>
 
                         <div
@@ -228,7 +242,10 @@ watch(
                                             v-if="copied"
                                             class="w-4 text-green-500"
                                         />
-                                        <Copy v-else class="w-4" />
+                                        <Copy
+                                            v-else
+                                            class="w-4"
+                                        />
                                     </button>
                                 </template>
                             </div>
@@ -245,7 +262,11 @@ watch(
                         @success="isOpen = false"
                         v-slot="{ errors, processing }"
                     >
-                        <input type="hidden" name="code" :value="code" />
+                        <input
+                            type="hidden"
+                            name="code"
+                            :value="code"
+                        />
                         <div
                             ref="pinInputContainerRef"
                             class="relative w-full space-y-3"

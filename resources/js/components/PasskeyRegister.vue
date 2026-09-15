@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { usePasskeyRegister } from '@laravel/passkeys/vue';
 import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+import InputError from '@/components/InputError.vue';
 
 const emit = defineEmits<{
     success: [];
@@ -60,11 +62,18 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <div v-if="!isSupported" class="text-muted-foreground text-sm">
+    <div
+        v-if="!isSupported"
+        class="text-muted-foreground text-sm"
+    >
         Passkeys are not supported in this browser.
     </div>
 
-    <Button v-else-if="!showForm" variant="outline" @click="showForm = true">
+    <Button
+        v-else-if="!showForm"
+        variant="outline"
+        @click="showForm = true"
+    >
         Add passkey
     </Button>
 
@@ -88,13 +97,23 @@ const handleCancel = () => {
             </p>
         </div>
 
-        <InputError v-if="error" :message="error" />
+        <InputError
+            v-if="error"
+            :message="error"
+        />
 
         <div class="flex gap-2">
-            <Button type="submit" :disabled="isLoading || !name.trim()">
+            <Button
+                type="submit"
+                :disabled="isLoading || !name.trim()"
+            >
                 {{ isLoading ? 'Registering...' : 'Register passkey' }}
             </Button>
-            <Button type="button" variant="ghost" @click="handleCancel">
+            <Button
+                type="button"
+                variant="ghost"
+                @click="handleCancel"
+            >
                 Cancel
             </Button>
         </div>

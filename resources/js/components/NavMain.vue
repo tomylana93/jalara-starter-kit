@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -7,7 +8,9 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+
 import type { NavItem } from '@/types';
 
 defineProps<{
@@ -21,7 +24,10 @@ const { isCurrentUrl } = useCurrentUrl();
     <SidebarGroup class="px-2 py-0">
         <SidebarGroupLabel>Platform</SidebarGroupLabel>
         <SidebarMenu>
-            <SidebarMenuItem v-for="item in items" :key="item.title">
+            <SidebarMenuItem
+                v-for="item in items"
+                :key="item.title"
+            >
                 <SidebarMenuButton
                     as-child
                     :is-active="isCurrentUrl(item.href)"

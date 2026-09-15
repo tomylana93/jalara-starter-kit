@@ -50,13 +50,14 @@ export default defineConfig({
             'bootstrap/ssr/**',
             'tailwind.config.js',
             'resources/js/actions/**',
-            'resources/js/components/ui/*',
+            'resources/js/components/ui/**',
             'resources/js/routes/**',
             'resources/js/wayfinder/**',
         ],
         options: {
             denyWarnings: true,
             typeAware: true,
+            typeCheck: true,
         },
     },
     fmt: {
@@ -64,12 +65,73 @@ export default defineConfig({
         tabWidth: 4,
         singleQuote: true,
         semi: true,
-        singleAttributePerLine: false,
-        htmlWhitespaceSensitivity: 'css',
+        singleAttributePerLine: true,
+        htmlWhitespaceSensitivity: 'ignore',
+        sortImports: {
+            customGroups: [
+                {
+                    groupName: 'ui',
+                    elementNamePattern: ['@/components/ui/**'],
+                },
+                {
+                    groupName: 'components',
+                    elementNamePattern: ['@/components/**'],
+                },
+                {
+                    groupName: 'layouts',
+                    elementNamePattern: ['@/layouts/**'],
+                },
+                {
+                    groupName: 'actions',
+                    elementNamePattern: ['@/actions/**'],
+                },
+                {
+                    groupName: 'routes',
+                    elementNamePattern: ['@/routes', '@/routes/**'],
+                },
+                {
+                    groupName: 'composables',
+                    elementNamePattern: ['@/composables/**'],
+                },
+                {
+                    groupName: 'lib',
+                    elementNamePattern: ['@/lib/**'],
+                },
+                {
+                    groupName: 'types',
+                    elementNamePattern: ['@/types', '@/types/**'],
+                },
+                {
+                    groupName: 'wayfinder',
+                    elementNamePattern: ['@/wayfinder', '@/wayfinder/**'],
+                },
+            ],
+            groups: [
+                'builtin',
+                'external',
+                'ui',
+                'components',
+                'layouts',
+                'actions',
+                'routes',
+                'composables',
+                'lib',
+                'types',
+                'wayfinder',
+                ['internal', 'subpath'],
+                ['parent', 'sibling', 'index'],
+                'style',
+                'unknown',
+            ],
+        },
         ignorePatterns: [
             '.github/**',
+            '.serena/**',
             'composer.json',
-            'resources/js/components/ui/*',
+            'resources/js/actions/**',
+            'resources/js/components/ui/**',
+            'resources/js/routes/**',
+            'resources/js/wayfinder/**',
             'resources/views/mail/*',
         ],
         sortTailwindcss: {

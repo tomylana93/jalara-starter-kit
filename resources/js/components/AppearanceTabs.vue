@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Monitor, Moon, Sun } from '@lucide/vue';
+
 import { useAppearance } from '@/composables/useAppearance';
 
 const { appearance, updateAppearance } = useAppearance();
@@ -26,7 +27,10 @@ const tabs = [
                     : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60',
             ]"
         >
-            <component :is="Icon" class="-ml-1 h-4 w-4" />
+            <component
+                :is="Icon"
+                class="-ml-1 h-4 w-4"
+            />
             <span class="ml-1.5 text-sm">{{ label }}</span>
         </button>
     </div>

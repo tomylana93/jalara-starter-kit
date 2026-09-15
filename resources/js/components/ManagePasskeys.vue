@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { KeyRound } from '@lucide/vue';
-import type { Passkey } from '@/types/auth';
+
 import Heading from '@/components/Heading.vue';
 import PasskeyItem from '@/components/PasskeyItem.vue';
 import PasskeyRegister from '@/components/PasskeyRegister.vue';
+
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
+
+import type { Passkey } from '@/types/auth';
 
 export type Props = {
     canManagePasskeys?: boolean;
@@ -30,7 +33,10 @@ const handleRegisterSuccess = () => {
 </script>
 
 <template>
-    <div v-if="canManagePasskeys" class="space-y-6">
+    <div
+        v-if="canManagePasskeys"
+        class="space-y-6"
+    >
         <Heading
             variant="small"
             title="Passkeys"
@@ -47,7 +53,10 @@ const handleRegisterSuccess = () => {
                 />
             </template>
 
-            <div v-else class="p-8 text-center">
+            <div
+                v-else
+                class="p-8 text-center"
+            >
                 <div
                     class="bg-muted mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
                 >
