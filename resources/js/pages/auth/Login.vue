@@ -131,10 +131,10 @@ defineProps<{
                                     :aria-label="
                                         showPassword
                                             ? trans(
-                                                  'authentication.login.tooltip.hide_password',
+                                                  'authentication.tooltip.hide_password',
                                               )
                                             : trans(
-                                                  'authentication.login.tooltip.show_password',
+                                                  'authentication.tooltip.show_password',
                                               )
                                     "
                                 >
@@ -147,10 +147,10 @@ defineProps<{
                                     {{
                                         showPassword
                                             ? trans(
-                                                  'authentication.login.tooltip.hide_password',
+                                                  'authentication.tooltip.hide_password',
                                               )
                                             : trans(
-                                                  'authentication.login.tooltip.show_password',
+                                                  'authentication.tooltip.show_password',
                                               )
                                     }}
                                 </p>

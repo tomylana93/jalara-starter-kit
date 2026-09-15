@@ -1,118 +1,265 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, Link, setLayoutProps, useForm } from '@inertiajs/vue3';
+import { Eye, EyeOff, LockKeyhole, Mail, User } from '@lucide/vue';
+import { ref, watchEffect } from 'vue';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
+import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import InputError from '@/components/form/InputError.vue';
-import PasswordInput from '@/components/form/PasswordInput.vue';
-import TextLink from '@/components/shared/TextLink.vue';
+
+import { store } from '@/actions/Laravel/Fortify/Http/Controllers/RegisteredUserController';
 
 import { login } from '@/routes';
-import { store } from '@/routes/register';
+
+import { useTrans } from '@/composables/useTrans';
+
+import type { RegisterForm } from '@/types';
+
+const { trans } = useTrans();
+
+const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
+
+const form = useForm<RegisterForm>(store(), {
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+});
+
+const submit = (): void => {
+    form.submit({
+        onSuccess: () => form.reset('password', 'password_confirmation'),
+    });
+};
+
+watchEffect(() => {
+    setLayoutProps({
+        title: trans('authentication.register.heading'),
+        description: trans('authentication.register.description'),
+    });
+});
 
 defineProps<{
     passwordRules: string;
 }>();
-
-defineOptions({
-    layout: {
-        title: 'Create an account',
-        description: 'Enter your details below to create your account',
-    },
-});
 </script>
 
 <template>
-    <Head title="Register" />
+    <Head :title="trans('authentication.register.title')" />
 
-    <Form
-        v-bind="store.form()"
-        :reset-on-success="['password', 'password_confirmation']"
-        v-slot="{ errors, processing }"
+    <form
         class="flex flex-col gap-6"
+        novalidate
+        @submit.prevent="submit"
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input
-                    id="name"
-                    type="text"
-                    required
-                    autofocus
-                    :tabindex="1"
-                    autocomplete="name"
-                    name="name"
-                    placeholder="Full name"
+                <InputGroup>
+                    <InputGroupAddon>
+                        <User />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="name"
+                        v-model="form.name"
+                        autofocus
+                        autocomplete="name"
+                        :placeholder="trans('user.placeholder.name')"
+                        :aria-invalid="form.errors.name ? true : undefined"
+                        :aria-describedby="
+                            form.errors.name ? 'name-error' : undefined
+                        "
+                    />
+                </InputGroup>
+                <InputError
+                    id="name-error"
+                    :message="form.errors.name"
                 />
-                <InputError :message="errors.name" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    required
-                    :tabindex="2"
-                    autocomplete="email"
-                    name="email"
-                    placeholder="email@example.com"
+                <InputGroup>
+                    <InputGroupAddon>
+                        <Mail />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="email"
+                        v-model="form.email"
+                        autocomplete="email"
+                        :placeholder="trans('user.placeholder.email')"
+                        :aria-invalid="form.errors.email ? true : undefined"
+                        :aria-describedby="
+                            form.errors.email ? 'email-error' : undefined
+                        "
+                    />
+                </InputGroup>
+                <InputError
+                    id="email-error"
+                    :message="form.errors.email"
                 />
-                <InputError :message="errors.email" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">Password</Label>
-                <PasswordInput
-                    id="password"
-                    required
-                    :tabindex="3"
-                    autocomplete="new-password"
-                    name="password"
-                    placeholder="Password"
-                    :passwordrules="passwordRules"
+                <InputGroup>
+                    <InputGroupAddon>
+                        <LockKeyhole />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="password"
+                        v-model="form.password"
+                        :type="showPassword ? 'text' : 'password'"
+                        autocomplete="new-password"
+                        :passwordrules="passwordRules"
+                        :placeholder="trans('user.placeholder.password')"
+                        :aria-invalid="form.errors.password ? true : undefined"
+                        :aria-describedby="
+                            form.errors.password ? 'password-error' : undefined
+                        "
+                    />
+                    <TooltipProvider :delay-duration="0">
+                        <Tooltip>
+                            <TooltipTrigger as-child>
+                                <InputGroupButton
+                                    type="button"
+                                    @click="showPassword = !showPassword"
+                                    :aria-label="
+                                        showPassword
+                                            ? trans(
+                                                  'authentication.tooltip.hide_password',
+                                              )
+                                            : trans(
+                                                  'authentication.tooltip.show_password',
+                                              )
+                                    "
+                                >
+                                    <EyeOff v-if="showPassword" />
+                                    <Eye v-else />
+                                </InputGroupButton>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {{
+                                        showPassword
+                                            ? trans(
+                                                  'authentication.tooltip.hide_password',
+                                              )
+                                            : trans(
+                                                  'authentication.tooltip.show_password',
+                                              )
+                                    }}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </InputGroup>
+                <InputError
+                    id="password-error"
+                    :message="form.errors.password"
                 />
-                <InputError :message="errors.password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
-                <PasswordInput
-                    id="password_confirmation"
-                    required
-                    :tabindex="4"
-                    autocomplete="new-password"
-                    name="password_confirmation"
-                    placeholder="Confirm password"
-                    :passwordrules="passwordRules"
+                <InputGroup>
+                    <InputGroupAddon>
+                        <LockKeyhole />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                        id="password_confirmation"
+                        v-model="form.password_confirmation"
+                        :type="showPasswordConfirmation ? 'text' : 'password'"
+                        autocomplete="new-password"
+                        :passwordrules="passwordRules"
+                        :placeholder="
+                            trans('user.placeholder.password_confirmation')
+                        "
+                        :aria-invalid="
+                            form.errors.password_confirmation ? true : undefined
+                        "
+                        :aria-describedby="
+                            form.errors.password_confirmation
+                                ? 'password-confirmation-error'
+                                : undefined
+                        "
+                    />
+                    <TooltipProvider :delay-duration="0">
+                        <Tooltip>
+                            <TooltipTrigger as-child>
+                                <InputGroupButton
+                                    type="button"
+                                    @click="
+                                        showPasswordConfirmation =
+                                            !showPasswordConfirmation
+                                    "
+                                    :aria-label="
+                                        showPasswordConfirmation
+                                            ? trans(
+                                                  'authentication.tooltip.hide_password',
+                                              )
+                                            : trans(
+                                                  'authentication.tooltip.show_password',
+                                              )
+                                    "
+                                >
+                                    <EyeOff v-if="showPasswordConfirmation" />
+                                    <Eye v-else />
+                                </InputGroupButton>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {{
+                                        showPasswordConfirmation
+                                            ? trans(
+                                                  'authentication.tooltip.hide_password',
+                                              )
+                                            : trans(
+                                                  'authentication.tooltip.show_password',
+                                              )
+                                    }}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </InputGroup>
+                <InputError
+                    id="password-confirmation-error"
+                    :message="form.errors.password_confirmation"
                 />
-                <InputError :message="errors.password_confirmation" />
             </div>
+        </div>
 
+        <div class="grid gap-2">
             <Button
                 type="submit"
-                class="mt-2 w-full"
-                tabindex="5"
-                :disabled="processing"
+                :disabled="form.processing"
                 data-test="register-user-button"
             >
-                <Spinner v-if="processing" />
-                Create account
+                <Spinner v-if="form.processing" />
+                {{ trans('authentication.register.button.submit') }}
             </Button>
         </div>
 
-        <div class="text-muted-foreground text-center text-sm">
-            Already have an account?
-            <TextLink
-                :href="login()"
-                class="underline underline-offset-4"
-                :tabindex="6"
-            >
-                Log in
-            </TextLink>
-        </div>
-    </Form>
+        <Separator />
+
+        <Button
+            variant="outline"
+            :as="Link"
+            :href="login()"
+        >
+            {{ trans('authentication.register.button.login') }}
+        </Button>
+    </form>
 </template>

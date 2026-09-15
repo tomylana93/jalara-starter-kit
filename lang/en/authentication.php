@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'tooltip' => [
+        'hide_password' => 'Hide password',
+        'show_password' => 'Show password',
+    ],
     'login' => [
         'title' => 'Log in',
         'heading' => 'Log in to your account',
@@ -15,9 +19,14 @@ return [
         'helper' => [
             'continue_with_email' => 'Or continue with email',
         ],
-        'tooltip' => [
-            'hide_password' => 'Hide password',
-            'show_password' => 'Show password',
+    ],
+    'register' => [
+        'title' => 'Register',
+        'heading' => 'Create an account',
+        'description' => 'Enter your details below to create your account',
+        'button' => [
+            'submit' => 'Create account',
+            'login' => 'Log in',
         ],
     ],
 ];
