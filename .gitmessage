@@ -1,0 +1,10 @@
+# Conventional Commit:
+# <type>(<scope>): <description>
+#
+# Examples:
+# feat(auth): add passkey authentication
+# fix(shipment): prevent duplicate POD upload
+# refactor(admin): standardize table structure
+#
+# Full convention:
+# .github/commit-instructions.md
