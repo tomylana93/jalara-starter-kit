@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
-import InputError from '@/components/InputError.vue';
-import PasskeyVerify from '@/components/PasskeyVerify.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import InputError from '@/components/form/InputError.vue';
+import PasswordInput from '@/components/form/PasswordInput.vue';
+import PasskeyVerify from '@/components/security/passkeys/PasskeyVerify.vue';
 
 import {
     index as confirmOptions,

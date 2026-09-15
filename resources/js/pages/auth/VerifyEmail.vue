@@ -4,7 +4,7 @@ import { Form, Head } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 
-import TextLink from '@/components/TextLink.vue';
+import TextLink from '@/components/shared/TextLink.vue';
 
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';

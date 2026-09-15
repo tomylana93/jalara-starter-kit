@@ -19,8 +19,8 @@ import {
 } from '@/components/ui/input-otp';
 import { Spinner } from '@/components/ui/spinner';
 
-import AlertError from '@/components/AlertError.vue';
-import InputError from '@/components/InputError.vue';
+import AlertError from '@/components/form/AlertError.vue';
+import InputError from '@/components/form/InputError.vue';
 
 import { confirm } from '@/routes/two-factor';
 

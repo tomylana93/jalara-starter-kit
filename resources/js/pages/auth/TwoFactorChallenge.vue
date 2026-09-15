@@ -10,7 +10,7 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 
-import InputError from '@/components/InputError.vue';
+import InputError from '@/components/form/InputError.vue';
 
 import { store } from '@/routes/two-factor/login';
 

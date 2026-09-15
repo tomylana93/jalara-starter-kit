@@ -5,9 +5,9 @@ import { onUnmounted, ref } from 'vue';
 
 import { Button } from '@/components/ui/button';
 
-import Heading from '@/components/Heading.vue';
-import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
-import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
+import TwoFactorRecoveryCodes from '@/components/security/two-factor/TwoFactorRecoveryCodes.vue';
+import TwoFactorSetupModal from '@/components/security/two-factor/TwoFactorSetupModal.vue';
+import Heading from '@/components/shared/Heading.vue';
 
 import { disable, enable } from '@/routes/two-factor';
 

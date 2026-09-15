@@ -9,7 +9,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import AppLogoIcon from '@/components/branding/AppLogoIcon.vue';
 
 import { home } from '@/routes';
 

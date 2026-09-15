@@ -12,10 +12,10 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
-import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
+import AppLogo from '@/components/branding/AppLogo.vue';
+import NavFooter from '@/components/navigation/NavFooter.vue';
+import NavMain from '@/components/navigation/NavMain.vue';
+import NavUser from '@/components/navigation/NavUser.vue';
 
 import { dashboard } from '@/routes';
 

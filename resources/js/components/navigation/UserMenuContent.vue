@@ -9,7 +9,7 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-import UserInfo from '@/components/UserInfo.vue';
+import UserInfo from '@/components/navigation/UserInfo.vue';
 
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';

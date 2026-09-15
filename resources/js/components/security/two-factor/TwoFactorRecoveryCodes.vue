@@ -12,7 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 
-import AlertError from '@/components/AlertError.vue';
+import AlertError from '@/components/form/AlertError.vue';
 
 import { regenerateRecoveryCodes } from '@/routes/two-factor';
 

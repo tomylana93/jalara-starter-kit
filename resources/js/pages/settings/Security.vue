@@ -4,13 +4,13 @@ import { Form, Head } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import type { Props as ManagePasskeysProps } from '@/components/ManagePasskeys.vue';
-import ManagePasskeys from '@/components/ManagePasskeys.vue';
-import type { Props as ManageTwoFactorProps } from '@/components/ManageTwoFactor.vue';
-import ManageTwoFactor from '@/components/ManageTwoFactor.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import InputError from '@/components/form/InputError.vue';
+import PasswordInput from '@/components/form/PasswordInput.vue';
+import type { Props as ManagePasskeysProps } from '@/components/security/passkeys/ManagePasskeys.vue';
+import ManagePasskeys from '@/components/security/passkeys/ManagePasskeys.vue';
+import type { Props as ManageTwoFactorProps } from '@/components/security/two-factor/ManageTwoFactor.vue';
+import ManageTwoFactor from '@/components/security/two-factor/ManageTwoFactor.vue';
+import Heading from '@/components/shared/Heading.vue';
 
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 

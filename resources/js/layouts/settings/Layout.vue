@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-import Heading from '@/components/Heading.vue';
+import Heading from '@/components/shared/Heading.vue';
 
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editProfile } from '@/routes/profile';

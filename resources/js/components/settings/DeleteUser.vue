@@ -15,9 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
+import InputError from '@/components/form/InputError.vue';
+import PasswordInput from '@/components/form/PasswordInput.vue';
+import Heading from '@/components/shared/Heading.vue';
 
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 

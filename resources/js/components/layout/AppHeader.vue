@@ -30,10 +30,10 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import AppLogo from '@/components/AppLogo.vue';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import UserMenuContent from '@/components/UserMenuContent.vue';
+import AppLogo from '@/components/branding/AppLogo.vue';
+import AppLogoIcon from '@/components/branding/AppLogoIcon.vue';
+import Breadcrumbs from '@/components/navigation/Breadcrumbs.vue';
+import UserMenuContent from '@/components/navigation/UserMenuContent.vue';
 
 import { dashboard } from '@/routes';
 

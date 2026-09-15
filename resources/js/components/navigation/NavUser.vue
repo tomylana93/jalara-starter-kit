@@ -15,8 +15,8 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 
-import UserInfo from '@/components/UserInfo.vue';
-import UserMenuContent from '@/components/UserMenuContent.vue';
+import UserInfo from '@/components/navigation/UserInfo.vue';
+import UserMenuContent from '@/components/navigation/UserMenuContent.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
