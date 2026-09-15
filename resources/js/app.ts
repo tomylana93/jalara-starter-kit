@@ -8,9 +8,14 @@ import { initializeTheme } from '@/composables/useAppearance';
 
 import { initializeFlashToast } from '@/lib/flashToast';
 
+import { createAppI18n } from '@/i18n';
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 void createInertiaApp({
+    withApp(app, { page }) {
+        app.use(createAppI18n(page.props.locale));
+    },
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {

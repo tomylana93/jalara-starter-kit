@@ -11,6 +11,8 @@
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
+/resources/js/locales/generated/*
+!/resources/js/locales/generated/.gitkeep
 /vendor
 .DS_Store
 .env

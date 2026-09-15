@@ -1,10 +1,70 @@
+import { execFileSync } from 'node:child_process';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+
 import inertia from '@inertiajs/vite';
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
-import { defineConfig, lazyPlugins } from 'vite-plus';
+import { defineConfig, lazyPlugins, type Plugin } from 'vite-plus';
+
+function laravelTranslations(): Plugin {
+    let root = process.cwd();
+
+    const exportTranslations = () => {
+        execFileSync('php', ['artisan', 'lang:export', '--no-interaction'], {
+            cwd: root,
+            stdio: 'inherit',
+        });
+    };
+
+    return {
+        name: 'laravel-translations',
+        configResolved(config) {
+            root = config.root;
+        },
+        buildStart() {
+            exportTranslations();
+        },
+        configureServer(server) {
+            const sourcePath = resolve(root, 'lang');
+            let exportTimer: ReturnType<typeof setTimeout> | undefined;
+
+            server.watcher.add(resolve(sourcePath, '**/*.{php,json}'));
+
+            const queueExport = (changedPath: string) => {
+                const absolutePath = isAbsolute(changedPath)
+                    ? changedPath
+                    : resolve(root, changedPath);
+                const sourceRelativePath = relative(sourcePath, absolutePath);
+
+                if (
+                    sourceRelativePath.startsWith(`..${sep}`) ||
+                    !/\.(php|json)$/.test(sourceRelativePath)
+                ) {
+                    return;
+                }
+
+                clearTimeout(exportTimer);
+                exportTimer = setTimeout(() => {
+                    try {
+                        exportTranslations();
+                        server.ws.send({ type: 'full-reload' });
+                    } catch {
+                        server.config.logger.error(
+                            'Failed to export Laravel translations.',
+                        );
+                    }
+                }, 75);
+            };
+
+            server.watcher.on('add', queueExport);
+            server.watcher.on('change', queueExport);
+            server.watcher.on('unlink', queueExport);
+        },
+    };
+}
 
 export default defineConfig({
     plugins: lazyPlugins(() => [
@@ -17,6 +77,7 @@ export default defineConfig({
                 }),
             ],
         }),
+        laravelTranslations(),
         inertia(),
         tailwindcss(),
         vue({
