@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
@@ -16,10 +17,12 @@ test('users can authenticate using the login screen', function (): void {
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => 'password',
+        'remember' => true,
     ]);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertCookie(Auth::guard()->getRecallerName());
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function (): void {
@@ -35,10 +38,12 @@ test('users with two factor enabled are redirected to two factor challenge', fun
     $response = $this->post(route('login'), [
         'email' => $user->email,
         'password' => 'password',
+        'remember' => true,
     ]);
 
     $response->assertRedirect(route('two-factor.login'));
     $response->assertSessionHas('login.id', $user->id);
+    $response->assertSessionHas('login.remember', true);
     $this->assertGuest();
 });
 

@@ -8,7 +8,7 @@ import type {
 } from '@/locales/generated/messages';
 
 type TranslationArguments<Key extends MessageKey> =
-    keyof MessageParameters[Key] extends never
+    MessageParameters[Key] extends Record<string, never>
         ? [parameters?: MessageParameters[Key]]
         : [parameters: MessageParameters[Key]];
 
