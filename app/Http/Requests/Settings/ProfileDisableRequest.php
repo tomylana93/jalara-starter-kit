@@ -8,7 +8,7 @@ use App\Concerns\PasswordValidationRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProfileDeleteRequest extends FormRequest
+class ProfileDisableRequest extends FormRequest
 {
     use PasswordValidationRules;
 

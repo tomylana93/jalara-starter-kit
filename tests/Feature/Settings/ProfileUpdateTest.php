@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserStatus;
 use App\Models\User;
 
 test('profile page is displayed', function (): void {
@@ -50,12 +51,12 @@ test('email verification status is unchanged when the email address is unchanged
     expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
 
-test('user can delete their account', function (): void {
+test('user can disable their account', function (): void {
     $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
-        ->delete(route('profile.destroy'), [
+        ->patch(route('profile.disable'), [
             'password' => 'password',
         ]);
 
@@ -64,16 +65,17 @@ test('user can delete their account', function (): void {
         ->assertRedirect(route('home'));
 
     $this->assertGuest();
-    expect($user->fresh())->toBeNull();
+    $this->assertModelExists($user);
+    expect($user->fresh()->status)->toBe(UserStatus::Disabled);
 });
 
-test('correct password must be provided to delete account', function (): void {
+test('correct password must be provided to disable account', function (): void {
     $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
         ->from(route('profile.edit'))
-        ->delete(route('profile.destroy'), [
+        ->patch(route('profile.disable'), [
             'password' => 'wrong-password',
         ]);
 
@@ -81,5 +83,5 @@ test('correct password must be provided to delete account', function (): void {
         ->assertSessionHasErrors('password')
         ->assertRedirect(route('profile.edit'));
 
-    expect($user->fresh())->not->toBeNull();
+    expect($user->fresh()->status)->toBe(UserStatus::Active);
 });

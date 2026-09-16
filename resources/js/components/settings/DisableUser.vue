@@ -28,8 +28,8 @@ const passwordInput = useTemplateRef('passwordInput');
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Delete account"
-            description="Delete your account and all of its resources"
+            title="Disable account"
+            description="Disable your account while keeping its data"
         />
         <div
             class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
@@ -37,21 +37,22 @@ const passwordInput = useTemplateRef('passwordInput');
             <div class="relative space-y-0.5 text-red-600 dark:text-red-100">
                 <p class="font-medium">Warning</p>
                 <p class="text-sm">
-                    Please proceed with caution, this cannot be undone.
+                    You will be signed out and unable to access your account
+                    until it is re-enabled.
                 </p>
             </div>
             <Dialog>
                 <DialogTrigger as-child>
                     <Button
                         variant="destructive"
-                        data-test="delete-user-button"
+                        data-test="disable-user-button"
                     >
-                        Delete account
+                        Disable account
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <Form
-                        v-bind="ProfileController.destroy.form()"
+                        v-bind="ProfileController.disable.form()"
                         reset-on-success
                         @error="() => passwordInput?.focus()"
                         :options="{
@@ -62,14 +63,12 @@ const passwordInput = useTemplateRef('passwordInput');
                     >
                         <DialogHeader class="space-y-3">
                             <DialogTitle>
-                                Are you sure you want to delete your account?
+                                Are you sure you want to disable your account?
                             </DialogTitle>
                             <DialogDescription>
-                                Once your account is deleted, all of its
-                                resources and data will also be permanently
-                                deleted. Please enter your password to confirm
-                                you would like to permanently delete your
-                                account.
+                                Your data will be kept, but you will be signed
+                                out and unable to access your account until it
+                                is re-enabled. Enter your password to confirm.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -108,9 +107,9 @@ const passwordInput = useTemplateRef('passwordInput');
                                 type="submit"
                                 variant="destructive"
                                 :disabled="processing"
-                                data-test="confirm-delete-user-button"
+                                data-test="confirm-disable-user-button"
                             >
-                                Delete account
+                                Disable account
                             </Button>
                         </DialogFooter>
                     </Form>

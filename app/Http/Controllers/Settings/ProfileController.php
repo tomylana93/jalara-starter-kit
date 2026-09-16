@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\ProfileDeleteRequest;
+use App\Http\Requests\Settings\ProfileDisableRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -37,13 +38,14 @@ class ProfileController extends Controller
         return to_route('profile.edit');
     }
 
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    public function disable(ProfileDisableRequest $request): RedirectResponse
     {
         $user = $request->user();
 
-        Auth::logout();
+        $user->status = UserStatus::Disabled;
+        $user->save();
 
-        $user->delete();
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

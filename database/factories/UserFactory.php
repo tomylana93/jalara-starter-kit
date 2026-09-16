@@ -40,6 +40,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function disabled(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => UserStatus::Disabled,
+        ]);
+    }
+
     public function withTwoFactor(): static
     {
         return $this->state(fn (array $attributes): array => [

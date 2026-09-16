@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import InputError from '@/components/form/InputError.vue';
-import DeleteUser from '@/components/settings/DeleteUser.vue';
+import DisableUser from '@/components/settings/DisableUser.vue';
 import Heading from '@/components/shared/Heading.vue';
 
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
@@ -114,5 +114,5 @@ const user = computed(() => page.props.auth.user);
         </Form>
     </div>
 
-    <DeleteUser />
+    <DisableUser />
 </template>

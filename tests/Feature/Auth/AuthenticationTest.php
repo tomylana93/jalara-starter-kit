@@ -58,6 +58,29 @@ test('users can not authenticate with invalid password', function (): void {
     $this->assertGuest();
 });
 
+test('disabled users can not authenticate', function (): void {
+    $user = User::factory()->disabled()->create();
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertSessionHasErrors('email');
+    $this->assertGuest();
+});
+
+test('disabled users with an existing session are logged out', function (): void {
+    $user = User::factory()->disabled()->create();
+
+    $response = $this->actingAs($user)->get(route('dashboard'));
+
+    $response
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('status', 'Your account is disabled.');
+    $this->assertGuest();
+});
+
 test('users can logout', function (): void {
     $user = User::factory()->create();
 
