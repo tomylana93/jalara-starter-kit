@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\UserStatus;
+use App\Models\User;
 use Laravel\Fortify\Features;
 
 beforeEach(function (): void {
@@ -20,6 +22,15 @@ test('new users can register', function (): void {
         'password_confirmation' => 'password',
     ]);
 
-    $this->assertAuthenticated();
+    $user = User::query()->where('email', 'test@example.com')->sole();
+
+    $this->assertAuthenticatedAs($user);
     $response->assertRedirect(route('dashboard', absolute: false));
+    $this->assertDatabaseHas('users', [
+        'id' => $user->id,
+        'status' => 'active',
+    ]);
+
+    expect($user->id)->toBeUuid()
+        ->and($user->status)->toBe(UserStatus::Active);
 });
