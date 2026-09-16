@@ -60,16 +60,28 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "format": [
+            "pint --parallel --dirty --format agent"
+        ],
+        "frontend:build": [
+            "pnpm run build"
+        ],
+        "frontend:check": [
+            "pnpm run check"
+        ],
+        "frontend:fix": [
+            "pnpm run check:fix"
+        ],
         "lint": [
             "Composer\\Config::disableProcessTimeout",
             "@refactor",
-            "pint --parallel",
-            "pnpm run check:fix",
+            "@format",
+            "@frontend:fix",
             "@types:check"
         ],
         "lint:check": [
             "pint --parallel --test",
-            "pnpm run check"
+            "@frontend:check"
         ],
         "refactor": [
             "rector process --no-progress-bar"
@@ -101,6 +113,9 @@
             "@lint:check",
             "@types:check",
             "@php artisan test"
+        ],
+        "test:focused": [
+            "@php artisan test --compact"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
